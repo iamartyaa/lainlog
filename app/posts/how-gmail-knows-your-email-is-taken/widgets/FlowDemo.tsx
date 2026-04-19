@@ -276,6 +276,7 @@ export function FlowDemo({ initialScenario = "fresh", initialStep = 0 }: Props) 
         </div>
       }
     >
+      <div className="bs-widget-scroll-at-narrow">
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         width="100%"
@@ -461,6 +462,7 @@ export function FlowDemo({ initialScenario = "fresh", initialStep = 0 }: Props) 
           );
         })()}
       </svg>
+      </div>
     </WidgetShell>
   );
 }
