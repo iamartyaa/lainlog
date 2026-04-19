@@ -23,6 +23,14 @@ export type PostMeta = {
 
 export const POSTS: PostMeta[] = [
   {
+    slug: "why-fetch-fails-only-in-browser",
+    title: "Why `fetch` works in curl but the browser blocks it",
+    date: "2026-04-20",
+    hook: "the server did answer — your browser is just holding the response back from your JavaScript.",
+    readingMinutes: 7,
+    tags: ["web", "browser", "security"],
+  },
+  {
     slug: "how-gmail-knows-your-email-is-taken",
     title: "How Gmail knows your email is taken, instantly",
     date: "2026-04-19",
