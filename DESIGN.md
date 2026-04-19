@@ -116,11 +116,13 @@ Every piece of text inside a post is a typed JSX element. No regex classifiers, 
 ## 6. Code blocks
 
 - Shiki dual-theme: **`github-dark-dimmed`** (dark) + **`github-light`** (light). Single DOM, CSS-variable switched.
-- Background: `--color-surface`. No distinct code-block color — stay in palette.
-- Padding: `--spacing-md`.
+- **Chrome**: terminal-style header bar with three muted dots (`--code-dot-red/-yellow/-green`), optional filename on the left, language badge on the right. Carve-out documented in §12. Chrome bar height is 34 px on desktop, 28 px on phone-width containers (the bar is a container-query consumer so the block adapts whether it's in prose or inside a widget).
+- Background: `--color-surface`. Subtle warmer band on the chrome via `color-mix(in oklab, surface 70%, bg)` so the chrome reads as a distinct surface without a heavy border.
+- Padding: `--spacing-md` default, `--spacing-sm` below the 560 px container-query breakpoint.
 - Font: Plex Mono at `--text-mono`.
-- Copy button: top-right on hover only, Plex Sans `--text-small`.
-- Line numbers: auto for blocks ≥ 10 lines. `--color-text-muted`, tabular-nums.
+- Copy button: always visible, 44 × 44 tap zone, Plex Sans `--text-small`. Hidden for `tone="terminal"` (shell transcripts aren't paste fodder).
+- Line numbers: on by default for `tone="default"`; off for `terminal` and `output`. `--color-text-muted` at 50 % opacity, tabular-nums.
+- **`tone` prop**: `default | terminal | output`. `terminal` renders a `$` prompt on the first line (accent-coloured); `output` dims the whole body to `--color-text-muted`. The `low-contrast-output-block` audit rule surfaces every `output` block so authors confirm none are teaching code.
 - Filename header: optional `<CodeBlock filename="…">`. Plex Mono `--text-small`.
 - `<CodeTrace>` active line: background tint on whole line, **not** a left stripe.
 - `<CodeMorph>`: shiki-magic-move wrapper for step-linked reveals.
@@ -231,3 +233,8 @@ Home splits into two columns at ≥ 768px:
 - **No dashboard "big number, small label, supporting stats" layouts.**
 - **No sparkline decoration.**
 - **No rounded-rectangle-with-generic-shadow** buttons.
+
+### Carve-outs from §12
+
+1. **Code-block chrome dots.** Three 8-px dots in the `<CodeBlock>` chrome (tokens `--code-dot-red` / `-yellow` / `-green`) are the one permitted exception to the one-accent rule. They're a well-established terminal metaphor, not decoration, and their chromas are ≤ 50 % of a typical OS traffic light so they read as muted against the surface. A reviewer should confirm no decorative use creeps into other surfaces — these tokens exist solely for the code-block chrome.
+2. **Transient press-pulses.** Already documented in §9 — `.bs-press` ring pulse ≤ 300 ms on commit-worthy taps is gesture feedback, not decoration.

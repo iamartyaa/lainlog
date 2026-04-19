@@ -25,7 +25,7 @@ export default function HowGmailKnowsYourEmailIsTaken() {
   return (
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
-        <div className="mb-[var(--spacing-md)] flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
+        <div className="mb-[var(--spacing-md)] hidden md:flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
           <HeroTile slug="how-gmail-knows-your-email-is-taken" />
         </div>
         <H1 style={{ fontSize: "clamp(2.5rem, 2rem + 3.5vw, 4rem)" }}>

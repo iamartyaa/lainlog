@@ -23,7 +23,7 @@ export default function WhyFetchFailsOnlyInBrowser() {
   return (
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
-        <div className="mb-[var(--spacing-md)] flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
+        <div className="mb-[var(--spacing-md)] hidden md:flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
           <HeroTile slug="why-fetch-fails-only-in-browser" />
         </div>
         <H1 style={{ fontSize: "clamp(2.5rem, 2rem + 3.5vw, 4rem)" }}>
@@ -215,13 +215,13 @@ export default function WhyFetchFailsOnlyInBrowser() {
           <Code>Access-Control-Max-Age</Code> so the handshake doesn&apos;t repeat for
           every request.
         </P>
-        <Aside>
+        <Callout tone="warn">
           If your server reflects the request&apos;s <Code>Origin</Code> header back
           in <Code>Access-Control-Allow-Origin</Code> to support many origins, you
           must also send <Code>Vary: Origin</Code>. Without it, a CDN or shared
           proxy can serve origin A&apos;s allowed response to origin B&apos;s
           request. It looks fine in dev and breaks on Tuesday.
-        </Aside>
+        </Callout>
       </div>
 
       {/* §5 — credentials */}

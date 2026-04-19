@@ -72,6 +72,15 @@
   /* Widget canvas width — every widget-embedded SVG reads this for its max
      width so the editorial page gets one place to change the figure width. */
   --widget-width: min(100%, 900px);
+
+  /* Code-block chrome — three muted-tone dots that read as a terminal
+     metaphor without lighting the page up with three new accents. These
+     are the one permitted exception to DESIGN.md §12's one-accent rule
+     (see §12 for the carve-out). Chromas are ≤ 50 % of a typical OS
+     traffic light so they sit inside the editorial palette. */
+  --code-dot-red: oklch(0.58 0.09 28);
+  --code-dot-yellow: oklch(0.75 0.08 80);
+  --code-dot-green: oklch(0.68 0.08 150);
 }
 
 /* ---------------------------------------------------------------------------
@@ -186,6 +195,60 @@ body {
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
   opacity: 0.5;
+}
+
+/* ---------------------------------------------------------------------------
+   CodeBlock chrome — macOS-style terminal identity. The three dots read as
+   "this is a terminal" at a glance; the chroma is pulled down to ≤ 50 % of
+   an OS traffic light so they don't compete with the terracotta accent.
+--------------------------------------------------------------------------- */
+.bs-code {
+  container-type: inline-size;
+}
+.bs-code-chrome {
+  height: 34px;
+}
+.bs-code-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.bs-code-filename {
+  font-family: var(--font-mono);
+  letter-spacing: 0.01em;
+}
+
+/* `terminal` tone — render a `$` prompt on the first non-blank line via a
+   pseudo-element on the code body. Also drops line numbers. */
+.bs-code[data-tone="terminal"] .bs-code-body .shiki code .line:first-child::before {
+  content: "$ ";
+  color: var(--color-accent);
+  margin-right: 0;
+  width: auto;
+  opacity: 0.8;
+}
+
+/* `output` tone — dim the body to muted text so shell-output blocks read
+   as derivative, not teaching. The audit rule `low-contrast-output-block`
+   surfaces this so authors confirm the block is genuinely non-teaching. */
+.bs-code[data-tone="output"] .bs-code-body {
+  color: var(--color-text-muted);
+}
+
+/* Mobile container-query density — shrink chrome, hide language badge,
+   tighten padding. The copy button's own styles keep its 44 px tap zone. */
+@container (max-width: 560px) {
+  .bs-code-chrome {
+    height: 28px;
+    padding-inline: var(--spacing-sm);
+  }
+  .bs-code-badge {
+    display: none;
+  }
+  .bs-code-body {
+    padding-inline: var(--spacing-sm);
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -306,6 +369,29 @@ html[data-theme-transitioning] {
   .bs-race-controls {
     grid-template-columns: 1fr 1fr;
     gap: var(--spacing-md);
+  }
+}
+
+/* The function that remembered — three widgets author both orientations and
+   the container query picks which renders. Same pattern RequestJourney ships:
+   pure CSS, no hydration mismatch, no ResizeObserver. Wide stays the existing
+   680-unit landscape layout; narrow stacks into a portrait composition where
+   labels keep their native size. */
+.bs-looptrap-narrow,
+.bs-tetherscope-narrow,
+.bs-renderloom-narrow {
+  display: none;
+}
+@container widget (max-width: 560px) {
+  .bs-looptrap-wide,
+  .bs-tetherscope-wide,
+  .bs-renderloom-wide {
+    display: none;
+  }
+  .bs-looptrap-narrow,
+  .bs-tetherscope-narrow,
+  .bs-renderloom-narrow {
+    display: block;
   }
 }
 
