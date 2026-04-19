@@ -38,7 +38,10 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: SITE_NAME, template: `%s · ${SITE_NAME}` },
+  title: {
+    default: `${SITE_NAME} · engineering essays`,
+    template: `%s · ${SITE_NAME}`,
+  },
   description: SITE_DESCRIPTION,
   authors: [{ name: SITE_AUTHOR, url: SITE_AUTHOR_URL }],
   openGraph: {
