@@ -19,7 +19,7 @@ pnpm dev
 
 ## Author
 
-Built by [@iamartyaa](https://github.com/iamartyaa).
+Built by [An Anonymous Engineer](https://github.com/iamartyaa).
 
 ## Design
 

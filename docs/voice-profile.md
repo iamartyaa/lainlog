@@ -1,6 +1,6 @@
 # bytesize — voice profile
 
-The reference document for how every bytesize post should *sound* and *feel*. Derived from Amartya's edits on post #1 ("How Gmail knows your email is taken, instantly") and captured here so future drafts don't drift.
+The reference document for how every bytesize post should *sound* and *feel*. Derived from the author's edits on post #1 ("How Gmail knows your email is taken, instantly") and captured here so future drafts don't drift.
 
 This doc is loaded at Phase E of the `/new-post` workflow. When any rule here conflicts with a one-off kernel.md decision, this doc wins unless the conflict is explicitly resolved at Checkpoint 2 or 3.
 

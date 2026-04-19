@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SITE_AUTHOR_DISPLAY, SITE_AUTHOR_URL } from "@/lib/site";
 
 export function Footer() {
   return (
@@ -14,13 +15,16 @@ export function Footer() {
         <span>
           bytesize · built by{" "}
           <a
-            href="https://github.com/iamartyaa"
+            href={SITE_AUTHOR_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-[color:var(--color-text)] transition-colors"
           >
-            amartya
+            {SITE_AUTHOR_DISPLAY}
           </a>
+          <span aria-hidden className="ml-[0.25em] opacity-70">
+            {"</>"}
+          </span>
         </span>
         <Link
           href="/rss.xml"
