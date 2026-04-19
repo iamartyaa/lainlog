@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { Stepper } from "@/components/viz/Stepper";
-import { SPRING } from "@/lib/motion";
+import { PRESS, SPRING } from "@/lib/motion";
 import { WidgetShell } from "./WidgetShell";
 
 type Step = {
@@ -140,20 +140,21 @@ export function RequestJourney({
       controls={
         <div className="flex items-center gap-[var(--spacing-md)] flex-wrap">
           <Stepper value={step} total={STEPS.length} onChange={setStep} />
-          <button
+          <motion.button
             type="button"
             onClick={() => setAllow((v) => !v)}
             aria-pressed={allow}
-            className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] font-mono transition-colors"
+            className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] min-h-[44px] inline-flex items-center font-mono transition-colors"
             style={{
               fontSize: "var(--text-small)",
               color: allow ? "var(--color-bg)" : "var(--color-text)",
               background: allow ? "var(--color-accent)" : "transparent",
               border: `1px solid ${allow ? "var(--color-accent)" : "var(--color-rule)"}`,
             }}
+            {...PRESS}
           >
             Access-Control-Allow-Origin: {allow ? "app.example.com" : "missing"}
-          </button>
+          </motion.button>
         </div>
       }
     >

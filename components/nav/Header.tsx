@@ -1,5 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { motion } from "motion/react";
+import { PRESS } from "@/lib/motion";
 import { ThemeToggle } from "./theme-toggle";
+
+const MotionLink = motion.create(Link);
 
 export function Header() {
   return (
@@ -7,7 +13,7 @@ export function Header() {
       className="flex h-[56px] sm:h-[64px] items-center justify-between px-[var(--spacing-md)] sm:px-[var(--spacing-lg)]"
       style={{ fontSize: "var(--text-ui)" }}
     >
-      <Link
+      <MotionLink
         href="/"
         aria-label="bytesize — home"
         className="group inline-flex items-center gap-[var(--spacing-2xs)] font-mono transition-colors hover:text-[color:var(--color-accent)]"
@@ -15,6 +21,7 @@ export function Header() {
           fontSize: "0.9375rem",
           letterSpacing: "0.02em",
         }}
+        {...PRESS}
       >
         <span
           aria-hidden
@@ -22,7 +29,7 @@ export function Header() {
           style={{ background: "var(--color-accent)" }}
         />
         <span>bytesize</span>
-      </Link>
+      </MotionLink>
 
       <nav className="flex items-center gap-[var(--spacing-md)]">
         <ThemeToggle />

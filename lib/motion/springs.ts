@@ -36,6 +36,16 @@ export const STAGGER = {
 /** whileTap scale for interactive elements. */
 export const TAP = { scale: 0.96 } as const;
 
+/**
+ * PRESS — unified press/tap identity for buttons and links across bytesize.
+ * Spread onto any <motion.*> to get consistent depress + snappy settle.
+ * Reduced-motion users collapse to opacity-only via MotionConfigProvider.
+ */
+export const PRESS = {
+  whileTap: TAP,
+  transition: SPRING.snappy,
+} as const;
+
 /** Element-level enter presets. Pair with SPRING.smooth. */
 export const ELEMENT_ENTER = {
   /** 4px displacement — inline chips */

@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { motion } from "motion/react";
+import { PRESS } from "@/lib/motion";
+import { useTapPulse } from "@/lib/hooks/use-tap-pulse";
 
 type Props = {
   /** 0-indexed current step. */
@@ -17,10 +20,14 @@ type Props = {
 /**
  * Stepper — prev / play / next controls. Pair with <Scrubber> or use alone.
  * Keyboard: ←/→ while focused anywhere inside the containing widget.
+ * Auto-play pauses whenever the Stepper scrolls out of the viewport so
+ * background widgets don't drain battery on mobile.
  */
 export function Stepper({ value, total, onChange, playable = true, playInterval = 900 }: Props) {
   const [playing, setPlaying] = useState(false);
+  const [inView, setInView] = useState(true);
   const onChangeRef = useRef(onChange);
+  const containerRef = useRef<HTMLDivElement>(null);
   onChangeRef.current = onChange;
 
   const go = useCallback(
@@ -31,8 +38,11 @@ export function Stepper({ value, total, onChange, playable = true, playInterval 
     [total],
   );
 
+  const prev = useTapPulse<HTMLButtonElement>();
+  const next = useTapPulse<HTMLButtonElement>();
+
   useEffect(() => {
-    if (!playing) return;
+    if (!playing || !inView) return;
     const id = setInterval(() => {
       if (value >= total - 1) {
         setPlaying(false);
@@ -41,25 +51,48 @@ export function Stepper({ value, total, onChange, playable = true, playInterval 
       go(value + 1);
     }, playInterval);
     return () => clearInterval(id);
-  }, [playing, value, total, go, playInterval]);
+  }, [playing, inView, value, total, go, playInterval]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { threshold: 0 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   const atStart = value <= 0;
   const atEnd = value >= total - 1;
 
+  const btnClass =
+    "rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] min-h-[44px] inline-flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:enabled:text-[color:var(--color-accent)]";
+
   return (
-    <div className="flex items-center gap-[var(--spacing-sm)] font-sans" style={{ fontSize: "var(--text-ui)" }}>
-      <button
+    <div
+      ref={containerRef}
+      className="flex items-center gap-x-[var(--spacing-sm)] gap-y-[var(--spacing-2xs)] flex-wrap font-sans"
+      style={{ fontSize: "var(--text-ui)" }}
+    >
+      <motion.button
+        ref={prev.ref}
         type="button"
-        onClick={() => go(value - 1)}
+        onClick={() => {
+          prev.pulse();
+          go(value - 1);
+        }}
         disabled={atStart}
-        aria-label="Previous step"
-        className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:enabled:text-[color:var(--color-accent)]"
+        aria-label="Previous step — Left arrow"
+        className={btnClass}
+        {...PRESS}
       >
         ← prev
-      </button>
+      </motion.button>
 
       {playable ? (
-        <button
+        <motion.button
           type="button"
           onClick={() => {
             if (atEnd) {
@@ -69,28 +102,34 @@ export function Stepper({ value, total, onChange, playable = true, playInterval 
               setPlaying((p) => !p);
             }
           }}
-          aria-label={playing ? "Pause" : "Play"}
-          className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] transition-colors hover:text-[color:var(--color-accent)]"
+          aria-label={playing ? "Pause auto-play — Space" : "Play auto-play — Space"}
+          className={btnClass}
           style={{ color: playing ? "var(--color-accent)" : undefined }}
+          {...PRESS}
         >
           {playing ? "pause" : atEnd ? "replay ▸" : "play ▸"}
-        </button>
+        </motion.button>
       ) : null}
 
-      <button
+      <motion.button
+        ref={next.ref}
         type="button"
-        onClick={() => go(value + 1)}
+        onClick={() => {
+          next.pulse();
+          go(value + 1);
+        }}
         disabled={atEnd}
-        aria-label="Next step"
-        className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed hover:enabled:text-[color:var(--color-accent)]"
+        aria-label="Next step — Right arrow"
+        className={btnClass}
+        {...PRESS}
       >
         next →
-      </button>
+      </motion.button>
 
       <span
         className="ml-auto font-mono tabular-nums"
         style={{
-          fontSize: "var(--text-small)",
+          fontSize: "var(--text-ui)",
           color: "var(--color-text-muted)",
         }}
       >

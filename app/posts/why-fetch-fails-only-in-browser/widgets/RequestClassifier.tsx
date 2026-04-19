@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { SPRING } from "@/lib/motion";
+import { PRESS, SPRING } from "@/lib/motion";
 import { WidgetShell } from "./WidgetShell";
 
 type Method = "GET" | "POST" | "PUT" | "DELETE";
@@ -304,14 +304,14 @@ function SegmentedRow<T extends string>({
         {options.map((opt) => {
           const active = opt === value;
           return (
-            <button
+            <motion.button
               key={opt}
               type="button"
               role="radio"
               aria-checked={active}
               disabled={disabled}
               onClick={() => onChange(opt)}
-              className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] font-mono transition-colors hover:enabled:text-[color:var(--color-accent)] disabled:cursor-not-allowed"
+              className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] min-h-[44px] inline-flex items-center font-mono transition-colors hover:enabled:text-[color:var(--color-accent)] disabled:cursor-not-allowed"
               style={{
                 fontSize: "var(--text-small)",
                 color: active ? "var(--color-accent)" : "var(--color-text-muted)",
@@ -320,9 +320,10 @@ function SegmentedRow<T extends string>({
                   : "transparent",
                 border: `1px solid ${active ? "var(--color-accent)" : "var(--color-rule)"}`,
               }}
+              {...PRESS}
             >
               {opt}
-            </button>
+            </motion.button>
           );
         })}
         {disabled && disabledHint ? (
@@ -348,11 +349,11 @@ function Toggle({
   onToggle: () => void;
 }) {
   return (
-    <button
+    <motion.button
       type="button"
       aria-pressed={pressed}
       onClick={onToggle}
-      className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] font-mono transition-colors hover:text-[color:var(--color-accent)]"
+      className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] min-h-[44px] inline-flex items-center font-mono transition-colors hover:text-[color:var(--color-accent)]"
       style={{
         fontSize: "var(--text-small)",
         color: pressed ? "var(--color-accent)" : "var(--color-text-muted)",
@@ -361,11 +362,12 @@ function Toggle({
           : "transparent",
         border: `1px solid ${pressed ? "var(--color-accent)" : "var(--color-rule)"}`,
       }}
+      {...PRESS}
     >
       <span aria-hidden style={{ marginRight: 6 }}>
         {pressed ? "■" : "□"}
       </span>
       {label}
-    </button>
+    </motion.button>
   );
 }

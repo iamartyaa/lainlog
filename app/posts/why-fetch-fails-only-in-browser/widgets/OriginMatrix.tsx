@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { HScroll } from "@/components/viz/HScroll";
 import { WidgetShell } from "./WidgetShell";
 
 type Row = {
@@ -118,10 +119,14 @@ export function OriginMatrix() {
         )
       }
     >
-      <div className="overflow-x-auto">
+      <HScroll ariaLabel="origin comparison matrix — swipe horizontally to compare">
         <table
           className="w-full font-mono tabular-nums"
-          style={{ fontSize: "var(--text-small)", borderCollapse: "collapse" }}
+          style={{
+            fontSize: "var(--text-small)",
+            borderCollapse: "collapse",
+            minWidth: "520px",
+          }}
         >
           <thead>
             <tr style={{ color: "var(--color-text-muted)" }}>
@@ -229,7 +234,7 @@ export function OriginMatrix() {
             })}
           </tbody>
         </table>
-      </div>
+      </HScroll>
     </WidgetShell>
   );
 }

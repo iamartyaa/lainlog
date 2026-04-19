@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "motion/react";
+import { PRESS } from "@/lib/motion";
 
 export function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -16,15 +18,16 @@ export function CopyButton({ text }: { text: string }) {
   };
 
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
       aria-label={copied ? "Copied" : "Copy code"}
       data-copied={copied || undefined}
       className="bs-copy-btn absolute right-1 top-1 inline-flex min-h-[44px] min-w-[44px] select-none items-center justify-center font-sans transition-colors duration-[var(--dur-base,240ms)]"
       style={{ fontSize: "var(--text-small)" }}
+      {...PRESS}
     >
       {copied ? "copied" : "copy"}
-    </button>
+    </motion.button>
   );
 }

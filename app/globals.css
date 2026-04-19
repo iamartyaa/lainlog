@@ -62,6 +62,16 @@
 
   /* Motion. */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Widget container-query flip points — reused across every widget so layout
+     decisions feel coordinated rather than ad-hoc. Consumed via `@container (…)`
+     inside WidgetShell. */
+  --flip-narrow: 560px;
+  --flip-wide: 640px;
+
+  /* Widget canvas width — every widget-embedded SVG reads this for its max
+     width so the editorial page gets one place to change the figure width. */
+  --widget-width: min(100%, 900px);
 }
 
 /* ---------------------------------------------------------------------------
@@ -176,6 +186,61 @@ body {
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
   opacity: 0.5;
+}
+
+/* ---------------------------------------------------------------------------
+   Press identity — unified "this is tappable" vocabulary. Ring-pulse is the
+   transient feedback for heavy-commit actions (Stepper advance, subscribe
+   CTA); other buttons rely on the JS-driven PRESS scale only.
+
+   DESIGN.md §12 bans drop-shadows as decoration. Ring-pulse is transient
+   feedback keyed to a user gesture (≤ 300 ms), not decoration — the Phase 6
+   DESIGN.md sync adds an explicit §9 carve-out for gesture feedback.
+--------------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------------
+   Prose link hover — gated behind (hover: hover) so touch devices don't get
+   stuck in the saturated state after tap-release.
+--------------------------------------------------------------------------- */
+@media (hover: hover) {
+  .bs-prose-link:hover {
+    text-decoration-color: var(--color-accent);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Widget shell — establishes an inline-size container so widgets can drive
+   orientation flips via @container queries without touching the viewport.
+--------------------------------------------------------------------------- */
+.bs-widget-container {
+  container-type: inline-size;
+  container-name: widget;
+}
+
+/* SignupRace — stack scrubbers on phone, two-up once the widget has room.
+   Keyed on the widget container, not the viewport, so the layout tracks
+   actual available width even inside a column sidebar. */
+@container widget (min-width: 560px) {
+  .bs-race-controls {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+  }
+}
+
+@keyframes ring-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-accent) 35%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 6px color-mix(in oklab, var(--color-accent) 0%, transparent);
+  }
+}
+.bs-press {
+  animation: ring-pulse 260ms var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  .bs-press {
+    animation: none;
+  }
 }
 
 /* ---------------------------------------------------------------------------
