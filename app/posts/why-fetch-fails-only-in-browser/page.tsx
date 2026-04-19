@@ -22,7 +22,9 @@ export default function WhyFetchFailsOnlyInBrowser() {
   return (
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
-        <H1>Why <span style={{ fontFamily: "var(--font-mono)", fontWeight: 500, letterSpacing: "-0.01em" }}>fetch</span> works in curl but the browser blocks it</H1>
+        <H1 style={{ fontSize: "clamp(2.5rem, 2rem + 3.5vw, 4rem)" }}>
+          Why <span style={{ fontFamily: "var(--font-mono)", fontWeight: 500, letterSpacing: "-0.01em" }}>fetch</span> works in curl but the browser blocks it
+        </H1>
         <p
           className="mt-[var(--spacing-sm)] font-mono tabular-nums"
           style={{

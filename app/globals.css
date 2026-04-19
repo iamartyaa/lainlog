@@ -173,6 +173,31 @@ body {
 }
 
 /* ---------------------------------------------------------------------------
+   H2 anchor — revealed when the heading is the :target of a fragment URL.
+   Tailwind group-hover handles the hover/focus path; this one rule handles
+   the "user landed here via a #section-id link" path.
+--------------------------------------------------------------------------- */
+.bs-h2:target .bs-h2-anchor {
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------------------
+   Copy button — always visible over a code block. Muted at rest so it
+   doesn't compete with the code; saturates on hover/focus; terracotta
+   during the 1.2 s "copied" window.
+--------------------------------------------------------------------------- */
+.bs-copy-btn {
+  color: color-mix(in oklab, var(--color-text-muted) 60%, transparent);
+}
+.bs-copy-btn:hover,
+.bs-copy-btn:focus-visible {
+  color: var(--color-text-muted);
+}
+.bs-copy-btn[data-copied] {
+  color: var(--color-accent);
+}
+
+/* ---------------------------------------------------------------------------
    Range slider — native <input type="range"> styled as terracotta square
    thumb on a 2px rule track. Used by <Scrubber>. (.bs-range class)
 --------------------------------------------------------------------------- */
@@ -180,8 +205,9 @@ body {
   -webkit-appearance: none;
   appearance: none;
   background: transparent;
-  height: 16px;
+  height: 44px;
   cursor: pointer;
+  touch-action: manipulation;
 }
 .bs-range::-webkit-slider-runnable-track {
   height: 2px;
@@ -205,19 +231,23 @@ body {
   -webkit-appearance: none;
   appearance: none;
   width: 14px;
-  height: 14px;
-  border-radius: var(--radius-sm);
-  background: var(--color-accent);
+  height: 44px;
+  padding: 15px 0; /* transparent padding; makes the tap target 44 px */
+  background-color: var(--color-accent);
+  background-clip: content-box; /* confines the accent fill to inner 14 × 14 */
   border: 0;
-  margin-top: -6px; /* centers on 2px track */
+  border-radius: var(--radius-sm);
+  margin-top: 0;
   transition: transform 160ms var(--ease-out);
 }
 .bs-range::-moz-range-thumb {
   width: 14px;
-  height: 14px;
-  border-radius: var(--radius-sm);
-  background: var(--color-accent);
+  height: 44px;
+  padding: 15px 0;
+  background-color: var(--color-accent);
+  background-clip: content-box;
   border: 0;
+  border-radius: var(--radius-sm);
   transition: transform 160ms var(--ease-out);
 }
 .bs-range:active::-webkit-slider-thumb,

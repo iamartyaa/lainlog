@@ -22,7 +22,7 @@ export function AboutColumn() {
       : `${COPYRIGHT_START} – ${COPYRIGHT_NOW}`;
 
   return (
-    <aside className="md:sticky md:top-[var(--spacing-lg)] self-start flex flex-col min-h-[480px]">
+    <aside className="md:sticky md:top-[var(--spacing-lg)] self-start flex flex-col min-h-0 md:min-h-[480px]">
       {/* Giant serif wordmark — brand moment */}
       <h1
         className="font-serif font-semibold"

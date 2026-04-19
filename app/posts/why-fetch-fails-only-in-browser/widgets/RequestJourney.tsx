@@ -157,11 +157,10 @@ export function RequestJourney({
         </div>
       }
     >
-      <div className="overflow-x-auto">
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         width="100%"
-        style={{ maxWidth: WIDTH, minWidth: 620, height: "auto", display: "block" }}
+        style={{ maxWidth: WIDTH, height: "auto", display: "block" }}
         role="img"
         aria-label={`Request journey step ${step + 1}: ${current.label}`}
       >
@@ -403,7 +402,6 @@ export function RequestJourney({
           </motion.text>
         </g>
       </svg>
-      </div>
     </WidgetShell>
   );
 }
