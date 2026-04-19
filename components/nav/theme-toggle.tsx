@@ -1,7 +1,9 @@
 "use client";
 
+import { motion } from "motion/react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { PRESS } from "@/lib/motion";
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -18,18 +20,19 @@ export function ThemeToggle() {
   const next = resolvedTheme === "dark" ? "light" : "dark";
 
   return (
-    <button
+    <motion.button
       type="button"
       onClick={() => setTheme(next)}
       aria-label={`Switch to ${next} theme`}
       className="inline-flex h-[44px] w-[44px] -m-[10px] items-center justify-center text-[color:var(--color-text-muted)] transition-colors hover:text-[color:var(--color-text)]"
+      {...PRESS}
     >
       {resolvedTheme === "dark" ? (
         <SunIcon className="h-[14px] w-[14px]" />
       ) : (
         <MoonIcon className="h-[14px] w-[14px]" />
       )}
-    </button>
+    </motion.button>
   );
 }
 

@@ -1,7 +1,13 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { motion } from "motion/react";
 import type { PostMeta } from "@/content/posts-manifest";
+import { PRESS } from "@/lib/motion";
 import { MotionItem, MotionList } from "./PostListMotion";
+
+const MotionLink = motion.create(Link);
 
 function formatDate(iso: string): string {
   const d = new Date(iso + "T00:00:00Z");
@@ -57,10 +63,11 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
                 key={p.slug}
                 className={`group ${i === 0 ? "" : "border-t border-dashed border-[color:var(--color-rule)]"}`}
               >
-                <Link
+                <MotionLink
                   href={`/posts/${p.slug}`}
                   className="grid grid-cols-[64px_minmax(0,1fr)_24px] lg:grid-cols-[80px_minmax(0,1.1fr)_minmax(0,1.2fr)_32px] items-center gap-[var(--spacing-md)] lg:gap-[var(--spacing-lg)] px-[var(--spacing-sm)] py-[var(--spacing-lg)] no-underline transition-colors hover:bg-[color:color-mix(in_oklab,var(--color-accent)_4%,transparent)]"
                   aria-label={`${p.title} — ${p.hook}`}
+                  {...PRESS}
                 >
                   {/* Icon / thumbnail — square crop of auto-generated cover */}
                   <div
@@ -139,7 +146,7 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
                   >
                     {p.hook}
                   </p>
-                </Link>
+                </MotionLink>
               </MotionItem>
             ))}
           </MotionList>

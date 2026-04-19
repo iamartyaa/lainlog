@@ -62,6 +62,16 @@
 
   /* Motion. */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Widget container-query flip points — reused across every widget so layout
+     decisions feel coordinated rather than ad-hoc. Consumed via `@container (…)`
+     inside WidgetShell. */
+  --flip-narrow: 560px;
+  --flip-wide: 640px;
+
+  /* Widget canvas width — every widget-embedded SVG reads this for its max
+     width so the editorial page gets one place to change the figure width. */
+  --widget-width: min(100%, 900px);
 }
 
 /* ---------------------------------------------------------------------------
@@ -176,6 +186,100 @@ body {
   color: var(--color-text-muted);
   font-variant-numeric: tabular-nums;
   opacity: 0.5;
+}
+
+/* ---------------------------------------------------------------------------
+   Press identity — unified "this is tappable" vocabulary. Ring-pulse is the
+   transient feedback for heavy-commit actions (Stepper advance, subscribe
+   CTA); other buttons rely on the JS-driven PRESS scale only.
+
+   DESIGN.md §12 bans drop-shadows as decoration. Ring-pulse is transient
+   feedback keyed to a user gesture (≤ 300 ms), not decoration — the Phase 6
+   DESIGN.md sync adds an explicit §9 carve-out for gesture feedback.
+--------------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------------
+   Prose link hover — gated behind (hover: hover) so touch devices don't get
+   stuck in the saturated state after tap-release.
+--------------------------------------------------------------------------- */
+@media (hover: hover) {
+  .bs-prose-link:hover {
+    text-decoration-color: var(--color-accent);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Widget shell — establishes an inline-size container so widgets can drive
+   orientation flips via @container queries without touching the viewport.
+--------------------------------------------------------------------------- */
+.bs-widget-container {
+  container-type: inline-size;
+  container-name: widget;
+}
+
+/* SignupRace — stack scrubbers on phone, two-up once the widget has room.
+   Keyed on the widget container, not the viewport, so the layout tracks
+   actual available width even inside a column sidebar. */
+@container widget (min-width: 560px) {
+  .bs-race-controls {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+  }
+}
+
+/* RequestClassifier — below --flip-narrow each control surface becomes a
+   small bordered card with its label as a caption on top, so each option
+   group reads as a discrete Q/A pane instead of an inline label + chips
+   row. Wide keeps the side-by-side label + options layout. */
+@container widget (max-width: 560px) {
+  .bs-classifier-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-2xs);
+    padding: var(--spacing-sm);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-md);
+  }
+  .bs-classifier-label {
+    min-width: 0;
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+    font-size: var(--text-small);
+  }
+}
+
+/* RequestJourney — orientation flip. Wide (≥ --flip-wide) keeps the
+   conventional sequence-diagram layout with actors as columns. Below the
+   flip point we swap to horizontal lifelines (actors as rows, time flowing
+   left-to-right) so long message labels like "GET /me · Origin: …" have
+   room to breathe instead of being scaled into illegibility. Both SVGs
+   render in SSR; the container query picks which one to show. */
+.bs-rj-narrow {
+  display: none;
+}
+@container widget (max-width: 640px) {
+  .bs-rj-wide {
+    display: none;
+  }
+  .bs-rj-narrow {
+    display: block;
+  }
+}
+
+@keyframes ring-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-accent) 35%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 6px color-mix(in oklab, var(--color-accent) 0%, transparent);
+  }
+}
+.bs-press {
+  animation: ring-pulse 260ms var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  .bs-press {
+    animation: none;
+  }
 }
 
 /* ---------------------------------------------------------------------------

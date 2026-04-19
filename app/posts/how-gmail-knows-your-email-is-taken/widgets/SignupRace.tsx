@@ -224,7 +224,7 @@ export function SignupRace({
         )
       }
       controls={
-        <div className="grid grid-cols-1 gap-[var(--spacing-2xs)] md:grid-cols-2 md:gap-[var(--spacing-md)]">
+        <div className="bs-race-controls grid grid-cols-1 gap-[var(--spacing-2xs)]">
           <Scrubber
             label="A submit"
             value={aMs}

@@ -1,10 +1,17 @@
+"use client";
+
 import Link from "next/link";
+import { motion } from "motion/react";
+import { PRESS } from "@/lib/motion";
+import { useTapPulse } from "@/lib/hooks/use-tap-pulse";
 import {
   SITE_ABOUT,
   SITE_AUTHOR_DISPLAY,
   SITE_AUTHOR_URL,
   SITE_NAME,
 } from "@/lib/site";
+
+const MotionLink = motion.create(Link);
 
 const COPYRIGHT_START = 2026;
 const COPYRIGHT_NOW = new Date().getFullYear();
@@ -16,6 +23,7 @@ const COPYRIGHT_NOW = new Date().getFullYear();
  * so it stays visible while the post list scrolls.
  */
 export function AboutColumn() {
+  const subscribe = useTapPulse<HTMLAnchorElement>();
   const years =
     COPYRIGHT_NOW === COPYRIGHT_START
       ? `${COPYRIGHT_START}`
@@ -51,18 +59,21 @@ export function AboutColumn() {
 
       {/* Subscribe CTA — terracotta pill, primary action */}
       <div className="mt-[var(--spacing-lg)]">
-        <Link
+        <MotionLink
+          ref={subscribe.ref}
           href="/rss.xml"
           aria-label="Subscribe via RSS"
-          className="inline-flex items-center gap-[var(--spacing-2xs)] rounded-[var(--radius-md)] px-[var(--spacing-md)] py-[var(--spacing-2xs)] font-sans font-medium transition-colors hover:bg-[color:var(--color-accent-pressed)]"
+          onClick={subscribe.pulse}
+          className="inline-flex min-h-[44px] items-center gap-[var(--spacing-2xs)] rounded-[var(--radius-md)] px-[var(--spacing-md)] py-[var(--spacing-2xs)] font-sans font-medium transition-colors hover:bg-[color:var(--color-accent-pressed)]"
           style={{
             background: "var(--color-accent)",
             color: "var(--color-bg)",
             fontSize: "var(--text-ui)",
           }}
+          {...PRESS}
         >
           subscribe
-        </Link>
+        </MotionLink>
       </div>
 
       {/* Bottom-left meta row — icons + copyright */}

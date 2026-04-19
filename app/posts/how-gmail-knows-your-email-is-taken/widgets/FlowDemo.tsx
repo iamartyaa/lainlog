@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { Stepper } from "@/components/viz/Stepper";
-import { SPRING } from "@/lib/motion";
+import { PRESS, SPRING } from "@/lib/motion";
 import { WidgetShell } from "./WidgetShell";
 
 type StageId =
@@ -242,18 +242,19 @@ export function FlowDemo({ initialScenario = "fresh", initialStep = 0 }: Props) 
                       ·
                     </span>
                   ) : null}
-                  <button
+                  <motion.button
                     type="button"
                     onClick={() => {
                       setScenarioId(s.id);
                       setStep(0);
                     }}
                     aria-pressed={active}
-                    className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] transition-colors hover:text-[color:var(--color-accent)] inline-flex items-center gap-[var(--spacing-2xs)]"
+                    className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] min-h-[44px] transition-colors hover:text-[color:var(--color-accent)] inline-flex items-center gap-[var(--spacing-2xs)]"
                     style={{
                       color: active ? "var(--color-accent)" : "var(--color-text-muted)",
                       textDecoration: active ? "underline" : "none",
                     }}
+                    {...PRESS}
                   >
                     <span
                       aria-hidden
@@ -267,7 +268,7 @@ export function FlowDemo({ initialScenario = "fresh", initialStep = 0 }: Props) 
                       }}
                     />
                     {s.label}
-                  </button>
+                  </motion.button>
                 </span>
               );
             })}

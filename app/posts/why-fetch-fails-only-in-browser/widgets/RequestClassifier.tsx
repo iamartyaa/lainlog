@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { SPRING } from "@/lib/motion";
+import { PRESS, SPRING } from "@/lib/motion";
 import { WidgetShell } from "./WidgetShell";
 
 type Method = "GET" | "POST" | "PUT" | "DELETE";
@@ -112,11 +112,11 @@ export function RequestClassifier({
             disabledHint={ctDisabled ? "(no body on this method)" : undefined}
           />
           <div
-            className="flex items-center gap-[var(--spacing-md)] flex-wrap font-sans"
+            className="bs-classifier-row flex items-center gap-[var(--spacing-md)] flex-wrap font-sans"
             style={{ fontSize: "var(--text-ui)" }}
           >
             <span
-              className="font-mono"
+              className="bs-classifier-label font-mono"
               style={{
                 color: "var(--color-text-muted)",
                 minWidth: "12ch",
@@ -124,16 +124,18 @@ export function RequestClassifier({
             >
               headers
             </span>
-            <Toggle
-              label="Authorization"
-              pressed={auth}
-              onToggle={() => setAuth((v) => !v)}
-            />
-            <Toggle
-              label="X-Custom"
-              pressed={custom}
-              onToggle={() => setCustom((v) => !v)}
-            />
+            <div className="bs-classifier-options flex items-center gap-[var(--spacing-2xs)] flex-wrap">
+              <Toggle
+                label="Authorization"
+                pressed={auth}
+                onToggle={() => setAuth((v) => !v)}
+              />
+              <Toggle
+                label="X-Custom"
+                pressed={custom}
+                onToggle={() => setCustom((v) => !v)}
+              />
+            </div>
           </div>
         </div>
 
@@ -283,11 +285,11 @@ function SegmentedRow<T extends string>({
 }) {
   return (
     <div
-      className="flex items-center gap-[var(--spacing-md)] flex-wrap font-sans"
+      className="bs-classifier-row flex items-center gap-[var(--spacing-md)] flex-wrap font-sans"
       style={{ fontSize: "var(--text-ui)" }}
     >
       <span
-        className="font-mono"
+        className="bs-classifier-label font-mono"
         style={{
           color: "var(--color-text-muted)",
           minWidth: "12ch",
@@ -298,20 +300,20 @@ function SegmentedRow<T extends string>({
       <div
         role="radiogroup"
         aria-label={label}
-        className="flex items-center gap-[var(--spacing-2xs)] flex-wrap"
+        className="bs-classifier-options flex items-center gap-[var(--spacing-2xs)] flex-wrap"
         style={{ opacity: disabled ? 0.5 : 1 }}
       >
         {options.map((opt) => {
           const active = opt === value;
           return (
-            <button
+            <motion.button
               key={opt}
               type="button"
               role="radio"
               aria-checked={active}
               disabled={disabled}
               onClick={() => onChange(opt)}
-              className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] font-mono transition-colors hover:enabled:text-[color:var(--color-accent)] disabled:cursor-not-allowed"
+              className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] min-h-[44px] inline-flex items-center font-mono transition-colors hover:enabled:text-[color:var(--color-accent)] disabled:cursor-not-allowed"
               style={{
                 fontSize: "var(--text-small)",
                 color: active ? "var(--color-accent)" : "var(--color-text-muted)",
@@ -320,9 +322,10 @@ function SegmentedRow<T extends string>({
                   : "transparent",
                 border: `1px solid ${active ? "var(--color-accent)" : "var(--color-rule)"}`,
               }}
+              {...PRESS}
             >
               {opt}
-            </button>
+            </motion.button>
           );
         })}
         {disabled && disabledHint ? (
@@ -348,11 +351,11 @@ function Toggle({
   onToggle: () => void;
 }) {
   return (
-    <button
+    <motion.button
       type="button"
       aria-pressed={pressed}
       onClick={onToggle}
-      className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] font-mono transition-colors hover:text-[color:var(--color-accent)]"
+      className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] min-h-[44px] inline-flex items-center font-mono transition-colors hover:text-[color:var(--color-accent)]"
       style={{
         fontSize: "var(--text-small)",
         color: pressed ? "var(--color-accent)" : "var(--color-text-muted)",
@@ -361,11 +364,12 @@ function Toggle({
           : "transparent",
         border: `1px solid ${pressed ? "var(--color-accent)" : "var(--color-rule)"}`,
       }}
+      {...PRESS}
     >
       <span aria-hidden style={{ marginRight: 6 }}>
         {pressed ? "■" : "□"}
       </span>
       {label}
-    </button>
+    </motion.button>
   );
 }
