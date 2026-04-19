@@ -11,7 +11,7 @@ export function Footer() {
         color: "var(--color-text-muted)",
       }}
     >
-      <div className="mx-auto flex max-w-[65ch] items-center justify-between">
+      <div className="mx-auto flex max-w-[65ch] flex-col gap-[var(--spacing-xs)] sm:flex-row sm:items-center sm:justify-between">
         <span>
           bytesize · built by{" "}
           <a

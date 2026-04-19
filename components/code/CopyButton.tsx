@@ -20,11 +20,9 @@ export function CopyButton({ text }: { text: string }) {
       type="button"
       onClick={onClick}
       aria-label={copied ? "Copied" : "Copy code"}
-      className="absolute right-3 top-3 select-none opacity-0 transition-opacity duration-[var(--dur-base,240ms)] group-hover:opacity-100 focus-visible:opacity-100 font-sans"
-      style={{
-        fontSize: "var(--text-small)",
-        color: copied ? "var(--color-accent)" : "var(--color-text-muted)",
-      }}
+      data-copied={copied || undefined}
+      className="bs-copy-btn absolute right-1 top-1 inline-flex min-h-[44px] min-w-[44px] select-none items-center justify-center font-sans transition-colors duration-[var(--dur-base,240ms)]"
+      style={{ fontSize: "var(--text-small)" }}
     >
       {copied ? "copied" : "copy"}
     </button>

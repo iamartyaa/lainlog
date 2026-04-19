@@ -4,7 +4,7 @@ import { ThemeToggle } from "./theme-toggle";
 export function Header() {
   return (
     <header
-      className="flex h-[64px] items-center justify-between px-[var(--spacing-lg)]"
+      className="flex h-[56px] sm:h-[64px] items-center justify-between px-[var(--spacing-md)] sm:px-[var(--spacing-lg)]"
       style={{ fontSize: "var(--text-ui)" }}
     >
       <Link
@@ -18,7 +18,7 @@ export function Header() {
       >
         <span
           aria-hidden
-          className="inline-block h-[10px] w-[10px] shrink-0 transition-transform group-hover:scale-110"
+          className="inline-block h-[12px] w-[12px] sm:h-[10px] sm:w-[10px] shrink-0 transition-transform group-hover:scale-110"
           style={{ background: "var(--color-accent)" }}
         />
         <span>bytesize</span>

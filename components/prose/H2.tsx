@@ -7,22 +7,22 @@ export function H2({ children, id }: { children: ReactNode; id?: string }) {
   return (
     <h2
       id={slug}
-      className="group relative mt-[2.75em] mb-[0.8em] font-sans font-semibold"
+      className="bs-h2 group relative mt-[2.75em] mb-[0.8em] font-sans font-semibold"
       style={{
         fontSize: "var(--text-h2)",
         letterSpacing: "-0.01em",
         lineHeight: 1.15,
       }}
     >
+      {children}
       <a
         href={`#${slug}`}
         aria-label={`Link to section: ${typeof children === "string" ? children : slug}`}
-        className="absolute -left-6 top-1/2 -translate-x-3 -translate-y-1/2 opacity-0 transition-[transform,opacity] duration-[160ms] ease-[var(--ease-out)] group-hover:translate-x-0 group-hover:opacity-100 focus-visible:translate-x-0 focus-visible:opacity-100"
+        className="bs-h2-anchor ml-[0.4em] opacity-0 transition-opacity duration-[160ms] ease-[var(--ease-out)] focus-visible:opacity-100 lg:absolute lg:-left-6 lg:top-1/2 lg:ml-0 lg:-translate-x-3 lg:-translate-y-1/2 lg:transition-[transform,opacity] lg:group-hover:translate-x-0 lg:group-hover:opacity-100 lg:focus-visible:translate-x-0"
         style={{ color: "var(--color-accent)" }}
       >
         #
       </a>
-      {children}
     </h2>
   );
 }

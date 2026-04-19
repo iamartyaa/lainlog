@@ -24,7 +24,9 @@ export default function HowGmailKnowsYourEmailIsTaken() {
   return (
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
-        <H1>How Gmail knows your email is taken, instantly</H1>
+        <H1 style={{ fontSize: "clamp(2.5rem, 2rem + 3.5vw, 4rem)" }}>
+          How Gmail knows your email is taken, instantly
+        </H1>
         <p
           className="mt-[var(--spacing-sm)] font-mono tabular-nums"
           style={{

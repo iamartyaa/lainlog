@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Serif, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
@@ -49,6 +49,17 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     type: "website",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  colorScheme: "dark light",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "oklch(0.12 0.015 28)" },
+    { media: "(prefers-color-scheme: light)", color: "oklch(0.98 0.005 28)" },
+  ],
 };
 
 export default function RootLayout({
