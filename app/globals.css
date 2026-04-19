@@ -167,18 +167,25 @@ body {
   font-family: var(--font-mono) !important;
 }
 
+/* Dark-theme token colors: promote the --shiki-dark variable to `color` on
+   each span. Crucially we DO NOT paint a background on .shiki or its spans —
+   Shiki's theme background (a cool #22272e) would clash with our warm
+   --color-surface and read as a tint on the code body. Transparent spans
+   let the outer container's surface show through cleanly. */
 [data-theme="dark"] .shiki,
 [data-theme="dark"] .shiki span {
   color: var(--shiki-dark) !important;
-  background-color: var(--shiki-dark-bg) !important;
 }
 
-/* Shiki's default <pre> has its own padding — we already pad the wrapper,
-   so strip Shiki's and let ours win. */
+/* Shiki's default <pre> has its own padding and background — strip both;
+   the outer <CodeBlock> handles surface + padding. */
 .shiki {
   background: transparent !important;
   padding: 0 !important;
   margin: 0 !important;
+}
+.shiki span {
+  background: transparent !important;
 }
 
 /* Line-number support: opt-in via [data-numbered="true"] on the wrapper. */

@@ -51,6 +51,32 @@ const RULES = [
     },
   },
   {
+    rule: "fragile-space-after-italic",
+    severity: "warn",
+    check: (line, lineNo) => {
+      // Pattern: </Em> or </Term> followed by a single literal space and a
+      // lowercase word-start. This IS correct source but React's whitespace
+      // handling in SSR has been observed to drop the space in some cases
+      // (specifically inside Callout/Aside wrappers and after `{" "}`
+      // expressions). Suggest the defensive form `</Em>{" "}word`.
+      //
+      // Scoped to Em/Term only because those are italic — the missing-space
+      // bug shows up as glued italic + roman, which is visually painful.
+      const re = /<\/(Em|Term)>\s+[a-z]/g;
+      const findings = [];
+      let m;
+      while ((m = re.exec(line)) !== null) {
+        findings.push({
+          line: lineNo,
+          rule: "fragile-space-after-italic",
+          severity: "warn",
+          snippet: `${line.slice(Math.max(0, m.index - 8), m.index + 24).trim()}  — consider </${m[1]}>{" "}word`,
+        });
+      }
+      return findings;
+    },
+  },
+  {
     rule: "missing-space-before-component",
     severity: "error",
     check: (line, lineNo) => {

@@ -129,7 +129,7 @@ const add10 = makeAdder(10);`}
           Each call to <Code>makeAdder</Code> creates its own frame, with its own{" "}
           <Code>n</Code>. The returned arrow function carries a tether to that frame.{" "}
           <Code>add5</Code> and <Code>add10</Code> aren&apos;t copies of <Code>n</Code>; they
-          each own a live pointer to a <Em>different</Em> frame. Step through a single call and
+          each own a live pointer to a <Em>different</Em>{" "}frame. Step through a single call and
           watch the mechanics:
         </P>
       </div>
@@ -138,8 +138,10 @@ const add10 = makeAdder(10);`}
 
       <div>
         <Callout tone="note">
-          A <Term>closure</Term> is a function, plus the tether it kept. Any function, as long
-          as it can still reach something from an outer scope. That&apos;s it.
+          A <Term>closure</Term>
+          {" "}
+          is a function, plus the tether it kept. Any function, as long as it can still
+          reach something from an outer scope. That&apos;s it.
         </Callout>
         <P>
           One subtlety worth stating plainly, because it&apos;s the misconception every other
@@ -155,7 +157,7 @@ const add10 = makeAdder(10);`}
         <Dots />
         <H2>Why one letter fixed the loop</H2>
         <P>
-          With that, scroll back up to <Em>LoopTrap</Em> and look at it again. The reason{" "}
+          With that, scroll back up to <Em>LoopTrap</Em>{" "}and look at it again. The reason{" "}
           <Code>var</Code> prints <Code>5 5 5 5 5</Code> isn&apos;t that the loop copied{" "}
           <Code>i</Code> wrong. It&apos;s that <Code>var</Code> declares one binding for the
           whole function. The five arrow functions picked up five tethers. All five tethers
@@ -181,10 +183,11 @@ const add10 = makeAdder(10);`}
           <A href="https://github.com/getify/You-Dont-Know-JS/blob/2nd-ed/scope-closures/ch7.md">
             You Don&apos;t Know JS
           </A>
-          {" "}reserves the word <Em>closure</Em> for functions that run somewhere their tether
-          targets aren&apos;t directly in scope — the observable case. MDN and the spec use the
-          word more broadly. Same mechanism — the debate is only about when its effects count
-          as observable.
+          {" "}reserves the word <Em>closure</Em>
+          {" "}
+          for functions that run somewhere their tether targets aren&apos;t directly in scope
+          — the observable case. MDN and the spec use the word more broadly. Same mechanism —
+          the debate is only about when its effects count as observable.
         </Aside>
       </div>
 

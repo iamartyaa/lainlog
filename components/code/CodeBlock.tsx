@@ -57,14 +57,16 @@ export async function CodeBlock({
         border: "1px solid var(--color-rule)",
       }}
     >
-      {/* macOS-style chrome bar: three muted dots + optional filename + lang */}
+      {/* macOS-style chrome bar: three muted dots + optional filename + lang.
+          Chrome shares the body background (--color-surface) so the block
+          reads as one unified surface with a single 1-px hairline between
+          chrome and body — no gradient tint, no shaded seam. */}
       <div
         className="bs-code-chrome flex items-center gap-[var(--spacing-sm)] border-b px-[var(--spacing-md)]"
         style={{
           borderColor: "var(--color-rule)",
           color: "var(--color-text-muted)",
           fontSize: "var(--text-small)",
-          background: "color-mix(in oklab, var(--color-surface) 70%, var(--color-bg))",
         }}
       >
         <span
