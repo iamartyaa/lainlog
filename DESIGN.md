@@ -151,22 +151,22 @@ Home splits into two columns at ≥ 768px:
 
 ```
 ┌ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ┐
-│ ┌──────────────────────────────────────────────────────────┐ │
-│ │ ■ bytesize                                    [○ theme]  │ │
-│ │                                                          │ │
-│ │                     2026                                 │ │
-│ │   bytesize          ────                                 │ │
-│ │                     [ico] how gmail knows …     apr 19   │ │
-│ │   one question              the pipeline that …    →     │ │
-│ │   per post. ten     ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌   │ │
-│ │   minutes of …      [ico]  (next post)                   │ │
-│ │                                                          │ │
-│ │  [subscribe]                                             │ │
-│ │                                                          │ │
-│ │  ⌂ github     © 2026                                     │ │
-│ │                                                          │ │
-│ │ bytesize · built by amartya           subscribe (rss)    │ │
-│ └──────────────────────────────────────────────────────────┘ │
+│ ┌──────────────────────────────────────────────────────────────┐ │
+│ │ ■ bytesize                                    [○ theme]      │ │
+│ │                                                              │ │
+│ │                     2026                                     │ │
+│ │   bytesize          ────                                     │ │
+│ │                     [ico] how gmail knows …     apr 19       │ │
+│ │   one question              the pipeline that …    →         │ │
+│ │   per post. ten     ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌       │ │
+│ │   minutes of …      [ico]  (next post)                       │ │
+│ │                                                              │ │
+│ │  [subscribe]                                                 │ │
+│ │                                                              │ │
+│ │  ⌂ github     © 2026                                         │ │
+│ │                                                              │ │
+│ │ bytesize · built by An Anonymous Engineer </> subscribe (rss) │ │
+│ └──────────────────────────────────────────────────────────────┘ │
 └ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ┘
 ```
 

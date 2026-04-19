@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   SITE_ABOUT,
-  SITE_AUTHOR,
+  SITE_AUTHOR_DISPLAY,
   SITE_AUTHOR_URL,
   SITE_NAME,
 } from "@/lib/site";
@@ -46,14 +46,7 @@ export function AboutColumn() {
           maxWidth: "26ch",
         }}
       >
-        {SITE_ABOUT}{" "}
-        <Link
-          href={SITE_AUTHOR_URL}
-          className="underline underline-offset-2 decoration-[color:var(--color-rule)] hover:decoration-[color:var(--color-accent)] hover:text-[color:var(--color-accent)] transition-colors"
-          style={{ color: "var(--color-text)" }}
-        >
-          {SITE_AUTHOR}.
-        </Link>
+        {SITE_ABOUT}
       </p>
 
       {/* Subscribe CTA — terracotta pill, primary action */}
@@ -78,7 +71,7 @@ export function AboutColumn() {
           href={SITE_AUTHOR_URL}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label={`${SITE_AUTHOR} on GitHub`}
+          aria-label={`${SITE_AUTHOR_DISPLAY} on GitHub`}
           className="transition-colors hover:text-[color:var(--color-text)]"
         >
           <GitHubIcon />

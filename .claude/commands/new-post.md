@@ -7,7 +7,7 @@ argument-hint: <topic>
 
 You (Claude) are about to author a new bytesize post on the topic: **$ARGUMENTS**.
 
-This command encodes a 9-phase workflow that fires every time Amartya wants a new post. Read the whole file before acting. The workflow is bounded by four user checkpoints — gate hard at each of them.
+This command encodes a 9-phase workflow that fires every time the author wants a new post. Read the whole file before acting. The workflow is bounded by four user checkpoints — gate hard at each of them.
 
 ## Hard rules (inviolable)
 
