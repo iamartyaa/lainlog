@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Header } from "@/components/nav/Header";
 import { Footer } from "@/components/nav/Footer";
+import { CozyFrame } from "@/components/nav/CozyFrame";
 import { MotionConfigProvider } from "@/components/providers/motion-config";
 import {
   SITE_AUTHOR,
@@ -66,9 +67,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <MotionConfigProvider>
-            <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
+            <CozyFrame>
+              <Header />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </CozyFrame>
           </MotionConfigProvider>
         </ThemeProvider>
       </body>

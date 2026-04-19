@@ -143,29 +143,37 @@ Every custom widget follows this skeleton. This is what "uniform UI" means.
 - **Focus rings**: 2px solid `--color-accent`, 2px offset. Never removed.
 - **"State set" color**: always `--color-accent`. Readers learn `terracotta = the algorithm is doing something here.`
 
-## 8. Home page (chronological, no cards)
+## 8. Home page (framed two-column, inline preview images)
+
+The whole site — header, main, footer — sits inside a `CozyFrame`: a 1px `--color-rule` bordered container, max-width 1040px, no fill, no shadow. Window frame, not a card.
+
+Home splits into two columns at ≥ 768px:
 
 ```
-bytesize                                       [○ theme]
-────────────────────────────────────────────────────────
-
-  explainers in software and ai engineering,
-  with widgets that teach.
-
-  2026
-  ───────────────────────────────────────────────
-  how gmail knows your email is taken, instantly   apr 19, 2026
-  the pipeline that tells you 'already taken'
-  before your finger lifts.
-
-  ────
-  bytesize · built by amartya · rss
+┌────────────────────────────────────────────────────────────────┐
+│ bytesize                                         [○ theme] rss │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│  engineering essays with        2026                           │
+│  widgets you can take           ────                           │
+│  apart.                         [img]  how gmail knows …       │
+│                                         the pipeline that …    │
+│  bytesize is a slow-cadence                       apr 19, 2026 │
+│  blog. each post takes a single                                │
+│  question — how does gmail know…                               │
+│                                                                │
+│  ■ new posts, occasionally.                                    │
+│                                                                │
+├────────────────────────────────────────────────────────────────┤
+│ bytesize · built by amartya · rss                              │
+└────────────────────────────────────────────────────────────────┘
 ```
 
-- Year groupings as small muted Plex Sans headings.
-- Post entry = title (Plex Sans, `--text-h3`) + date (Plex Mono, `--text-small`, right-aligned, tabular-nums) + one-line description (Plex Serif, `--text-body`, muted).
-- **No thumbnails, no cards, no grid.** Just a list.
-- The one-line description is the hook — rewrite ruthlessly.
+- **Left column** (`AboutColumn`): tagline (Plex Serif, 1.375rem), about paragraph (Plex Serif, body size, muted), cadence marker (terracotta swatch + Plex Mono small). Sticky on `md:`+ so it holds position while the post list scrolls.
+- **Right column** (`PostList`): year groupings (small muted Plex Sans caps), each post row = inline cover image (3:2, ~160×100 desktop / 96×60 mobile, radius `--radius-sm`) + title (Plex Sans, `--text-h3`) + date (Plex Mono, right-aligned, tabular-nums) + hook (Plex Serif, body, muted). Image sits *beside* the text, not above.
+- Single column below `md:` — about column stacks on top of the post list.
+- Covers are auto-generated at `/cover/[slug]` via `@vercel/og`, per-slug hue-shifted within the terracotta family; optional `coverImage?: string` on `PostMeta` for hand-crafted overrides.
+- The hook is the one-line description — rewrite ruthlessly.
 
 ## 9. Motion rules
 
@@ -201,7 +209,7 @@ bytesize                                       [○ theme]
 - **No pure `#000` or `#fff`.** Always tint toward terracotta hue.
 - **No glassmorphism.**
 - **No drop shadows as decoration.** Shadows only convey elevation.
-- **No card grids** on the home page.
+- **No card grids** on the home page. (Inline preview images beside list-row text — as specified in §8 — are allowed and are not a card grid.)
 - **No centered-everything layouts.**
 - **No dashboard "big number, small label, supporting stats" layouts.**
 - **No sparkline decoration.**
