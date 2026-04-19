@@ -59,12 +59,12 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
               >
                 <Link
                   href={`/posts/${p.slug}`}
-                  className="grid grid-cols-[64px_minmax(0,1fr)_24px] md:grid-cols-[80px_minmax(0,1.1fr)_minmax(0,1.2fr)_32px] items-center gap-[var(--spacing-md)] md:gap-[var(--spacing-lg)] px-[var(--spacing-sm)] py-[var(--spacing-lg)] no-underline transition-colors hover:bg-[color:color-mix(in_oklab,var(--color-accent)_4%,transparent)]"
+                  className="grid grid-cols-[64px_minmax(0,1fr)_24px] lg:grid-cols-[80px_minmax(0,1.1fr)_minmax(0,1.2fr)_32px] items-center gap-[var(--spacing-md)] lg:gap-[var(--spacing-lg)] px-[var(--spacing-sm)] py-[var(--spacing-lg)] no-underline transition-colors hover:bg-[color:color-mix(in_oklab,var(--color-accent)_4%,transparent)]"
                   aria-label={`${p.title} — ${p.hook}`}
                 >
                   {/* Icon / thumbnail — square crop of auto-generated cover */}
                   <div
-                    className="relative aspect-square h-[64px] w-[64px] md:h-[80px] md:w-[80px] overflow-hidden rounded-[var(--radius-sm)] transition-transform duration-[200ms] will-change-transform group-hover:-translate-y-[2px]"
+                    className="relative aspect-square h-[64px] w-[64px] lg:h-[80px] lg:w-[80px] overflow-hidden rounded-[var(--radius-sm)] transition-transform duration-[200ms] will-change-transform group-hover:-translate-y-[2px]"
                     style={{
                       background:
                         "color-mix(in oklab, var(--color-surface) 60%, transparent)",
@@ -75,7 +75,7 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
                       src={coverSrc(p)}
                       alt=""
                       fill
-                      sizes="(min-width: 768px) 80px, 64px"
+                      sizes="(min-width: 1024px) 80px, 64px"
                       className="object-cover"
                     />
                   </div>
@@ -85,7 +85,7 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
                     <h3
                       className="font-serif font-semibold transition-colors group-hover:text-[color:var(--color-accent)]"
                       style={{
-                        fontSize: "clamp(1.25rem, 1.05rem + 0.7vw, 1.5rem)",
+                        fontSize: "clamp(1.125rem, 1.05rem + 0.7vw, 1.5rem)",
                         lineHeight: 1.2,
                         letterSpacing: "-0.01em",
                         color: "var(--color-text)",
@@ -105,9 +105,9 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
                     </time>
                   </div>
 
-                  {/* Description — hidden below md, shown in its own column above */}
+                  {/* Description — hidden below lg:, shown in its own column above */}
                   <p
-                    className="hidden md:block font-serif"
+                    className="hidden lg:block font-serif"
                     style={{
                       fontSize: "var(--text-body)",
                       color: "var(--color-text-muted)",
@@ -126,11 +126,11 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
                     <ArrowIcon />
                   </div>
 
-                  {/* On narrow viewports, the hook renders below title+date via a separate row
-                      tucked inside the first-cell column via a hidden-on-md span. Using a
-                      second full-width row via display: contents keeps this single grid. */}
+                  {/* Below lg: the hook stacks beneath the title+date as its own grid row.
+                      Spans the full 3-column template on base → md. Hidden at lg: where
+                      the hook gets its own inline column. */}
                   <p
-                    className="md:hidden col-span-3 -mt-[var(--spacing-xs)] font-serif"
+                    className="col-span-full lg:hidden -mt-[var(--spacing-xs)] font-serif"
                     style={{
                       fontSize: "var(--text-small)",
                       color: "var(--color-text-muted)",

@@ -24,16 +24,22 @@
   --color-terra-60: oklch(0.65 0.135 28);
   --color-terra-80: oklch(0.82 0.07 28);
 
-  /* Spacing — 4pt scale, semantic names. */
+  /* Breakpoints — 4-tier mobile-first. No xl / 2xl. */
+  --breakpoint-sm: 30rem; /* 480px */
+  --breakpoint-md: 48rem; /* 768px */
+  --breakpoint-lg: 64rem; /* 1024px */
+
+  /* Spacing — 4pt scale, semantic names. Six largest are fluid via clamp().
+     Floors tuned so adjacent tokens stay ≥ 6 px apart at 360 vw. */
   --spacing-3xs: 4px;
   --spacing-2xs: 8px;
   --spacing-xs: 12px;
   --spacing-sm: 16px;
-  --spacing-md: 24px;
-  --spacing-lg: 32px;
-  --spacing-xl: 48px;
-  --spacing-2xl: 64px;
-  --spacing-3xl: 96px;
+  --spacing-md: clamp(16px, 14px + 0.8vw, 24px);
+  --spacing-lg: clamp(22px, 18px + 1.5vw, 32px);
+  --spacing-xl: clamp(28px, 20px + 2.8vw, 48px);
+  --spacing-2xl: clamp(36px, 22px + 4vw, 64px);
+  --spacing-3xl: clamp(48px, 24px + 6vw, 96px);
 
   /* Radii — editorial-calm doesn't round things. */
   --radius-sm: 2px;

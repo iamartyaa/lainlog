@@ -12,7 +12,7 @@ export function ThemeToggle() {
   }, []);
 
   if (!mounted) {
-    return <span className="inline-block h-6 w-6" aria-hidden="true" />;
+    return <span className="inline-block h-6 w-6 -m-[10px] p-[10px]" aria-hidden="true" />;
   }
 
   const next = resolvedTheme === "dark" ? "light" : "dark";
@@ -22,7 +22,7 @@ export function ThemeToggle() {
       type="button"
       onClick={() => setTheme(next)}
       aria-label={`Switch to ${next} theme`}
-      className="inline-flex h-6 w-6 items-center justify-center text-[color:var(--color-text-muted)] transition-colors hover:text-[color:var(--color-text)]"
+      className="inline-flex h-[44px] w-[44px] -m-[10px] items-center justify-center text-[color:var(--color-text-muted)] transition-colors hover:text-[color:var(--color-text)]"
     >
       {resolvedTheme === "dark" ? (
         <SunIcon className="h-[14px] w-[14px]" />
