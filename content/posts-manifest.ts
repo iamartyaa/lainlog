@@ -23,6 +23,14 @@ export type PostMeta = {
 
 export const POSTS: PostMeta[] = [
   {
+    slug: "the-function-that-remembered",
+    title: "The function that remembered",
+    date: "2026-04-24",
+    hook: "how a function outlives the scope it was born in — and why half of your JS bugs start there.",
+    readingMinutes: 10,
+    tags: ["javascript", "language-internals"],
+  },
+  {
     slug: "why-fetch-fails-only-in-browser",
     title: "Why `fetch` works in curl but the browser blocks it",
     date: "2026-04-20",
