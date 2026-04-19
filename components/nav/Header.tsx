@@ -23,7 +23,7 @@ export function Header() {
         <ThemeToggle />
         <Link
           href="/rss.xml"
-          aria-label="RSS feed"
+          aria-label="Subscribe via RSS"
           className="font-mono transition-colors hover:text-[color:var(--color-accent)]"
           style={{
             fontSize: "var(--text-small)",

@@ -1,5 +1,6 @@
 import { PostList } from "@/components/nav/PostList";
 import { POSTS_NEWEST_FIRST } from "@/content/posts-manifest";
+import { SITE_TAGLINE } from "@/lib/site";
 
 export default function Home() {
   return (
@@ -12,9 +13,7 @@ export default function Home() {
           color: "var(--color-text)",
         }}
       >
-        explainers in software and ai engineering,
-        <br />
-        with widgets that teach.
+        {SITE_TAGLINE}
       </p>
 
       <PostList posts={POSTS_NEWEST_FIRST} />
