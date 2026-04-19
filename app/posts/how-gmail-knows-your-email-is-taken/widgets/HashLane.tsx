@@ -123,6 +123,7 @@ export function HashLane({ m = 16, script = DEFAULT_SCRIPT, initialStep = 0 }: P
       caption={current.caption}
       controls={<Stepper value={step} total={script.length} onChange={setStep} />}
     >
+      <div className="bs-widget-scroll-at-narrow">
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         width="100%"
@@ -241,6 +242,7 @@ export function HashLane({ m = 16, script = DEFAULT_SCRIPT, initialStep = 0 }: P
           </motion.text>
         ) : null}
       </svg>
+      </div>
     </WidgetShell>
   );
 }

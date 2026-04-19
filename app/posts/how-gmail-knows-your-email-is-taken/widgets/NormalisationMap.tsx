@@ -88,6 +88,7 @@ export function NormalisationMap({
       caption={current.caption}
       controls={<Stepper value={step} total={rows.length} onChange={setStep} />}
     >
+      <div className="bs-widget-scroll-at-narrow">
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         width="100%"
@@ -230,6 +231,7 @@ export function NormalisationMap({
           );
         })}
       </svg>
+      </div>
     </WidgetShell>
   );
 }

@@ -309,6 +309,26 @@ html[data-theme-transitioning] {
   }
 }
 
+/* Dense SVG widgets that would otherwise scale into illegibility on phone
+   containers get an opt-in narrow-scroll wrapper. Above --flip-narrow the
+   SVG fits its container as normal; below, it keeps a minimum internal
+   width and the wrapper scrolls horizontally so labels and grid lines stay
+   readable. Used by FlowDemo (820u wide) and NormalisationMap (680u wide)
+   whose text would drop below ~7 px on a 360 px container otherwise. */
+.bs-widget-scroll-at-narrow {
+  overflow-x: visible;
+}
+@container widget (max-width: 560px) {
+  .bs-widget-scroll-at-narrow {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+  }
+  .bs-widget-scroll-at-narrow > svg {
+    min-width: 560px;
+  }
+}
+
 /* RequestClassifier — below --flip-narrow each control surface becomes a
    small bordered card with its label as a caption on top, so each option
    group reads as a discrete Q/A pane instead of an inline label + chips
