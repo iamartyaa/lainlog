@@ -19,10 +19,22 @@ export function ThemeToggle() {
 
   const next = resolvedTheme === "dark" ? "light" : "dark";
 
+  const handleToggle = () => {
+    // Set the attribute synchronously before flipping the theme, so the
+    // accent-bridge keyframe in globals.css fires in the same frame as the
+    // color-variable swap. A useEffect watching `resolvedTheme` would arrive
+    // one render late and miss the desaturation bridge.
+    document.documentElement.setAttribute("data-theme-transitioning", "");
+    setTheme(next);
+    window.setTimeout(() => {
+      document.documentElement.removeAttribute("data-theme-transitioning");
+    }, 260);
+  };
+
   return (
     <motion.button
       type="button"
-      onClick={() => setTheme(next)}
+      onClick={handleToggle}
       aria-label={`Switch to ${next} theme`}
       className="inline-flex h-[44px] w-[44px] -m-[10px] items-center justify-center text-[color:var(--color-text-muted)] transition-colors hover:text-[color:var(--color-text)]"
       {...PRESS}

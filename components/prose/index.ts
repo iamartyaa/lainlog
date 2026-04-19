@@ -12,3 +12,4 @@ export { Callout } from "./Callout";
 export { Aside } from "./Aside";
 export { FullBleed } from "./FullBleed";
 export { Dots } from "./Dots";
+export { HeroTile } from "./HeroTile";

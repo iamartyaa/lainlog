@@ -9,6 +9,7 @@ import {
   Em,
   Aside,
   A,
+  HeroTile,
   Term,
 } from "@/components/prose";
 import {
@@ -25,7 +26,12 @@ export default function TheFunctionThatRemembered() {
   return (
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
-        <H1>The function that remembered</H1>
+        <div className="mb-[var(--spacing-md)] flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
+          <HeroTile slug="the-function-that-remembered" />
+        </div>
+        <H1 style={{ fontSize: "clamp(2.5rem, 2rem + 3.5vw, 4rem)" }}>
+          The function that remembered
+        </H1>
         <p
           className="mt-[var(--spacing-sm)] font-mono tabular-nums"
           style={{

@@ -62,6 +62,8 @@
   - paragraph → widget: `margin-block: 2em`
   - section ornament: `margin-block: 3.5em`
 - **No TOC**, **no reading-progress bar** for MVP.
+- **Breakpoints**: `sm` 480 px, `md` 768 px, `lg` 1024 px (registered as `--breakpoint-*` in `@theme`). No `xl` / `2xl`. Breakpoints are authored mobile-first — everything assumes a 360 px phone until a named tier relaxes upward.
+- **Home two-column**: activates at `lg:` (1024 px), not `md:`. At 768 px with a 320 px sidebar the PostList body cell collapses to ~400 px, which starves the 4-column row. Tablet-portrait (~810 px) is explicitly single-column with PostList at full width.
 
 ## 3. Tokens (OKLCH, 4pt spacing, semantic aliases)
 
@@ -70,6 +72,10 @@ All color in OKLCH — perceptually uniform. Foundation palette + semantic alias
 Full canonical values live in [`app/globals.css`](./app/globals.css). Editing tokens there must update this doc.
 
 Spacing scale uses semantic names (`--spacing-sm`, `--spacing-md`), never pixel-named tokens.
+
+**Fluid spacing**: `--spacing-md` through `--spacing-3xl` are fluid via `clamp()`; `--spacing-3xs` through `--spacing-sm` remain literal pixel values. Adjacent tokens stay ≥ 6 px apart at 360 vw so the rhythm holds at phone widths.
+
+**Widget container-query tokens**: `--flip-narrow: 560px` and `--flip-wide: 640px` are the two canonical flip points consumed by `@container widget (…)` rules across every widget. `--widget-width: min(100%, 900px)` is the single source of truth for widget-canvas width.
 
 ## 4. Type ramp (Plex family, 1.25 ratio)
 
@@ -84,6 +90,8 @@ Spacing scale uses semantic names (`--spacing-sm`, `--spacing-md`), never pixel-
 | `--text-small` | `0.8125rem`                          | Plex Sans  | 0em      | 1.4         |
 
 Body is **Plex Serif at 18px, 1.7 line-height** — this is the load-bearing choice for editorial-calm.
+
+**Weight subset (Path B-lite):** Plex Serif 400/500/600 + 400 italic, Plex Sans 400/500/600, Plex Mono 400/500. Weight 700 is not rendered anywhere in the current UI; the heaviest used weight is 600 (`font-semibold`). Proper Path A (self-hosted variable fonts) is deferred to a follow-up phase once VF glyph coverage is verified against the content corpus.
 
 ## 5. Prose components (explicit, typed, semantic HTML)
 
@@ -139,9 +147,12 @@ Every custom widget follows this skeleton. This is what "uniform UI" means.
 - **Canvas** has no visible border. If a background is needed, `--color-surface` at 40%.
 - **Measurement labels**: top-right of header, Plex Mono tabular-nums, `--text-small`, separated by `·`.
 - **Step buttons**: Plex Sans `--text-ui`, weight 500, `8px 16px` padding, `--radius-sm`, hover text → `--color-accent`.
-- **Sliders**: native `<input type="range">` styled — thumb is a 14px terracotta square.
+- **Sliders**: native `<input type="range">` styled — thumb visual is 14 px terracotta square. **Hit target is 44 × 44 px** via transparent `padding` + `background-clip: content-box` on the thumb pseudo-element; the visible square stays 14 px while the draggable region grows to meet the WCAG 44-px minimum.
 - **Focus rings**: 2px solid `--color-accent`, 2px offset. Never removed.
 - **"State set" color**: always `--color-accent`. Readers learn `terracotta = the algorithm is doing something here.`
+- **Press identity**: every interactive surface gets `PRESS` feedback (`whileTap: { scale: 0.96 }` + `SPRING.snappy`). High-frequency controls (Stepper prev/next, subscribe CTA) add a `.bs-press` ring pulse ≤ 300 ms on commit. Consistent across buttons, toggles, links — so the site speaks one tactile language.
+- **Hydration canvas**: every widget SSR-renders a single 6 × 6 terracotta square centred in its canvas container; the real interactive surface fades in on hydrate with `SPRING.smooth`. No spinners, no skeleton shimmer — the dot is the loading state.
+- **Orientation flips**: widgets drive layout via `@container widget (…)` queries against `--flip-narrow` / `--flip-wide`, not global viewport breakpoints, so a widget embedded in a narrow column flips for its container rather than waiting for the viewport.
 
 ## 8. Home page (hatched-page two-column, nan.fyi-inspired)
 
@@ -185,6 +196,9 @@ Home splits into two columns at ≥ 768px:
 - **Height transitions**: `grid-template-rows: 0fr → 1fr`, not `max-height`.
 - **`prefers-reduced-motion`**: all durations drop to `0.01ms`. Widgets must still function without motion.
 - **Stagger**: 60ms between siblings.
+- **Page transitions**: route changes use the View Transitions API (`@view-transition { navigation: auto }`). Root fade is 280 ms opacity + 8 px y. Shared-element morphs (PostList cover → post hero tile) ride the same transition via `view-transition-name: cover-{slug}` pairs. Unsupported browsers (Firefox) fall through to instant navigation — no feature detection needed. Under `prefers-reduced-motion: reduce` the animation duration collapses to 1 ms.
+- **Theme morph**: dark ↔ light toggles animate color / background-color / border-color over 240 ms via a zero-specificity `:where()` transition. During the morph the accent desaturates through `--color-text-muted` (the `accent-bridge` keyframe) so terracotta becomes the "still point" of the whole-page color flip. The `data-theme-transitioning` attribute is set synchronously in the toggle handler — `useEffect` arrives one render too late.
+- **Transient press-pulses** (`.bs-press` ring, ≤ 300 ms) are the one permitted exception to the §12 drop-shadow ban. They are gesture feedback keyed to a tap, not decoration; static decorative box-shadows remain banned.
 
 ## 10. Distinctive moves (why this isn't generic)
 
@@ -202,6 +216,8 @@ Home splits into two columns at ≥ 768px:
 - Animations respect `prefers-reduced-motion`.
 - Semantic tags: `<dfn>`, `<kbd>`, `<code>`, `<time>`.
 - Information conveyed via color must also be conveyed via shape/position/label.
+- **Minimum tap target 44 × 44 CSS px** on every interactive element (WCAG 2.5.5). Expand with transparent padding + negative margin where the visible glyph is smaller.
+- **Hover is opt-in**: hover-only styling (underline saturation, color shifts) is gated behind `@media (hover: hover)` so touch devices don't inherit stuck-hover state after tap-release.
 
 ## 12. Absolute bans
 

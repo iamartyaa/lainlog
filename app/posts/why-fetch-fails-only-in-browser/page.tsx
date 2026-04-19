@@ -10,6 +10,7 @@ import {
   Aside,
   A,
   FullBleed,
+  HeroTile,
   Term,
 } from "@/components/prose";
 import { CodeBlock } from "@/components/code";
@@ -22,6 +23,9 @@ export default function WhyFetchFailsOnlyInBrowser() {
   return (
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
+        <div className="mb-[var(--spacing-md)] flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
+          <HeroTile slug="why-fetch-fails-only-in-browser" />
+        </div>
         <H1 style={{ fontSize: "clamp(2.5rem, 2rem + 3.5vw, 4rem)" }}>
           Why <span style={{ fontFamily: "var(--font-mono)", fontWeight: 500, letterSpacing: "-0.01em" }}>fetch</span> works in curl but the browser blocks it
         </H1>

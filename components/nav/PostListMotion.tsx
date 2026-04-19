@@ -14,16 +14,16 @@ import type { ReactNode } from "react";
  * durations collapse to near-instant, no per-component handling needed.
  */
 
-const listVariants = {
+const makeListVariants = (delayChildren: number) => ({
   hidden: { opacity: 1 }, // keep the list itself visible; stagger drives children
   show: {
     opacity: 1,
     transition: {
       staggerChildren: STAGGER.tight,
-      delayChildren: 0.05,
+      delayChildren,
     },
   },
-};
+});
 
 const itemVariants = {
   hidden: { opacity: 0, y: 8 },
@@ -37,14 +37,18 @@ const itemVariants = {
 export function MotionList({
   children,
   className,
+  delayChildren = 0.05,
 }: {
   children: ReactNode;
   className?: string;
+  /** Seconds to wait before the first child fires. First-visit home
+   *  choreography passes ~1.2s so the list arrives after the hero beat. */
+  delayChildren?: number;
 }) {
   return (
     <motion.ul
       className={className}
-      variants={listVariants}
+      variants={makeListVariants(delayChildren)}
       initial="hidden"
       animate="show"
     >
