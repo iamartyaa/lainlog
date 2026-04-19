@@ -17,6 +17,14 @@ export type PostMeta = {
 
 export const POSTS: PostMeta[] = [
   {
+    slug: "how-gmail-knows-your-email-is-taken",
+    title: "How Gmail knows your email is taken, instantly",
+    date: "2026-04-19",
+    hook: "the pipeline that tells you 'already taken' before your finger lifts.",
+    readingMinutes: 12,
+    tags: ["distributed-systems", "architecture"],
+  },
+  {
     slug: "how-bloom-filters-work",
     title: "How Bloom Filters Work",
     date: "2026-04-19",
