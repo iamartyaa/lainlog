@@ -25,7 +25,7 @@ export default function HowGmailKnowsYourEmailIsTaken() {
   return (
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
-        <div className="mb-[var(--spacing-md)] flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
+        <div className="mb-[var(--spacing-md)] hidden md:flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
           <HeroTile slug="how-gmail-knows-your-email-is-taken" />
         </div>
         <H1 style={{ fontSize: "clamp(2.5rem, 2rem + 3.5vw, 4rem)" }}>
@@ -99,21 +99,21 @@ export default function HowGmailKnowsYourEmailIsTaken() {
         <Dots />
         <H2>Two caches before the database</H2>
         <P>
-          A <Em>very</Em> common question about this flow: what&apos;s the cache doing in front
+          A <Em>very</Em>{" "}common question about this flow: what&apos;s the cache doing in front
           of the database? Most real identity systems put at least one — often two — in-memory
           cache tiers between the request and the authoritative store, and Gmail is no
           exception.
         </P>
         <P>
-          The first one is an <Em>in-process</Em> near-cache, right inside the Gaia frontend
+          The first one is an <Em>in-process</Em>{" "}near-cache, right inside the Gaia frontend
           that handles your request. If the same canonical email was asked about in the last few
           seconds on the same shard (which happens a lot — popular names get typed constantly),
           the answer is still in memory. No further work.
         </P>
         <P>
-          The second is a <Em>distributed</Em> cache that spans many frontends, so a warm
+          The second is a <Em>distributed</Em>{" "}cache that spans many frontends, so a warm
           answer from one shard can serve another. In the FlowDemo widget above, the{" "}
-          <Em>someone just checked this name</Em> scenario lights this up: the request
+          <Em>someone just checked this name</Em>{" "}scenario lights this up: the request
           terminates at the near-cache and never reaches the Bloom filter or Spanner.
         </P>
         <Callout tone="note">
@@ -139,7 +139,7 @@ export default function HowGmailKnowsYourEmailIsTaken() {
           is created, a few hash functions of the canonical email each pick a bit, and those
           bits get flipped on. To check an email, hash it the same way and look at those bits:
           if any one of them is <Code>0</Code>, it&apos;s definitely not in the set. If
-          they&apos;re all <Code>1</Code>, it <Em>might</Em> be.
+          they&apos;re all <Code>1</Code>, it <Em>might</Em>{" "}be.
         </P>
         <P>
           Step through a handful of inserts and queries below.
@@ -150,8 +150,8 @@ export default function HowGmailKnowsYourEmailIsTaken() {
 
       <div>
         <P>
-          The filter can lie about <Em>yes</Em>, never about <Em>no</Em>. A <Em>no</Em> alone is
-          enough to answer the user — no database round-trip needed. A <Em>maybe</Em> has to go
+          The filter can lie about <Em>yes</Em>, never about <Em>no</Em>. A <Em>no</Em>{" "}alone is
+          enough to answer the user — no database round-trip needed. A <Em>maybe</Em>{" "}has to go
           to Spanner to be sure.
         </P>
       </div>
@@ -214,7 +214,7 @@ export default function HowGmailKnowsYourEmailIsTaken() {
       <div>
         <P>
           The winner is whichever INSERT Spanner committed first — not whichever user clicked
-          Submit first in their browser. Both clients saw <Em>available</Em> while typing; only
+          Submit first in their browser. Both clients saw <Em>available</Em>{" "}while typing; only
           the database&apos;s serial ordering at commit decides who actually got the address.
         </P>
         <Callout tone="note">
@@ -238,7 +238,7 @@ export default function HowGmailKnowsYourEmailIsTaken() {
           that worked like this. An attacker signs up for Netflix using a dotted variant of
           your Gmail — say <Code>j.ohn.doe@gmail.com</Code> — with a bad card. Netflix treats
           the dotted version as a new customer, because Netflix doesn&apos;t normalise the way
-          Gmail does. The card fails. Netflix sends <Em>you</Em> a polite email about it —
+          Gmail does. The card fails. Netflix sends <Em>you</Em>{" "}a polite email about it —
           both addresses land in your inbox. You, confused, helpfully pay.
         </P>
         <P>

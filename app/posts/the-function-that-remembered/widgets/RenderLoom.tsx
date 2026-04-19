@@ -116,6 +116,7 @@ export function RenderLoom() {
         </div>
       }
     >
+      <div className="bs-renderloom-wide">
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         width="100%"
@@ -375,7 +376,312 @@ export function RenderLoom() {
           </AnimatePresence>
         </g>
       </svg>
+      </div>
+      <div className="bs-renderloom-narrow">
+        <NarrowRenderLoom mode={mode} step={step} tick={tick} />
+      </div>
     </WidgetShell>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*                     Narrow portrait layout (mobile-first)                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * NarrowRenderLoom — portrait composition. Reading order matches the real
+ * world: the screen (what the user sees) sits at the top, the render stack
+ * below it (the machinery producing that screen), and the effect callback
+ * at the bottom — connected to its tethered render by a vertical arrow in
+ * `broken` mode, or labeled "no tether" in `fixed` mode.
+ */
+function NarrowRenderLoom({
+  mode,
+  step,
+  tick,
+}: {
+  mode: Mode;
+  step: number;
+  tick: Tick;
+}) {
+  const W = 360;
+  const SCREEN_X = 18;
+  const SCREEN_Y = 20;
+  const SCREEN_W = W - SCREEN_X * 2;
+  const SCREEN_H = 68;
+
+  const MAX_RENDERS = 3;
+  const visibleRenders = tick.bindings.slice(-MAX_RENDERS);
+  const renderIdxOffset = tick.bindings.length - visibleRenders.length;
+
+  const R_X = 18;
+  const R_Y0 = SCREEN_Y + SCREEN_H + 24;
+  const R_W = W - R_X * 2;
+  const R_H = 40;
+  const R_GAP = 6;
+
+  const EFFECT_X = 18;
+  const EFFECT_Y = R_Y0 + MAX_RENDERS * (R_H + R_GAP) + 40;
+  const EFFECT_W = W - EFFECT_X * 2;
+  const EFFECT_H = 88;
+  const H = EFFECT_Y + EFFECT_H + 20;
+
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      width="100%"
+      style={{ maxWidth: W, height: "auto", display: "block" }}
+      role="img"
+      aria-label={`RenderLoom: ${mode} mode, tick ${step} of ${TICK_STEPS - 1}`}
+    >
+      {/* Screen — what the user sees */}
+      <g>
+        <rect
+          x={SCREEN_X}
+          y={SCREEN_Y}
+          width={SCREEN_W}
+          height={SCREEN_H}
+          rx={3}
+          fill="color-mix(in oklab, var(--color-accent) 6%, transparent)"
+          stroke="var(--color-rule)"
+          strokeWidth={1}
+        />
+        <text
+          x={SCREEN_X + 10}
+          y={SCREEN_Y + 16}
+          fontFamily="var(--font-sans)"
+          fontSize={9}
+          fill="var(--color-text-muted)"
+          letterSpacing="0.08em"
+        >
+          SCREEN
+        </text>
+        <AnimatePresence mode="popLayout">
+          <motion.text
+            key={`n-screen-${tick.displayedRender}-${mode}`}
+            x={SCREEN_X + SCREEN_W / 2}
+            y={SCREEN_Y + 54}
+            textAnchor="middle"
+            fontFamily="var(--font-sans)"
+            fontSize={36}
+            fontWeight={500}
+            fill="var(--color-text)"
+            initial={{ opacity: 0, y: SCREEN_Y + 48 }}
+            animate={{ opacity: 1, y: SCREEN_Y + 54 }}
+            exit={{ opacity: 0 }}
+            transition={SPRING.snappy}
+          >
+            {tick.bindings[tick.displayedRender]}
+          </motion.text>
+        </AnimatePresence>
+      </g>
+
+      {/* Renders header */}
+      <text
+        x={R_X}
+        y={R_Y0 - 8}
+        fontFamily="var(--font-sans)"
+        fontSize={9}
+        fill="var(--color-text-muted)"
+        letterSpacing="0.08em"
+      >
+        RENDERS
+      </text>
+
+      {/* Render stack — only the most recent MAX_RENDERS */}
+      {visibleRenders.map((countVal, localIdx) => {
+        const renderIdx = renderIdxOffset + localIdx;
+        const y = R_Y0 + localIdx * (R_H + R_GAP);
+        const isDisplayed = renderIdx === tick.displayedRender;
+        const isTethered = mode === "broken" && renderIdx === tick.tetherRender;
+        const borderColor = isTethered
+          ? "var(--color-accent)"
+          : isDisplayed
+            ? "var(--color-text-muted)"
+            : "var(--color-rule)";
+        const bgFill = isTethered
+          ? "color-mix(in oklab, var(--color-accent) 10%, transparent)"
+          : isDisplayed
+            ? "color-mix(in oklab, var(--color-surface) 70%, transparent)"
+            : "transparent";
+        return (
+          <motion.g
+            key={`n-render-${renderIdx}`}
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={SPRING.smooth}
+          >
+            <rect
+              x={R_X}
+              y={y}
+              width={R_W}
+              height={R_H}
+              rx={3}
+              fill={bgFill}
+              stroke={borderColor}
+              strokeWidth={isTethered || isDisplayed ? 1.3 : 1}
+              strokeDasharray={isTethered ? "0" : isDisplayed ? "0" : "3 3"}
+            />
+            <text
+              x={R_X + 10}
+              y={y + 15}
+              fontFamily="var(--font-sans)"
+              fontSize={10}
+              fill="var(--color-text-muted)"
+              letterSpacing="0.04em"
+            >
+              render {renderIdx}
+            </text>
+            <text
+              x={R_X + 10}
+              y={y + 30}
+              fontFamily="var(--font-mono)"
+              fontSize={12}
+              fill="var(--color-text)"
+            >
+              count
+            </text>
+            <rect
+              x={R_X + 64}
+              y={y + 18}
+              width={24}
+              height={16}
+              rx={2}
+              fill="var(--color-accent)"
+            />
+            <text
+              x={R_X + 76}
+              y={y + 30}
+              textAnchor="middle"
+              fontFamily="var(--font-mono)"
+              fontSize={11}
+              fill="var(--color-bg)"
+            >
+              {countVal}
+            </text>
+            {isTethered || isDisplayed ? (
+              <text
+                x={R_X + R_W - 10}
+                y={y + 15}
+                textAnchor="end"
+                fontFamily="var(--font-sans)"
+                fontSize={8}
+                fill={isTethered ? "var(--color-accent)" : "var(--color-text-muted)"}
+                letterSpacing="0.08em"
+              >
+                {isTethered && isDisplayed
+                  ? "TETHERED · ON SCREEN"
+                  : isTethered
+                    ? "TETHERED"
+                    : "ON SCREEN"}
+              </text>
+            ) : null}
+          </motion.g>
+        );
+      })}
+
+      {/* Effect callback */}
+      <g>
+        <rect
+          x={EFFECT_X}
+          y={EFFECT_Y}
+          width={EFFECT_W}
+          height={EFFECT_H}
+          rx={3}
+          fill="color-mix(in oklab, var(--color-surface) 80%, transparent)"
+          stroke="var(--color-text-muted)"
+          strokeWidth={1}
+        />
+        <text
+          x={EFFECT_X + 10}
+          y={EFFECT_Y + 18}
+          fontFamily="var(--font-sans)"
+          fontSize={9}
+          fill="var(--color-text-muted)"
+          letterSpacing="0.08em"
+        >
+          setInterval callback
+        </text>
+        <text
+          x={EFFECT_X + 10}
+          y={EFFECT_Y + 40}
+          fontFamily="var(--font-mono)"
+          fontSize={11}
+          fill="var(--color-text)"
+        >
+          () =&gt; setCount(
+        </text>
+        <text
+          x={EFFECT_X + 10}
+          y={EFFECT_Y + 58}
+          fontFamily="var(--font-mono)"
+          fontSize={11}
+          fill={mode === "broken" ? "var(--color-accent)" : "var(--color-text)"}
+        >
+          {mode === "broken" ? "  count + 1" : "  c => c + 1"}
+        </text>
+        <text
+          x={EFFECT_X + 10}
+          y={EFFECT_Y + 76}
+          fontFamily="var(--font-mono)"
+          fontSize={11}
+          fill="var(--color-text)"
+        >
+          {")"}
+        </text>
+      </g>
+
+      {/* Tether — vertical arrow from callback UP to tethered render */}
+      <AnimatePresence>
+        {mode === "broken" && tick.tetherRender !== null ? (
+          <motion.g
+            key="n-tether"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={SPRING.smooth}
+          >
+            {(() => {
+              const tetherLocalIdx = tick.tetherRender - renderIdxOffset;
+              // If the tethered render scrolled out of the visible stack,
+              // point to the top-of-stack row to keep the arrow visible.
+              const targetLocalIdx =
+                tetherLocalIdx >= 0 && tetherLocalIdx < MAX_RENDERS
+                  ? tetherLocalIdx
+                  : 0;
+              const y2 = R_Y0 + targetLocalIdx * (R_H + R_GAP) + R_H;
+              return (
+                <Arrow
+                  x1={EFFECT_X + 60}
+                  y1={EFFECT_Y}
+                  x2={EFFECT_X + 60}
+                  y2={y2}
+                  tone="active"
+                  strokeWidth={2}
+                  curvature={12}
+                />
+              );
+            })()}
+          </motion.g>
+        ) : (
+          <motion.text
+            key="n-no-tether"
+            x={EFFECT_X + EFFECT_W - 10}
+            y={EFFECT_Y - 6}
+            textAnchor="end"
+            fontFamily="var(--font-sans)"
+            fontSize={10}
+            fill="var(--color-text-muted)"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={SPRING.smooth}
+          >
+            (no tether)
+          </motion.text>
+        )}
+      </AnimatePresence>
+    </svg>
   );
 }
 

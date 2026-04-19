@@ -12,6 +12,7 @@ import {
   HeroTile,
   Term,
 } from "@/components/prose";
+import { CodeBlock } from "@/components/code";
 import {
   LoopTrap,
   TetherScope,
@@ -26,7 +27,7 @@ export default function TheFunctionThatRemembered() {
   return (
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
-        <div className="mb-[var(--spacing-md)] flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
+        <div className="mb-[var(--spacing-md)] hidden md:flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
           <HeroTile slug="the-function-that-remembered" />
         </div>
         <H1 style={{ fontSize: "clamp(2.5rem, 2rem + 3.5vw, 4rem)" }}>
@@ -50,19 +51,13 @@ export default function TheFunctionThatRemembered() {
           zero through four, one per second. The loop looks fine. You hit run and watch the
           console.
         </P>
-        <pre
-          className="my-[var(--spacing-md)] overflow-x-auto rounded-[var(--radius-md)] font-mono"
-          style={{
-            background: "var(--color-surface)",
-            padding: "var(--spacing-md)",
-            fontSize: "var(--text-mono)",
-            lineHeight: 1.55,
-          }}
-        >
-{`for (var i = 0; i < 5; i++) {
+        <CodeBlock
+          lang="javascript"
+          filename="loop.js"
+          code={`for (var i = 0; i < 5; i++) {
   setTimeout(() => console.log(i), 1000);
 }`}
-        </pre>
+        />
         <P>
           It prints <PredictReveal answer="5 5 5 5 5" />. Not{" "}
           <Code>0 1 2 3 4</Code>. Five fives. A second late, five times over.
@@ -120,27 +115,21 @@ export default function TheFunctionThatRemembered() {
           don&apos;t vanish if a function born inside them is still holding the tether.
           Consider a factory:
         </P>
-        <pre
-          className="my-[var(--spacing-md)] overflow-x-auto rounded-[var(--radius-md)] font-mono"
-          style={{
-            background: "var(--color-surface)",
-            padding: "var(--spacing-md)",
-            fontSize: "var(--text-mono)",
-            lineHeight: 1.55,
-          }}
-        >
-{`function makeAdder(n) {
+        <CodeBlock
+          lang="javascript"
+          filename="makeAdder.js"
+          code={`function makeAdder(n) {
   return (x) => x + n;
 }
 
 const add5  = makeAdder(5);
 const add10 = makeAdder(10);`}
-        </pre>
+        />
         <P>
           Each call to <Code>makeAdder</Code> creates its own frame, with its own{" "}
           <Code>n</Code>. The returned arrow function carries a tether to that frame.{" "}
           <Code>add5</Code> and <Code>add10</Code> aren&apos;t copies of <Code>n</Code>; they
-          each own a live pointer to a <Em>different</Em> frame. Step through a single call and
+          each own a live pointer to a <Em>different</Em>{" "}frame. Step through a single call and
           watch the mechanics:
         </P>
       </div>
@@ -149,8 +138,10 @@ const add10 = makeAdder(10);`}
 
       <div>
         <Callout tone="note">
-          A <Term>closure</Term> is a function, plus the tether it kept. Any function, as long
-          as it can still reach something from an outer scope. That&apos;s it.
+          A <Term>closure</Term>
+          {" "}
+          is a function, plus the tether it kept. Any function, as long as it can still
+          reach something from an outer scope. That&apos;s it.
         </Callout>
         <P>
           One subtlety worth stating plainly, because it&apos;s the misconception every other
@@ -166,7 +157,7 @@ const add10 = makeAdder(10);`}
         <Dots />
         <H2>Why one letter fixed the loop</H2>
         <P>
-          With that, scroll back up to <Em>LoopTrap</Em> and look at it again. The reason{" "}
+          With that, scroll back up to <Em>LoopTrap</Em>{" "}and look at it again. The reason{" "}
           <Code>var</Code> prints <Code>5 5 5 5 5</Code> isn&apos;t that the loop copied{" "}
           <Code>i</Code> wrong. It&apos;s that <Code>var</Code> declares one binding for the
           whole function. The five arrow functions picked up five tethers. All five tethers
@@ -192,10 +183,11 @@ const add10 = makeAdder(10);`}
           <A href="https://github.com/getify/You-Dont-Know-JS/blob/2nd-ed/scope-closures/ch7.md">
             You Don&apos;t Know JS
           </A>
-          {" "}reserves the word <Em>closure</Em> for functions that run somewhere their tether
-          targets aren&apos;t directly in scope — the observable case. MDN and the spec use the
-          word more broadly. Same mechanism — the debate is only about when its effects count
-          as observable.
+          {" "}reserves the word <Em>closure</Em>
+          {" "}
+          for functions that run somewhere their tether targets aren&apos;t directly in scope
+          — the observable case. MDN and the spec use the word more broadly. Same mechanism —
+          the debate is only about when its effects count as observable.
         </Aside>
       </div>
 
@@ -207,16 +199,10 @@ const add10 = makeAdder(10);`}
           Fast-forward to a React component. You&apos;ve written this before, and you remember
           being surprised the first time:
         </P>
-        <pre
-          className="my-[var(--spacing-md)] overflow-x-auto rounded-[var(--radius-md)] font-mono"
-          style={{
-            background: "var(--color-surface)",
-            padding: "var(--spacing-md)",
-            fontSize: "var(--text-mono)",
-            lineHeight: 1.55,
-          }}
-        >
-{`function Counter() {
+        <CodeBlock
+          lang="tsx"
+          filename="Counter.tsx"
+          code={`function Counter() {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
@@ -228,7 +214,7 @@ const add10 = makeAdder(10);`}
 
   return <h1>{count}</h1>;
 }`}
-        </pre>
+        />
         <P>
           It goes from <Code>0</Code> to <Code>1</Code> and stops. The interval keeps firing,
           but the number on the screen never moves past one.
@@ -283,16 +269,10 @@ const add10 = makeAdder(10);`}
           closures leak memory. The classic pattern — first spotted in Meteor a decade back —
           looks like this:
         </P>
-        <pre
-          className="my-[var(--spacing-md)] overflow-x-auto rounded-[var(--radius-md)] font-mono"
-          style={{
-            background: "var(--color-surface)",
-            padding: "var(--spacing-md)",
-            fontSize: "var(--text-mono)",
-            lineHeight: 1.55,
-          }}
-        >
-{`let theThing = null;
+        <CodeBlock
+          lang="javascript"
+          filename="replaceThing.js"
+          code={`let theThing = null;
 function replaceThing() {
   const prev = theThing;
   theThing = {
@@ -301,7 +281,7 @@ function replaceThing() {
   };
 }
 setInterval(replaceThing, 1000);`}
-        </pre>
+        />
         <P>
           Every tick, <Code>theThing</Code> gets replaced with a new megabyte-sized object that
           carries a closure — <Code>link</Code> — tethered back to <Code>prev</Code>. And{" "}

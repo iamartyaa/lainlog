@@ -23,7 +23,7 @@ export default function WhyFetchFailsOnlyInBrowser() {
   return (
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
-        <div className="mb-[var(--spacing-md)] flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
+        <div className="mb-[var(--spacing-md)] hidden md:flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
           <HeroTile slug="why-fetch-fails-only-in-browser" />
         </div>
         <H1 style={{ fontSize: "clamp(2.5rem, 2rem + 3.5vw, 4rem)" }}>
@@ -85,7 +85,7 @@ export default function WhyFetchFailsOnlyInBrowser() {
         <P>
           Before the mechanism makes sense, the vocabulary has to. An <Term>origin</Term>{" "}
           is the triple <Code>(scheme, host, port)</Code>. Two URLs are the{" "}
-          <Em>same origin</Em> only if all three match. Path doesn&apos;t count.
+          <Em>same origin</Em>{" "}only if all three match. Path doesn&apos;t count.
           Subdomains don&apos;t match. And yes, <Code>http</Code> vs <Code>https</Code>{" "}
           on the exact same hostname is cross-origin — TLS changes the trust boundary.
           Hover any row below to see which part differs.
@@ -96,11 +96,11 @@ export default function WhyFetchFailsOnlyInBrowser() {
 
       <div>
         <P>
-          The <Em>same-origin policy</Em> is the browser&apos;s default. JS running in
+          The <Em>same-origin policy</Em>{" "}is the browser&apos;s default. JS running in
           one origin can&apos;t read a response from another. Loading assets across
           origins — an <Code>&lt;img&gt;</Code>, a <Code>&lt;script&gt;</Code>, a
           stylesheet — has always been allowed, which is why the restriction feels
-          arbitrary until you notice what <Em>is</Em> forbidden: reading a response
+          arbitrary until you notice what <Em>is</Em>{" "}forbidden: reading a response
           from JS. CORS is the opt-in mechanism for punching holes in that wall.
         </P>
         <Callout tone="note">
@@ -130,7 +130,7 @@ export default function WhyFetchFailsOnlyInBrowser() {
           Walk that back slowly. The fetch left the browser. The request reached
           the server. The server ran its handler — the same code it runs for any
           other client. It returned <Code>200 OK</Code> with a real body. The
-          response arrived in the browser. Only then, <Em>after</Em> the whole
+          response arrived in the browser. Only then, <Em>after</Em>{" "}the whole
           round trip, did the browser look at the response headers, fail to find
           an invitation for your page&apos;s origin, and throw the body away.
         </P>
@@ -196,10 +196,10 @@ export default function WhyFetchFailsOnlyInBrowser() {
 
       <div>
         <P>
-          The <Em>preflight</Em> carries <Code>Origin</Code>, the method the real
+          The <Em>preflight</Em>{" "}carries <Code>Origin</Code>, the method the real
           request will use, and any non-safelisted headers it plans to send. The
           server answers with a matching <Code>Access-Control-Allow-Methods</Code>{" "}
-          and <Code>Access-Control-Allow-Headers</Code>, and <Em>only then</Em> does
+          and <Code>Access-Control-Allow-Headers</Code>, and <Em>only then</Em>{" "}does
           the browser let the real request go. If any of those don&apos;t line up,
           the real <Code>POST</Code>, <Code>DELETE</Code>, or <Code>PATCH</Code>{" "}
           never reaches your backend. This is the one case where CORS genuinely
@@ -215,13 +215,13 @@ export default function WhyFetchFailsOnlyInBrowser() {
           <Code>Access-Control-Max-Age</Code> so the handshake doesn&apos;t repeat for
           every request.
         </P>
-        <Aside>
+        <Callout tone="warn">
           If your server reflects the request&apos;s <Code>Origin</Code> header back
           in <Code>Access-Control-Allow-Origin</Code> to support many origins, you
           must also send <Code>Vary: Origin</Code>. Without it, a CDN or shared
           proxy can serve origin A&apos;s allowed response to origin B&apos;s
           request. It looks fine in dev and breaks on Tuesday.
-        </Aside>
+        </Callout>
       </div>
 
       {/* §5 — credentials */}
@@ -229,7 +229,7 @@ export default function WhyFetchFailsOnlyInBrowser() {
         <Dots />
         <H2>Cookies don&apos;t tag along by default</H2>
         <P>
-          <Code>fetch</Code> to a cross-origin URL does <Em>not</Em> send cookies or
+          <Code>fetch</Code> to a cross-origin URL does <Em>not</Em>{" "}send cookies or
           HTTP auth unless you ask. You opt in; the server opts in separately. Both
           sides have to agree.
         </P>
@@ -280,7 +280,7 @@ await fetch('https://api.other.com/me', {
           Three things to check, in order. Which origin is your page? Is the
           server returning <Code>Access-Control-Allow-Origin</Code> matching that
           origin exactly? And if there&apos;s an <Code>OPTIONS</Code> row before
-          your real request, does <Em>that</Em> response approve the method and
+          your real request, does <Em>that</Em>{" "}response approve the method and
           headers you&apos;re about to send? Almost every CORS failure is one of
           those three, in that order.
         </P>
