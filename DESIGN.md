@@ -143,36 +143,37 @@ Every custom widget follows this skeleton. This is what "uniform UI" means.
 - **Focus rings**: 2px solid `--color-accent`, 2px offset. Never removed.
 - **"State set" color**: always `--color-accent`. Readers learn `terracotta = the algorithm is doing something here.`
 
-## 8. Home page (framed two-column, inline preview images)
+## 8. Home page (hatched-page two-column, nan.fyi-inspired)
 
-The whole site — header, main, footer — sits inside a `CozyFrame`: a 1px `--color-rule` bordered container, max-width 1040px, no fill, no shadow. Window frame, not a card.
+The body paints a subtle 135° diagonal-hatch pattern (`repeating-linear-gradient` over `color-mix(text 5%, transparent)`). A centred `CozyFrame` — max-width 1360px, solid `--color-bg` — sits on top, so content "floats" in a flat rectangle bounded by the hatched page. No border, no shadow. Texture contrast is the frame.
 
 Home splits into two columns at ≥ 768px:
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│ ■ bytesize                                           [○ theme] │
-├────────────────────────────────────────────────────────────────┤
-│                                                                │
-│  engineering essays with        2026                           │
-│  widgets you can take           ────                           │
-│  apart.                         [img]  how gmail knows …       │
-│                                         the pipeline that …    │
-│  bytesize is a slow-cadence                       apr 19, 2026 │
-│  blog. each post takes a single                                │
-│  question — how does gmail know…                               │
-│                                                                │
-│  ■ new posts, occasionally.                                    │
-│                                                                │
-├────────────────────────────────────────────────────────────────┤
-│ bytesize · built by amartya               subscribe (rss)      │
-└────────────────────────────────────────────────────────────────┘
+┌ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ┐
+│ ┌──────────────────────────────────────────────────────────┐ │
+│ │ ■ bytesize                                    [○ theme]  │ │
+│ │                                                          │ │
+│ │                     2026                                 │ │
+│ │   bytesize          ────                                 │ │
+│ │                     [ico] how gmail knows …     apr 19   │ │
+│ │   one question              the pipeline that …    →     │ │
+│ │   per post. ten     ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌   │ │
+│ │   minutes of …      [ico]  (next post)                   │ │
+│ │                                                          │ │
+│ │  [subscribe]                                             │ │
+│ │                                                          │ │
+│ │  ⌂ github     © 2026                                     │ │
+│ │                                                          │ │
+│ │ bytesize · built by amartya           subscribe (rss)    │ │
+│ └──────────────────────────────────────────────────────────┘ │
+└ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ┘
 ```
 
-- **Left column** (`AboutColumn`): tagline (Plex Serif, 1.375rem), about paragraph (Plex Serif, body size, muted), cadence marker (terracotta swatch + Plex Mono small). Sticky on `md:`+ so it holds position while the post list scrolls.
-- **Right column** (`PostList`): year groupings (small muted Plex Sans caps), each post row = inline cover image (3:2, ~160×100 desktop / 96×60 mobile, radius `--radius-sm`) + title (Plex Sans, `--text-h3`) + date (Plex Mono, right-aligned, tabular-nums) + hook (Plex Serif, body, muted). Image sits *beside* the text, not above.
-- Single column below `md:` — about column stacks on top of the post list.
+- **Left column** (`AboutColumn`, 320px fixed): big Plex Serif wordmark (clamp 3–4.5rem, 0.95 line-height, -0.03em tracking), about paragraph (Plex Serif body, muted, max 26ch), terracotta **subscribe** pill (`--color-accent` fill, `--color-bg` text, `--radius-md`), bottom-left meta row (GitHub icon + copyright in Plex Mono small). Sticky on md+.
+- **Right column** (`PostList`): year heading (small muted Plex Sans caps) + list of rows. Each row is a 4-column grid on md+ (`80px · 1.1fr · 1.2fr · 32px`): square cover tile · title + date stacked · hook description · arrow. On mobile it collapses to `64px · 1fr · 24px` with the hook stacking on a second row spanning all columns. Dashed top-border (`--color-rule`) separates rows; the first row has none.
 - Covers are auto-generated at `/cover/[slug]` via `@vercel/og`, per-slug hue-shifted within the terracotta family; optional `coverImage?: string` on `PostMeta` for hand-crafted overrides.
+- Row hover: subtle background tint (`color-mix(accent 4%, transparent)`), cover lifts `-2px`, title shifts to `--color-accent`, arrow translates 3px right. All on the same 200ms timing.
 - The hook is the one-line description — rewrite ruthlessly.
 
 ## 9. Motion rules
