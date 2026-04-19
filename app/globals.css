@@ -159,3 +159,60 @@ body {
   font-variant-numeric: tabular-nums;
   opacity: 0.5;
 }
+
+/* ---------------------------------------------------------------------------
+   Range slider — native <input type="range"> styled as terracotta square
+   thumb on a 2px rule track. Used by <Scrubber>. (.bs-range class)
+--------------------------------------------------------------------------- */
+.bs-range {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  height: 16px;
+  cursor: pointer;
+}
+.bs-range::-webkit-slider-runnable-track {
+  height: 2px;
+  background: linear-gradient(
+    to right,
+    var(--color-accent) 0%,
+    var(--color-accent) var(--pct, 0%),
+    var(--color-rule) var(--pct, 0%),
+    var(--color-rule) 100%
+  );
+}
+.bs-range::-moz-range-track {
+  height: 2px;
+  background: var(--color-rule);
+}
+.bs-range::-moz-range-progress {
+  height: 2px;
+  background: var(--color-accent);
+}
+.bs-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  border: 0;
+  margin-top: -6px; /* centers on 2px track */
+  transition: transform 160ms var(--ease-out);
+}
+.bs-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent);
+  border: 0;
+  transition: transform 160ms var(--ease-out);
+}
+.bs-range:active::-webkit-slider-thumb,
+.bs-range:focus-visible::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+.bs-range:active::-moz-range-thumb,
+.bs-range:focus-visible::-moz-range-thumb {
+  transform: scale(1.15);
+}
