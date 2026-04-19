@@ -3,11 +3,14 @@
 import { motion, useReducedMotion } from "motion/react";
 
 /**
- * Top-right terracotta corner swatch inside the CozyFrame. Pulses once on
- * first paint — a small arrival signal, not a loop. Under
+ * Bottom-right terracotta corner swatch inside the CozyFrame. Pulses once
+ * on first paint — a small arrival signal, not a loop. Under
  * prefers-reduced-motion the pulse is skipped entirely (useReducedMotion
  * short-circuits to a static swatch). Purely decorative; the element is
  * `aria-hidden` and sits outside any semantic flow.
+ *
+ * Placed at bottom-right so it doesn't collide with the header's
+ * wordmark / theme-toggle / rss cluster.
  */
 export function CozyFrameAccent() {
   const reduced = useReducedMotion();
@@ -15,7 +18,7 @@ export function CozyFrameAccent() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute right-[var(--spacing-md)] top-[var(--spacing-md)]"
+      className="pointer-events-none absolute right-[var(--spacing-md)] bottom-[var(--spacing-md)]"
     >
       {/* The always-visible swatch (terracotta square) */}
       <div
