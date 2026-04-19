@@ -226,6 +226,45 @@ body {
   }
 }
 
+/* RequestClassifier — below --flip-narrow each control surface becomes a
+   small bordered card with its label as a caption on top, so each option
+   group reads as a discrete Q/A pane instead of an inline label + chips
+   row. Wide keeps the side-by-side label + options layout. */
+@container widget (max-width: 560px) {
+  .bs-classifier-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-2xs);
+    padding: var(--spacing-sm);
+    border: 1px solid var(--color-rule);
+    border-radius: var(--radius-md);
+  }
+  .bs-classifier-label {
+    min-width: 0;
+    letter-spacing: 0.04em;
+    text-transform: lowercase;
+    font-size: var(--text-small);
+  }
+}
+
+/* RequestJourney — orientation flip. Wide (≥ --flip-wide) keeps the
+   conventional sequence-diagram layout with actors as columns. Below the
+   flip point we swap to horizontal lifelines (actors as rows, time flowing
+   left-to-right) so long message labels like "GET /me · Origin: …" have
+   room to breathe instead of being scaled into illegibility. Both SVGs
+   render in SSR; the container query picks which one to show. */
+.bs-rj-narrow {
+  display: none;
+}
+@container widget (max-width: 640px) {
+  .bs-rj-wide {
+    display: none;
+  }
+  .bs-rj-narrow {
+    display: block;
+  }
+}
+
 @keyframes ring-pulse {
   0% {
     box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-accent) 35%, transparent);

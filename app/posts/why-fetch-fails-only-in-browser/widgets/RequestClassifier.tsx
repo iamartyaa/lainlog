@@ -112,11 +112,11 @@ export function RequestClassifier({
             disabledHint={ctDisabled ? "(no body on this method)" : undefined}
           />
           <div
-            className="flex items-center gap-[var(--spacing-md)] flex-wrap font-sans"
+            className="bs-classifier-row flex items-center gap-[var(--spacing-md)] flex-wrap font-sans"
             style={{ fontSize: "var(--text-ui)" }}
           >
             <span
-              className="font-mono"
+              className="bs-classifier-label font-mono"
               style={{
                 color: "var(--color-text-muted)",
                 minWidth: "12ch",
@@ -124,16 +124,18 @@ export function RequestClassifier({
             >
               headers
             </span>
-            <Toggle
-              label="Authorization"
-              pressed={auth}
-              onToggle={() => setAuth((v) => !v)}
-            />
-            <Toggle
-              label="X-Custom"
-              pressed={custom}
-              onToggle={() => setCustom((v) => !v)}
-            />
+            <div className="bs-classifier-options flex items-center gap-[var(--spacing-2xs)] flex-wrap">
+              <Toggle
+                label="Authorization"
+                pressed={auth}
+                onToggle={() => setAuth((v) => !v)}
+              />
+              <Toggle
+                label="X-Custom"
+                pressed={custom}
+                onToggle={() => setCustom((v) => !v)}
+              />
+            </div>
           </div>
         </div>
 
@@ -283,11 +285,11 @@ function SegmentedRow<T extends string>({
 }) {
   return (
     <div
-      className="flex items-center gap-[var(--spacing-md)] flex-wrap font-sans"
+      className="bs-classifier-row flex items-center gap-[var(--spacing-md)] flex-wrap font-sans"
       style={{ fontSize: "var(--text-ui)" }}
     >
       <span
-        className="font-mono"
+        className="bs-classifier-label font-mono"
         style={{
           color: "var(--color-text-muted)",
           minWidth: "12ch",
@@ -298,7 +300,7 @@ function SegmentedRow<T extends string>({
       <div
         role="radiogroup"
         aria-label={label}
-        className="flex items-center gap-[var(--spacing-2xs)] flex-wrap"
+        className="bs-classifier-options flex items-center gap-[var(--spacing-2xs)] flex-wrap"
         style={{ opacity: disabled ? 0.5 : 1 }}
       >
         {options.map((opt) => {
