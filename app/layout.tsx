@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Header } from "@/components/nav/Header";
 import { Footer } from "@/components/nav/Footer";
+import { MotionConfigProvider } from "@/components/providers/motion-config";
 
 const plexSerif = IBM_Plex_Serif({
   variable: "--font-plex-serif",
@@ -59,9 +60,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          <MotionConfigProvider>
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </MotionConfigProvider>
         </ThemeProvider>
       </body>
     </html>
