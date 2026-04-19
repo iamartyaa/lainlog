@@ -154,8 +154,9 @@ bytesize                                       [○ theme]
 
   2026
   ───────────────────────────────────────────────
-  how bloom filters work              apr 04, 2026
-  a probabilistic set, in three hash lanes.
+  how gmail knows your email is taken, instantly   apr 19, 2026
+  the pipeline that tells you 'already taken'
+  before your finger lifts.
 
   ────
   bytesize · built by amartya · rss

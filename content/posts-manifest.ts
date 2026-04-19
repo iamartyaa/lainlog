@@ -24,14 +24,6 @@ export const POSTS: PostMeta[] = [
     readingMinutes: 12,
     tags: ["distributed-systems", "architecture"],
   },
-  {
-    slug: "how-bloom-filters-work",
-    title: "How Bloom Filters Work",
-    date: "2026-04-19",
-    hook: "a probabilistic set, in three hash lanes.",
-    readingMinutes: 14,
-    tags: ["data-structures", "algorithms"],
-  },
 ];
 
 /** Sorted newest-first. */
