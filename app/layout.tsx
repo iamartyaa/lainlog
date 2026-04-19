@@ -14,10 +14,15 @@ import {
   SITE_URL,
 } from "@/lib/site";
 
+// Path B-lite: pre-flight grep found no `font-bold` / fontWeight 700 usage
+// (600 is the heaviest actually rendered weight via `font-semibold`), so we
+// drop 700 from both subsets. 14 font files → 11. Proper Path A (self-hosted
+// variable fonts) is deferred to Phase 7 once VF glyph coverage is verified
+// against the content corpus.
 const plexSerif = IBM_Plex_Serif({
   variable: "--font-plex-serif",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600"],
   style: ["normal", "italic"],
   display: "swap",
 });
@@ -25,7 +30,7 @@ const plexSerif = IBM_Plex_Serif({
 const plexSans = IBM_Plex_Sans({
   variable: "--font-plex-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 
@@ -78,7 +83,6 @@ export default function RootLayout({
           attribute="data-theme"
           defaultTheme="dark"
           enableSystem
-          disableTransitionOnChange
         >
           <MotionConfigProvider>
             <CozyFrame>

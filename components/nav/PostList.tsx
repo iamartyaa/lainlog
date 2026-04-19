@@ -5,6 +5,7 @@ import Image from "next/image";
 import { motion } from "motion/react";
 import type { PostMeta } from "@/content/posts-manifest";
 import { PRESS } from "@/lib/motion";
+import { useFirstVisit } from "@/lib/hooks/use-first-visit";
 import { MotionItem, MotionList } from "./PostListMotion";
 
 const MotionLink = motion.create(Link);
@@ -32,6 +33,12 @@ function coverSrc(p: PostMeta): string {
  * Year headings are rendered as small muted caps above their groups.
  */
 export function PostList({ posts }: { posts: PostMeta[] }) {
+  const { ready, firstVisit } = useFirstVisit();
+  // On first visit, hold the list until the hero choreography finishes
+  // (~1.2s). Return visits — and pre-hydration SSR — use the default tight
+  // stagger start. Keeping the SSR default matches the static render.
+  const delayChildren = ready && firstVisit ? 1.2 : 0.05;
+
   const groups = new Map<string, PostMeta[]>();
   for (const p of posts) {
     const year = p.date.slice(0, 4);
@@ -57,7 +64,7 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
           >
             {year}
           </h2>
-          <MotionList className="mt-[var(--spacing-sm)]">
+          <MotionList className="mt-[var(--spacing-sm)]" delayChildren={delayChildren}>
             {entries.map((p, i) => (
               <MotionItem
                 key={p.slug}
@@ -69,13 +76,16 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
                   aria-label={`${p.title} — ${p.hook}`}
                   {...PRESS}
                 >
-                  {/* Icon / thumbnail — square crop of auto-generated cover */}
+                  {/* Icon / thumbnail — square crop of auto-generated cover.
+                      `view-transition-name` pairs with the hero tile on the
+                      post page so the cover morphs between home and post. */}
                   <div
                     className="relative aspect-square h-[64px] w-[64px] lg:h-[80px] lg:w-[80px] overflow-hidden rounded-[var(--radius-sm)] transition-transform duration-[200ms] will-change-transform group-hover:-translate-y-[2px]"
                     style={{
                       background:
                         "color-mix(in oklab, var(--color-surface) 60%, transparent)",
                       border: "1px solid var(--color-rule)",
+                      viewTransitionName: `cover-${p.slug}`,
                     }}
                   >
                     <Image

@@ -198,6 +198,89 @@ body {
    DESIGN.md sync adds an explicit §9 carve-out for gesture feedback.
 --------------------------------------------------------------------------- */
 /* ---------------------------------------------------------------------------
+   View Transitions API — cross-document root transition for client-side
+   navigations. Vertical fade (8px enter, -8px exit) over 280ms. Unsupported
+   browsers (Firefox today) fall through to instant navigation; no feature
+   detection needed.
+
+   Shared-element morphs (cover tile ↔ hero tile) ride the same transition
+   via `view-transition-name: cover-{slug}` pairs set by PostList and each
+   post's hero tile.
+--------------------------------------------------------------------------- */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 280ms;
+  animation-timing-function: var(--ease-out);
+}
+::view-transition-old(root) {
+  animation-name: vt-fade-out-y;
+}
+::view-transition-new(root) {
+  animation-name: vt-fade-in-y;
+}
+
+@keyframes vt-fade-in-y {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes vt-fade-out-y {
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 1ms;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Theme morph — terracotta-as-bridge. Dark ↔ light toggles animate color,
+   background-color, and border-color over 240 ms. During the transition the
+   accent desaturates through the muted-text mid-point, so the terracotta
+   becomes the "still point" of the whole page's color flip. Scoped via
+   `:where()` so the 0-specificity doesn't interfere with any component's
+   own transitions.
+--------------------------------------------------------------------------- */
+:where(html, body, *) {
+  transition:
+    color 240ms var(--ease-out),
+    background-color 240ms var(--ease-out),
+    border-color 240ms var(--ease-out);
+}
+
+@keyframes accent-bridge {
+  50% {
+    --color-accent: color-mix(
+      in oklab,
+      var(--color-accent) 50%,
+      var(--color-text-muted)
+    );
+  }
+}
+html[data-theme-transitioning] {
+  animation: accent-bridge 240ms var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(html, body, *) {
+    transition: none;
+  }
+  html[data-theme-transitioning] {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
    Prose link hover — gated behind (hover: hover) so touch devices don't get
    stuck in the saturated state after tap-release.
 --------------------------------------------------------------------------- */
