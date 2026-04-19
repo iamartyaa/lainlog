@@ -1,9 +1,9 @@
 import { POSTS_NEWEST_FIRST } from "@/content/posts-manifest";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
-const SITE = "https://bytesize.vercel.app";
-const TITLE = "bytesize";
-const DESCRIPTION =
-  "small, digestible explainers in software and ai engineering, with widgets that teach.";
+const SITE = SITE_URL;
+const TITLE = SITE_NAME;
+const DESCRIPTION = SITE_DESCRIPTION;
 
 function escapeXml(unsafe: string): string {
   return unsafe.replace(/[<>&'"]/g, (c) => {

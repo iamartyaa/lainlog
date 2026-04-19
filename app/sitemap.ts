@@ -1,7 +1,6 @@
 import type { MetadataRoute } from "next";
 import { POSTS } from "@/content/posts-manifest";
-
-const SITE = "https://bytesize.vercel.app";
+import { SITE_URL as SITE } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes: MetadataRoute.Sitemap = [

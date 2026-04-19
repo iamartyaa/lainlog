@@ -24,9 +24,10 @@ export function Footer() {
         </span>
         <Link
           href="/rss.xml"
+          aria-label="Subscribe via RSS"
           className="hover:text-[color:var(--color-text)] transition-colors"
         >
-          rss
+          subscribe (rss)
         </Link>
       </div>
     </footer>

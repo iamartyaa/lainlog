@@ -94,6 +94,18 @@ body {
   font-size: var(--text-body);
   line-height: 1.7;
   font-feature-settings: "ss02"; /* Plex "a" alt — slightly more neutral */
+
+  /* Subtle diagonal hatch visible only outside the centred content container.
+     Content blocks the hatch by painting its own solid --color-bg on top.
+     Tinted by --color-text so it flips correctly between dark/light themes. */
+  background-color: var(--color-bg);
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0,
+    transparent 13px,
+    color-mix(in oklab, var(--color-text) 5%, transparent) 13px,
+    color-mix(in oklab, var(--color-text) 5%, transparent) 14px
+  );
 }
 
 /* ---------------------------------------------------------------------------

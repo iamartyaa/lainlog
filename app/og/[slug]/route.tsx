@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { POSTS } from "@/content/posts-manifest";
+import { SITE_NAME } from "@/lib/site";
 
 export const runtime = "edge";
 
@@ -17,8 +18,10 @@ export async function GET(_req: Request, ctx: RouteContext) {
   const { slug } = await ctx.params;
   const post = POSTS.find((p) => p.slug === slug);
 
-  const title = post?.title ?? "bytesize";
-  const hook = post?.hook ?? "small, digestible explainers in software and ai engineering.";
+  const title = post?.title ?? SITE_NAME;
+  const hook =
+    post?.hook ??
+    "engineering essays with interactive widgets that show how the thing actually works.";
   const date = post?.date
     ? new Date(post.date + "T00:00:00Z")
         .toLocaleDateString("en-US", {
@@ -61,7 +64,7 @@ export async function GET(_req: Request, ctx: RouteContext) {
               color: MUTED,
             }}
           >
-            bytesize
+            {SITE_NAME}
           </div>
           <div
             style={{

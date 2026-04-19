@@ -13,6 +13,12 @@ export type PostMeta = {
   readingMinutes?: number;
   /** Topic tag(s) for future filtering. */
   tags?: string[];
+  /**
+   * Optional hand-crafted cover image. When omitted, the home page falls
+   * back to the auto-generated `/cover/<slug>` route, which produces a
+   * deterministic typographic tile seeded on the slug.
+   */
+  coverImage?: string;
 };
 
 export const POSTS: PostMeta[] = [

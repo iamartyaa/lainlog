@@ -4,7 +4,15 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Header } from "@/components/nav/Header";
 import { Footer } from "@/components/nav/Footer";
+import { CozyFrame } from "@/components/nav/CozyFrame";
 import { MotionConfigProvider } from "@/components/providers/motion-config";
+import {
+  SITE_AUTHOR,
+  SITE_AUTHOR_URL,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_URL,
+} from "@/lib/site";
 
 const plexSerif = IBM_Plex_Serif({
   variable: "--font-plex-serif",
@@ -29,15 +37,16 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://bytesize.vercel.app"),
-  title: { default: "bytesize", template: "%s · bytesize" },
-  description:
-    "small, digestible explainers in software and AI engineering, with widgets that teach.",
-  authors: [{ name: "Amartya", url: "https://github.com/iamartyaa" }],
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${SITE_NAME} · engineering essays`,
+    template: `%s · ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  authors: [{ name: SITE_AUTHOR, url: SITE_AUTHOR_URL }],
   openGraph: {
-    title: "bytesize",
-    description:
-      "small, digestible explainers in software and AI engineering, with widgets that teach.",
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
     type: "website",
   },
 };
@@ -61,9 +70,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <MotionConfigProvider>
-            <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
+            <CozyFrame>
+              <Header />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </CozyFrame>
           </MotionConfigProvider>
         </ThemeProvider>
       </body>
