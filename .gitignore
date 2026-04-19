@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# new-post workflow scratch — research/ holds per-run artifacts; archive/ keeps
+# shipped runs for future reference. None of this lives in git.
+/research/
+
