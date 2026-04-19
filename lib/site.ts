@@ -21,4 +21,4 @@ export const SITE_TAGLINE = "engineering essays with widgets you can take apart.
 
 /** Longer blurb for the home's about column — Phase 3. */
 export const SITE_ABOUT =
-  "bytesize is a slow-cadence blog. each post takes a single question — how does gmail know an email is taken, why is a bloom filter the shape it is — and answers it with prose you can read in ten minutes and widgets you can poke at for twenty. written by an engineer, for engineers who want the details beneath the abstractions.";
+  "one question per post. ten minutes of prose, twenty of widgets you can poke at. for engineers who want the details beneath the abstractions.";
