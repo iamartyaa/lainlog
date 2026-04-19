@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+/* tokens are wired in Step 2 — this is a placeholder so the scaffold compiles */
+body {
+  background: #0e1014;
+  color: #f7f5f2;
+}
