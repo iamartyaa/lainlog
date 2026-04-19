@@ -119,3 +119,43 @@ body {
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
+
+/* ---------------------------------------------------------------------------
+   Shiki dual-theme CSS-variable switching.
+   Shiki emits each token with its light color inline + `--shiki-dark` set
+   to the dark color. Under data-theme="dark" we promote the dark variable.
+--------------------------------------------------------------------------- */
+.shiki,
+.shiki span {
+  font-family: var(--font-mono) !important;
+}
+
+[data-theme="dark"] .shiki,
+[data-theme="dark"] .shiki span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+}
+
+/* Shiki's default <pre> has its own padding — we already pad the wrapper,
+   so strip Shiki's and let ours win. */
+.shiki {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Line-number support: opt-in via [data-numbered="true"] on the wrapper. */
+[data-numbered="true"] .shiki code {
+  counter-reset: line;
+}
+[data-numbered="true"] .shiki code .line::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 2ch;
+  margin-right: var(--spacing-sm);
+  text-align: right;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.5;
+}
