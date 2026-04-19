@@ -1,7 +1,121 @@
 @import "tailwindcss";
 
-/* tokens are wired in Step 2 — this is a placeholder so the scaffold compiles */
+/* ---------------------------------------------------------------------------
+   bytesize design tokens
+   Every token here maps 1:1 to a section of DESIGN.md. Changing a value here
+   is a brand-level decision — do it deliberately, and update DESIGN.md to
+   match.
+--------------------------------------------------------------------------- */
+
+@theme {
+  /* Foundation palette — OKLCH, tinted toward terracotta hue (28°) so
+     neutrals have subconscious cohesion with the accent. Never pure gray. */
+  --color-ink-0: oklch(0.98 0.005 28);
+  --color-ink-5: oklch(0.96 0.006 28);
+  --color-ink-10: oklch(0.92 0.008 28);
+  --color-ink-40: oklch(0.55 0.012 28);
+  --color-ink-80: oklch(0.22 0.01 28);
+  --color-ink-90: oklch(0.16 0.012 28);
+  --color-ink-100: oklch(0.12 0.015 28);
+
+  /* Terracotta — one accent, never two. */
+  --color-terra-40: oklch(0.52 0.145 28);
+  --color-terra-50: oklch(0.58 0.155 28);
+  --color-terra-60: oklch(0.65 0.135 28);
+  --color-terra-80: oklch(0.82 0.07 28);
+
+  /* Spacing — 4pt scale, semantic names. */
+  --spacing-3xs: 4px;
+  --spacing-2xs: 8px;
+  --spacing-xs: 12px;
+  --spacing-sm: 16px;
+  --spacing-md: 24px;
+  --spacing-lg: 32px;
+  --spacing-xl: 48px;
+  --spacing-2xl: 64px;
+  --spacing-3xl: 96px;
+
+  /* Radii — editorial-calm doesn't round things. */
+  --radius-sm: 2px;
+  --radius-md: 4px;
+
+  /* Fonts — bind the next/font CSS variables to Tailwind's font- utilities. */
+  --font-serif: var(--font-plex-serif), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", Menlo,
+    monospace;
+
+  /* Type ramp — 1.25 ratio, clamp for display sizes. */
+  --text-h1: clamp(2.25rem, 1.8rem + 2vw, 3rem);
+  --text-h2: clamp(1.5rem, 1.3rem + 0.8vw, 1.75rem);
+  --text-h3: 1.25rem;
+  --text-body: 1.125rem;
+  --text-ui: 0.9375rem;
+  --text-mono: 0.9375rem;
+  --text-small: 0.8125rem;
+
+  /* Motion. */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---------------------------------------------------------------------------
+   Semantic aliases — these are what components actually use.
+   Switching data-theme reassigns these; foundation palette never changes.
+--------------------------------------------------------------------------- */
+
+:root,
+[data-theme="dark"] {
+  --color-bg: var(--color-ink-100);
+  --color-surface: var(--color-ink-90);
+  --color-text: var(--color-ink-0);
+  --color-text-muted: var(--color-ink-40);
+  --color-accent: var(--color-terra-60);
+  --color-accent-pressed: var(--color-terra-50);
+  --color-rule: color-mix(in oklab, var(--color-text) 10%, transparent);
+}
+
+[data-theme="light"] {
+  --color-bg: var(--color-ink-0);
+  --color-surface: var(--color-ink-5);
+  --color-text: var(--color-ink-100);
+  --color-text-muted: var(--color-ink-40);
+  --color-accent: var(--color-terra-40);
+  --color-accent-pressed: var(--color-terra-50);
+  --color-rule: color-mix(in oklab, var(--color-text) 12%, transparent);
+}
+
+html {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
 body {
-  background: #0e1014;
-  color: #f7f5f2;
+  font-family: var(--font-serif);
+  font-size: var(--text-body);
+  line-height: 1.7;
+  font-feature-settings: "ss02"; /* Plex "a" alt — slightly more neutral */
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced motion — drop all animation to instant, but keep state changes.
+   Widgets must still FUNCTION without motion.
+--------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Global focus ring — always visible, 2px terracotta, 2px offset.
+--------------------------------------------------------------------------- */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
