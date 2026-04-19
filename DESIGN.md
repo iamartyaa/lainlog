@@ -151,7 +151,7 @@ Home splits into two columns at ≥ 768px:
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
-│ bytesize                                         [○ theme] rss │
+│ bytesize                                             [○ theme] │
 ├────────────────────────────────────────────────────────────────┤
 │                                                                │
 │  engineering essays with        2026                           │
@@ -165,7 +165,7 @@ Home splits into two columns at ≥ 768px:
 │  ■ new posts, occasionally.                                    │
 │                                                                │
 ├────────────────────────────────────────────────────────────────┤
-│ bytesize · built by amartya · rss                              │
+│ bytesize · built by amartya               subscribe (rss)      │
 └────────────────────────────────────────────────────────────────┘
 ```
 

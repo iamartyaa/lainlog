@@ -21,17 +21,6 @@ export function Header() {
 
       <nav className="flex items-center gap-[var(--spacing-md)]">
         <ThemeToggle />
-        <Link
-          href="/rss.xml"
-          aria-label="Subscribe via RSS"
-          className="font-mono transition-colors hover:text-[color:var(--color-accent)]"
-          style={{
-            fontSize: "var(--text-small)",
-            color: "var(--color-text-muted)",
-          }}
-        >
-          rss
-        </Link>
       </nav>
     </header>
   );
