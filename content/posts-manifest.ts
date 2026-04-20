@@ -31,6 +31,14 @@ export const POSTS: PostMeta[] = [
     tags: ["javascript", "language-internals"],
   },
   {
+    slug: "the-browser-stopped-asking",
+    title: "The browser stopped asking",
+    date: "2026-04-22",
+    hook: "real-time apps didn't teach the server to speak first — they taught the browser to stop hanging up.",
+    readingMinutes: 9,
+    tags: ["web", "protocols", "real-time"],
+  },
+  {
     slug: "why-fetch-fails-only-in-browser",
     title: "Why `fetch` works in curl but the browser blocks it",
     date: "2026-04-20",

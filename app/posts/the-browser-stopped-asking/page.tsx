@@ -1,0 +1,535 @@
+import {
+  Prose,
+  H1,
+  H2,
+  H3,
+  P,
+  Code,
+  Callout,
+  Dots,
+  Em,
+  A,
+  FullBleed,
+  HeroTile,
+  Term,
+} from "@/components/prose";
+import { CodeBlock } from "@/components/code";
+import { PipeCompare, UpgradeHandshake, ReconnectGap } from "./widgets";
+import { metadata } from "./metadata";
+
+export { metadata };
+
+export default function TheBrowserStoppedAsking() {
+  return (
+    <Prose>
+      <div className="pt-[var(--spacing-xl)]">
+        <div className="mb-[var(--spacing-md)] hidden md:flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
+          <HeroTile slug="the-browser-stopped-asking" />
+        </div>
+        <H1>The browser stopped asking</H1>
+        <p
+          className="mt-[var(--spacing-sm)] font-mono tabular-nums"
+          style={{
+            fontSize: "var(--text-small)",
+            color: "var(--color-text-muted)",
+          }}
+        >
+          <time dateTime="2026-04-20">apr 20, 2026</time>
+          <span className="mx-2">·</span>
+          <span>9 min read</span>
+        </p>
+
+        {/* §0 — the scene */}
+        <P>
+          You open a Google Doc link a teammate sent you. In the top-right a tinted
+          avatar appears — Jordan is in. A colored cursor labeled <Em>Jordan</Em>{" "}shows
+          up inside the document. Jordan starts typing. The characters appear on your
+          screen as they&apos;re typed — not on refresh, not after a click, not when
+          you tab back in. They&apos;re just there.
+        </P>
+        <P>
+          The moment is so mundane we forget that the web wasn&apos;t born able to do
+          this. Rewind: <Em>what had to change about the web for Jordan&apos;s cursor
+          to appear on your screen?</Em>
+        </P>
+      </div>
+
+      {/* §1 — HTTP's only move */}
+      <div>
+        <Dots />
+        <H2>HTTP&apos;s only move is request-and-reply</H2>
+        <P>
+          The web&apos;s original protocol has one shape: the browser asks, the server
+          answers, the connection closes. That&apos;s it. A <Term>request</Term>{" "}
+          leaves your machine, a <Term>response</Term>{" "}comes back, and whatever
+          socket they travelled on is recycled or discarded. There is no protocol
+          room for the server to say anything the browser didn&apos;t ask for.
+        </P>
+        <P>
+          This isn&apos;t a style choice; it&apos;s baked in. HTTP/1.1{" "}
+          <A href="https://www.rfc-editor.org/rfc/rfc9112#section-9.2">
+            (RFC 9112 §9.2)
+          </A>
+          {" "}doesn&apos;t carry a request ID on the wire. Responses are matched to
+          requests <Em>by arrival order</Em>. If the server ever spoke out of turn,
+          the browser would have no way to know which request — if any — it was
+          replying to.
+        </P>
+      </div>
+
+      <FullBleed>
+        <CodeBlock
+          lang="http"
+          filename="the shape everything else lives inside"
+          tone="terminal"
+          code={`GET /doc/42 HTTP/1.1
+Host: docs.example
+Accept: text/html
+
+HTTP/1.1 200 OK
+Content-Type: text/html
+Content-Length: 1432
+
+<!doctype html>…`}
+        />
+      </FullBleed>
+
+      <div>
+        <P>
+          The web&apos;s cell wall is that the client always speaks first. Everything
+          that follows — every mechanism that makes Jordan&apos;s cursor appear on
+          your screen — is a way to <Em>live inside that wall</Em>. None of them let
+          the server initiate. They all turn the browser into something else: a
+          listener, not an asker.
+        </P>
+      </div>
+
+      {/* §2 — polling */}
+      <div>
+        <Dots />
+        <H2>First workaround: just keep asking</H2>
+        <P>
+          The most obvious answer is also the crudest. Fire a request every second
+          and see if anything&apos;s new.
+        </P>
+      </div>
+
+      <FullBleed>
+        <CodeBlock
+          lang="javascript"
+          filename="polling.js"
+          code={`setInterval(async () => {
+  const res = await fetch('/doc/42/updates?since=' + lastSeen);
+  const updates = await res.json();
+  if (updates.length) applyUpdates(updates);
+}, 1000);
+
+// 60 requests / minute. Each carries ~500–2000 B of HTTP headers.
+// At 1s intervals, that's ~120 KB / minute just to say: "anything new?"
+// Most of the time the answer is: no.`}
+        />
+      </FullBleed>
+
+      <div>
+        <P>
+          This <Term>polling</Term>{" "}loop honors HTTP&apos;s rule to the letter. It
+          also pays for it. A full request-response round-trip isn&apos;t free:
+          RFC 6202 notes that <Em>&ldquo;every long poll request and long poll
+          response is a complete HTTP message and thus contains a full set of HTTP
+          headers&rdquo;</Em> — the same is obviously true of short polling, where
+          the headers show up 60 times a minute whether or not there&apos;s anything
+          to say{" "}
+          <A href="https://datatracker.ietf.org/doc/html/rfc6202#section-2.2">
+            (RFC 6202 §2.2)
+          </A>.
+        </P>
+        <P>
+          Worse, your typing latency is bounded below by your polling interval.
+          Jordan hits a key; you don&apos;t see it until your next tick. Make the
+          interval shorter? You burn more bytes per minute. Make it longer? You watch
+          letters arrive in clumps.
+        </P>
+        <Callout tone="note">
+          Polling isn&apos;t dead. When updates are rare and tolerable latency is in
+          seconds (build statuses, queue positions), it&apos;s genuinely the right
+          shape. The trouble is what happens when you try to scale it to{" "}
+          <Em>every cursor in every open document</Em>.
+        </Callout>
+      </div>
+
+      {/* §3 — long polling + PipeCompare */}
+      <div>
+        <Dots />
+        <H2>What if you asked once, and the server waited?</H2>
+        <P>
+          Here&apos;s the clever move. The client still asks. But the server
+          doesn&apos;t reply until it has news. The request goes out, the TCP socket
+          stays open, and the response just… sits there, a promise dangling on both
+          sides of the wire. When something happens — Jordan types a letter — the
+          server finally writes the response and closes. The client reads it and
+          immediately opens another request, and the cycle repeats.
+        </P>
+        <P>
+          Ably calls this shape <A href="https://ably.com/topic/long-polling">&ldquo;bending HTTP slightly out of shape&rdquo;</A>.
+          The request-response format is preserved — it&apos;s still one ask, one
+          answer. What changed is the client&apos;s tolerance for waiting. A polling
+          client fires and forgets; a <Term>long-polling</Term>{" "}client fires and
+          listens, sometimes for tens of seconds, before the single reply arrives.
+        </P>
+        <P>
+          Alex Russell coined <Em>Comet</Em>{" "}for this family{" "}
+          <A href="https://infrequently.org/2006/03/comet-low-latency-data-for-the-browser/">
+            in March 2006
+          </A>, and it was the secret sauce behind the first generation of
+          &ldquo;live&rdquo; web apps. <strong>Google Docs shipped on long polling
+          for years.</strong> Look inside Google&apos;s Closure Library and
+          you&apos;ll still find <Code>goog.net.BrowserChannel</Code> — long polling
+          over XHR, with forever-iframe streaming as a fallback. Attribution comes
+          from ex-Googlers and{" "}
+          <A href="https://github.com/josephg/node-browserchannel">
+            Joseph Gentle&apos;s node re-implementation
+          </A>; Google itself doesn&apos;t publish it as an API, which is its own
+          kind of tell.
+        </P>
+      </div>
+
+      <PipeCompare />
+
+      <div>
+        <P>
+          Press play and watch the first two rows together. Polling racks up
+          roundtrips — most empty. Long polling only sends a byte when it matters.
+          The third row is a different kind of thing. The rest of this post is about
+          how it gets there.
+        </P>
+        <P>
+          What&apos;s happening in the long-polling row is the move the whole
+          genre is built on. The client <Em>still asked.</Em> It just{" "}
+          <Em>stopped hanging up</Em>{" "}when the server had nothing to say. That one
+          change — the browser refusing to finish the question — is what every
+          later protocol inherits.
+        </P>
+        <P>
+          Long polling is the first trick that actually felt live. It&apos;s also a
+          hack: every reply still pays one full HTTP round-trip of overhead —
+          headers, TLS re-validation, a TCP handshake if the connection didn&apos;t
+          stay warm. Someone was going to want to skip that.
+        </P>
+      </div>
+
+      {/* §4 — WebSockets + UpgradeHandshake */}
+      <div>
+        <Dots />
+        <H2>The line that ends HTTP mid-socket</H2>
+        <P>
+          WebSocket&apos;s move is to get HTTP to politely step aside. The client
+          opens a regular HTTP request with three special headers that ask it to{" "}
+          <Em>stop being HTTP</Em>. The server replies with a status code that
+          was, until WebSocket came along, vanishingly rare —{" "}
+          <Code>101 Switching Protocols</Code>{" "}— plus one header that proves it
+          understood.
+        </P>
+      </div>
+
+      <FullBleed>
+        <div className="grid gap-[var(--spacing-md)] md:grid-cols-[1fr_1fr]">
+          <CodeBlock
+            lang="http"
+            filename="client · opening request"
+            code={`GET /chat HTTP/1.1
+Host: docs.example
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
+Sec-WebSocket-Version: 13`}
+          />
+          <CodeBlock
+            lang="http"
+            filename="server · the 101 reply"
+            code={`HTTP/1.1 101 Switching Protocols
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=`}
+          />
+        </div>
+      </FullBleed>
+
+      <div>
+        <P>
+          The proof header is a hash. The client sent a random key in the request;
+          the server has to send one specific derivation of it back. The next widget
+          runs that derivation <Em>in your browser</Em>{" "}against a fresh random key
+          every time you press the button.
+        </P>
+      </div>
+
+      <UpgradeHandshake />
+
+      <div>
+        <P>
+          What you just watched was a SHA-1 over your random key with one very
+          strange suffix glued on. That suffix is a literal string, written into
+          the spec itself, identical for every server on earth:
+        </P>
+      </div>
+
+      <FullBleed>
+        <CodeBlock
+          lang="text"
+          filename="RFC 6455 §1.3 — the string, verbatim"
+          code={`258EAFA5-E914-47DA-95CA-C5AB0DC85B11`}
+        />
+      </FullBleed>
+
+      <div>
+        <P>
+          The whole algorithm fits on one line:
+        </P>
+      </div>
+
+      <FullBleed>
+        <CodeBlock
+          lang="text"
+          tone="output"
+          code={`Sec-WebSocket-Accept = base64( sha1( Sec-WebSocket-Key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11" ) )`}
+        />
+      </FullBleed>
+
+      <div>
+        <P>
+          The GUID is there so an unaware server can&apos;t accidentally reply{" "}
+          <Em>&ldquo;yes, we&apos;re speaking WebSocket&rdquo;</Em>{" "}without having
+          read the spec — the only way to produce the right accept header is to
+          know exactly what string to glue on{" "}
+          <A href="https://www.rfc-editor.org/rfc/rfc6455#section-1.3">
+            (RFC 6455 §1.3)
+          </A>. The widget runs the computation through your browser&apos;s Web
+          Crypto API, so the <Code>Sec-WebSocket-Accept</Code>{" "}you see is the
+          real SHA-1 your machine just computed. Nothing in the reveal is faked.
+        </P>
+        <P>
+          After that reply is written and read, the same TCP socket is{" "}
+          <Em>no longer speaking HTTP.</Em>{" "}It speaks WebSocket frames — 2 bytes
+          of header for most messages, up to 14 at the far end. Either side can
+          send, anytime, as long as both ends want the connection open. The client
+          spoke first, exactly once, and then the conversation became something
+          else.
+        </P>
+        <Callout tone="note">
+          Frame opcodes are a four-bit field{" "}
+          <A href="https://www.rfc-editor.org/rfc/rfc6455#section-5.2">
+            (§5.2)
+          </A>:{" "}<Code>0x1</Code> text, <Code>0x2</Code> binary,{" "}
+          <Code>0x8</Code> close, <Code>0x9</Code> ping, <Code>0xA</Code> pong. The
+          last two are load-bearing in production — NAT middleboxes silently drop
+          idle TCP flows, so WebSocket servers send pings at a cadence shorter than
+          the shortest NAT timeout on the path. Your socket looks healthy right up
+          until the next write fails.
+        </Callout>
+      </div>
+
+      {/* §5 — SSE + ReconnectGap */}
+      <div>
+        <Dots />
+        <H2>One direction, with a safety net</H2>
+        <P>
+          WebSocket isn&apos;t the only way out. <Term>Server-Sent Events</Term>{" "}
+          (SSE) are the one-way cousin: a regular HTTP response with{" "}
+          <Code>Content-Type: text/event-stream</Code> that the server never closes.
+          The browser hands each <Code>data: …\n\n</Code> chunk to{" "}
+          <Code>onmessage</Code> as it arrives. An SSE handler can be eight lines
+          of Node.
+        </P>
+      </div>
+
+      <FullBleed>
+        <CodeBlock
+          lang="javascript"
+          filename="server.js · the entire SSE handler"
+          code={`app.get('/stream', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.flushHeaders();
+
+  const send = (ev) => res.write(\`id: \${ev.id}\\ndata: \${JSON.stringify(ev)}\\n\\n\`);
+  const off = bus.on('update', send);
+  req.on('close', off);
+});`}
+        />
+      </FullBleed>
+
+      <div>
+        <P>
+          If WebSocket is &ldquo;HTTP steps aside,&rdquo; SSE is &ldquo;HTTP just
+          never stops.&rdquo; No Upgrade, no magic GUID, no frame opcodes. Just one
+          very patient HTTP response that keeps writing.
+        </P>
+        <P>
+          Then why not use WebSocket for everything? Because SSE ships the one
+          feature WebSocket doesn&apos;t:{" "}
+          <strong>automatic reconnect, with state recovery.</strong> The browser
+          remembers the last event&apos;s <Code>id:</Code>{" "}field, and when the
+          stream drops, it reopens the connection with a{" "}
+          <Code>Last-Event-ID</Code>{" "}header so the server can resume from that
+          cursor{" "}
+          <A href="https://html.spec.whatwg.org/multipage/server-sent-events.html#processing-model">
+            (WHATWG HTML §9.2.3)
+          </A>. WebSocket has none of this in the spec. The socket closes, you start
+          over — from whatever <Code>ws://</Code>{" "}URL, with whatever auth, and
+          whatever resume protocol you decided to build.
+        </P>
+      </div>
+
+      <ReconnectGap />
+
+      <div>
+        <P>
+          Drag the dropout in the widget. Both rows experience the same outage; only
+          one of them quietly heals. This is why SSE is not a weaker WebSocket —
+          it&apos;s a different trade. For one-way flows (notifications, logs,
+          progress streams, a live leaderboard), SSE gives you resilience for free.
+          For real two-way exchanges — say, sending Jordan&apos;s keystrokes back to
+          Google&apos;s ack path — you need <Term>full-duplex</Term>, both ends
+          talking at once instead of in turns. SSE can&apos;t give you that.
+        </P>
+      </div>
+
+      {/* §6 — the catch */}
+      <div>
+        <Dots />
+        <H2>The cost moved. It didn&apos;t vanish.</H2>
+        <P>
+          Three places the cost reappears — one for each mechanism. None of them
+          are in the tutorials.
+        </P>
+
+        <H3>&ldquo;Just use WebSockets&rdquo; still opens with long polling</H3>
+        <P>
+          Open the docs for the most widely deployed real-time library in the JS
+          world and read carefully.{" "}
+          <A href="https://socket.io/docs/v4/how-it-works/">Socket.IO v4</A>{" "}
+          <Em>still starts every connection with HTTP long polling</Em>, and only
+          upgrades to WebSocket once the handshake clears. Corporate proxies,
+          older transparent caches, and some antivirus software silently mis-handle
+          the <Code>Upgrade</Code>{" "}header. The fallback isn&apos;t legacy — it&apos;s
+          2026 insurance.
+        </P>
+      </div>
+
+      <FullBleed>
+        <CodeBlock
+          lang="javascript"
+          filename="socket.io-client · the default nobody reads"
+          code={`import { io } from "socket.io-client";
+
+const socket = io("https://…", {
+  transports: ["polling", "websocket"],  // ← polling first. on purpose.
+});`}
+        />
+      </FullBleed>
+
+      <div>
+        <H3>A gateway restarts, and every client knocks at once</H3>
+        <P>
+          Discord learned this at five million concurrent sessions. One gateway
+          blipped and the stampede of reconnects hit a ring-lookup process that{" "}
+          <A href="https://discord.com/blog/how-discord-scaled-elixir-to-5-000-000-concurrent-users">
+            took 17.5 seconds just to answer the queries
+          </A>{" "}
+          until they cached the results. Slack&apos;s{" "}
+          <A href="https://slack.engineering/flannel-an-application-level-edge-cache-to-make-slack-scale/">
+            Flannel
+          </A>{" "}was motivated by the same shape: one office loses network, and the
+          retry wave costs more than the outage that caused it. The tutorial writes{" "}
+          <Code>ws.onclose = () =&gt; reconnect()</Code>{" "}and moves on; production
+          writes randomized backoff, per-tenant semaphores, and lazy payloads so the
+          next herd can&apos;t trample the server that just recovered.
+        </P>
+
+        <H3>Fanout is the real ceiling</H3>
+        <P>
+          Phoenix held two million idle WebSocket connections on one box. So that
+          part isn&apos;t the problem. The problem is writing to all of them at the
+          same moment — Discord&apos;s publish to a single 30,000-member guild took{" "}
+          <strong>900 ms – 2.1 s</strong>{" "}before they parallelized fanout with
+          Manifold. The reader&apos;s mental model flips: the hard part of
+          real-time isn&apos;t holding the connection. It&apos;s the{" "}
+          <Code>O(N)</Code>{" "}write on every event.
+        </P>
+
+        <P>
+          None of this kills the idea. It just means <Em>real-time is a system,
+          not a primitive.</Em> The socket is the easy part.
+        </P>
+      </div>
+
+      {/* §7 — back to the scene */}
+      <div>
+        <Dots />
+        <H2>So when Jordan&apos;s cursor shows up on your screen…</H2>
+        <P>
+          …which of these is actually doing the work? Probably a WebSocket today.
+          Was long polling, via BrowserChannel, for most of the last decade. Google
+          doesn&apos;t publish which, and the honest answer is that most production
+          systems have <Em>some layer of every mechanism in this post</Em>{" "}somewhere
+          — polling for a heartbeat, long polling as a Socket.IO fallback, a
+          WebSocket for the hot path, SSE for the log tail, a cache in front of it
+          all so a reconnect storm doesn&apos;t take the site down.
+        </P>
+        <P>
+          What they share is the move at the center of every one of them. The
+          server never learned to speak first. The browser just stopped hanging up.
+          A request goes out; it doesn&apos;t come back until it has something to
+          say; it opens another the moment it does; or the socket simply never
+          closes.
+        </P>
+        <p
+          style={{
+            fontSize: "1.125em",
+            marginBlockStart: "1.5em",
+            marginBlockEnd: "0.2em",
+            lineHeight: 1.55,
+          }}
+        >
+          <Em>
+            Every &ldquo;real-time&rdquo; web app on your laptop right now is
+            variations on a browser that refuses to finish its sentence.
+          </Em>
+        </p>
+        <p
+          className="font-sans"
+          style={{
+            fontSize: "var(--text-small)",
+            color: "var(--color-text-muted)",
+            marginBlockStart: "0.5em",
+          }}
+        >
+          The title lied slightly: the browser didn&apos;t stop asking. It stopped
+          ending the question.
+        </p>
+
+        <div style={{ marginBlockStart: "var(--spacing-xl)" }}>
+          <p
+            className="font-sans font-semibold uppercase tracking-wider"
+            style={{
+              fontSize: "0.7rem",
+              letterSpacing: "0.08em",
+              color: "var(--color-accent)",
+              marginBlockEnd: "var(--spacing-2xs)",
+            }}
+          >
+            next —
+          </p>
+          <P>
+            We&apos;ve seen the pipe. We haven&apos;t seen what flows through it.
+            When Jordan types <Code>B → BC</Code>{" "}at the same moment you type{" "}
+            <Code>B → AB</Code>, why doesn&apos;t the document collapse into{" "}
+            <Code>ABC</Code>{" "}on one screen and <Code>BC</Code>{" "}on the other?
+            That answer isn&apos;t about the pipe — it&apos;s about the merge
+            algorithm running on top of it (the CRDT / OT family). Post two.
+          </P>
+        </div>
+      </div>
+    </Prose>
+  );
+}
