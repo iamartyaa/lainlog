@@ -25,7 +25,7 @@ export const POSTS: PostMeta[] = [
   {
     slug: "the-function-that-remembered",
     title: "The function that remembered",
-    date: "2026-04-24",
+    date: "2026-04-19",
     hook: "how a function outlives the scope it was born in — and why half of your JS bugs start there.",
     readingMinutes: 10,
     tags: ["javascript", "language-internals"],
@@ -33,7 +33,7 @@ export const POSTS: PostMeta[] = [
   {
     slug: "the-browser-stopped-asking",
     title: "The browser stopped asking",
-    date: "2026-04-22",
+    date: "2026-04-20",
     hook: "real-time apps didn't teach the server to speak first — they taught the browser to stop hanging up.",
     readingMinutes: 9,
     tags: ["web", "protocols", "real-time"],

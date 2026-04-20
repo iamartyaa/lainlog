@@ -507,28 +507,6 @@ const socket = io("https://…", {
           The title lied slightly: the browser didn&apos;t stop asking. It stopped
           ending the question.
         </p>
-
-        <div style={{ marginBlockStart: "var(--spacing-xl)" }}>
-          <p
-            className="font-sans font-semibold uppercase tracking-wider"
-            style={{
-              fontSize: "0.7rem",
-              letterSpacing: "0.08em",
-              color: "var(--color-accent)",
-              marginBlockEnd: "var(--spacing-2xs)",
-            }}
-          >
-            next —
-          </p>
-          <P>
-            We&apos;ve seen the pipe. We haven&apos;t seen what flows through it.
-            When Jordan types <Code>B → BC</Code>{" "}at the same moment you type{" "}
-            <Code>B → AB</Code>, why doesn&apos;t the document collapse into{" "}
-            <Code>ABC</Code>{" "}on one screen and <Code>BC</Code>{" "}on the other?
-            That answer isn&apos;t about the pipe — it&apos;s about the merge
-            algorithm running on top of it (the CRDT / OT family). Post two.
-          </P>
-        </div>
       </div>
     </Prose>
   );
