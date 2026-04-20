@@ -297,12 +297,23 @@ export function PipeCompare() {
         </div>
       }
     >
-      <PipeCanvas
-        nowMs={nowMs}
-        polling={polling}
-        longpoll={longpoll}
-        websocket={websocket}
-      />
+      {/* Both layouts render; CSS container query picks which is visible. */}
+      <div className="bs-pc-narrow">
+        <PipeCanvasNarrow
+          nowMs={nowMs}
+          polling={polling}
+          longpoll={longpoll}
+          websocket={websocket}
+        />
+      </div>
+      <div className="bs-pc-wide">
+        <PipeCanvas
+          nowMs={nowMs}
+          polling={polling}
+          longpoll={longpoll}
+          websocket={websocket}
+        />
+      </div>
     </WidgetShell>
   );
 }
@@ -344,23 +355,14 @@ function PipeCanvas({
     { label: "WebSocket", sublabel: "upgrade once · socket stays open", sim: websocket, protocol: "websocket" },
   ];
 
-  // Keep the SVG at its intrinsic size so 9-10pt labels stay readable at every
-  // width. Below ~800 CSS px the outer overflow-x scroll lets the reader drag
-  // the canvas horizontally — preferred over proportionally shrinking text
-  // into illegibility. DESIGN.md §7 note: canvas > label chrome.
+  // Wide variant — side-by-side comparison in one canvas with stats in a
+  // left gutter. Used at container widths ≥ --flip-wide (640px). Below that
+  // the narrow variant (stacked per-protocol cards) is shown instead.
   return (
-    <div
-      style={{
-        overflowX: "auto",
-        overflowY: "hidden",
-        maxWidth: "100%",
-      }}
-    >
     <svg
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-      width={WIDTH}
-      height={HEIGHT}
-      style={{ maxWidth: "100%", minWidth: 560, height: "auto", display: "block" }}
+      width="100%"
+      style={{ maxWidth: WIDTH, height: "auto", display: "block" }}
       role="img"
       aria-label={`Three protocols compared at t = ${(nowMs / 1000).toFixed(1)}s`}
     >
@@ -422,7 +424,307 @@ function PipeCanvas({
         opacity={0.5}
       />
     </svg>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*                             Narrow canvas (mobile)                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * PipeCanvasNarrow — mobile-first layout. Each protocol becomes a standalone
+ * stack: label + stats + timeline, rendered in its own compact SVG and
+ * stacked vertically. Labels never compete with the canvas for horizontal
+ * real estate — they sit above. The side-by-side comparison beat (wide
+ * variant) is a pleasure the reader loses on a phone; in return the
+ * messages become actually readable.
+ */
+function PipeCanvasNarrow({
+  nowMs,
+  polling,
+  longpoll,
+  websocket,
+}: {
+  nowMs: number;
+  polling: Sim;
+  longpoll: Sim;
+  websocket: Sim;
+}) {
+  const rows: RowConfig[] = [
+    { label: "polling", sublabel: `ask every ${POLL_INTERVAL_MS / 1000}s`, sim: polling, protocol: "polling" },
+    { label: "long polling", sublabel: "ask once · reply when there's news", sim: longpoll, protocol: "longpoll" },
+    { label: "WebSocket", sublabel: "upgrade once · socket stays open", sim: websocket, protocol: "websocket" },
+  ];
+  return (
+    <div className="flex flex-col gap-[var(--spacing-md)]">
+      {rows.map((row, i) => (
+        <ProtocolCardNarrow
+          key={row.protocol}
+          row={row}
+          nowMs={nowMs}
+          enterIndex={i}
+        />
+      ))}
     </div>
+  );
+}
+
+function ProtocolCardNarrow({
+  row,
+  nowMs,
+  enterIndex,
+}: {
+  row: RowConfig;
+  nowMs: number;
+  enterIndex: number;
+}) {
+  const WIDTH = 380;
+  const HEIGHT = 132;
+  const LEFT = 10;
+  const RIGHT = 10;
+  const TRACK_W = WIDTH - LEFT - RIGHT;
+  const BROWSER_Y = 48;
+  const SERVER_Y = 104;
+  const x = (t: number) =>
+    LEFT + Math.max(0, Math.min(DURATION_MS, t)) / DURATION_MS * TRACK_W;
+
+  // Stagger the three protocol cards on first mount so the reader's eye
+  // moves top-to-bottom in the teaching order: polling → long polling →
+  // WebSocket. 60 ms between cards, SPRING.smooth reveal. Reduced-motion
+  // users see an instant snap via MotionConfigProvider. Teaching signal:
+  // "read these in order, not as a flat list."
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ...SPRING.smooth, delay: enterIndex * 0.06 }}
+    >
+      {/* HTML header lets the label + stats use actual prose typography, not
+          shrunken SVG text. Stats stay on the right so the reader's eye lands
+          on the protocol name first, the cost second. */}
+      <div
+        className="flex items-baseline justify-between gap-[var(--spacing-sm)] pb-[var(--spacing-2xs)]"
+        style={{ fontSize: "var(--text-ui)" }}
+      >
+        <div>
+          <span className="font-sans font-medium" style={{ color: "var(--color-text)" }}>
+            {row.label}
+          </span>
+          <span
+            className="ml-[var(--spacing-sm)] font-mono"
+            style={{ fontSize: "var(--text-small)", color: "var(--color-text-muted)" }}
+          >
+            {row.sublabel}
+          </span>
+        </div>
+        <NarrowStats stats={row.sim.stats} protocol={row.protocol} />
+      </div>
+      <svg
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        width="100%"
+        style={{ maxWidth: WIDTH, height: "auto", display: "block" }}
+        role="img"
+        aria-label={`${row.label} at t = ${(nowMs / 1000).toFixed(1)}s`}
+      >
+        {/* Browser + server lifelines */}
+        <text
+          x={LEFT}
+          y={BROWSER_Y - 6}
+          fontFamily="var(--font-mono)"
+          fontSize={9}
+          fill="var(--color-text-muted)"
+        >
+          browser
+        </text>
+        <line
+          x1={LEFT}
+          x2={LEFT + TRACK_W}
+          y1={BROWSER_Y}
+          y2={BROWSER_Y}
+          stroke="var(--color-rule)"
+          strokeWidth={1}
+          strokeDasharray="3 4"
+        />
+        <line
+          x1={LEFT}
+          x2={LEFT + TRACK_W}
+          y1={SERVER_Y}
+          y2={SERVER_Y}
+          stroke="var(--color-rule)"
+          strokeWidth={1}
+          strokeDasharray="3 4"
+        />
+        <text
+          x={LEFT}
+          y={SERVER_Y + 14}
+          fontFamily="var(--font-mono)"
+          fontSize={9}
+          fill="var(--color-text-muted)"
+        >
+          server
+        </text>
+
+        {/* Server events (stars) — same scale-in + ring-ripple as the wide
+            variant so the first appearance of each event teaches instead of
+            pops. Remounts once per crossing of nowMs ≥ e. */}
+        {EVENTS_MS.filter((e) => e <= nowMs).map((e) => (
+          <g key={`evt-n-${row.protocol}-${e}`} transform={`translate(${x(e)}, ${SERVER_Y})`}>
+            <motion.circle
+              r={3}
+              cx={0}
+              cy={0}
+              fill="var(--color-accent)"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={SPRING.snappy}
+              style={{ transformOrigin: "0 0" }}
+            />
+            <motion.circle
+              cx={0}
+              cy={0}
+              fill="none"
+              stroke="var(--color-accent)"
+              strokeWidth={0.8}
+              initial={{ r: 3, opacity: 0.9 }}
+              animate={{ r: 11, opacity: 0 }}
+              transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+            />
+            <circle
+              r={6}
+              cx={0}
+              cy={0}
+              fill="none"
+              stroke="var(--color-accent)"
+              strokeWidth={0.8}
+              opacity={0.35}
+            />
+          </g>
+        ))}
+
+        {/* Long-poll held span */}
+        {row.sim.heldSpan ? (
+          <rect
+            x={x(row.sim.heldSpan.from)}
+            y={BROWSER_Y + 2}
+            width={Math.max(1, x(row.sim.heldSpan.to) - x(row.sim.heldSpan.from))}
+            height={SERVER_Y - BROWSER_Y - 4}
+            fill="color-mix(in oklab, var(--color-accent) 10%, transparent)"
+            stroke="var(--color-accent)"
+            strokeWidth={0.8}
+            opacity={0.8}
+          />
+        ) : null}
+        {row.protocol === "longpoll"
+          ? row.sim.messages
+              .filter((m) => m.held)
+              .map((m, i) => (
+                <rect
+                  key={`held-n-${i}`}
+                  x={x(m.tStart)}
+                  y={BROWSER_Y + 2}
+                  width={Math.max(1, x(m.tEnd) - x(m.tStart))}
+                  height={SERVER_Y - BROWSER_Y - 4}
+                  fill="color-mix(in oklab, var(--color-text-muted) 8%, transparent)"
+                  stroke="var(--color-text-muted)"
+                  strokeWidth={0.8}
+                  strokeDasharray="3 3"
+                  opacity={0.55}
+                />
+              ))
+          : null}
+
+        {/* WebSocket persistent pipe */}
+        {row.protocol === "websocket" && nowMs >= WS_HANDSHAKE_MS ? (
+          <line
+            x1={x(WS_HANDSHAKE_MS)}
+            x2={x(nowMs)}
+            y1={(BROWSER_Y + SERVER_Y) / 2}
+            y2={(BROWSER_Y + SERVER_Y) / 2}
+            stroke="var(--color-accent)"
+            strokeWidth={3}
+            opacity={0.75}
+          />
+        ) : null}
+
+        {/* Messages */}
+        {row.sim.messages.map((m) =>
+          m.held ? null : (
+            <MessageArrow
+              key={`mn-${row.protocol}-${m.kind}-${m.tStart}-${m.tEnd}`}
+              m={m}
+              xOfT={x}
+              browserY={BROWSER_Y}
+              serverY={SERVER_Y}
+              nowMs={nowMs}
+            />
+          ),
+        )}
+
+        {/* Playhead at current time */}
+        <line
+          x1={x(nowMs)}
+          x2={x(nowMs)}
+          y1={BROWSER_Y - 14}
+          y2={SERVER_Y + 16}
+          stroke="var(--color-accent)"
+          strokeWidth={1.2}
+          strokeDasharray="4 3"
+          opacity={0.45}
+        />
+
+        {/* Mini time axis below */}
+        <text
+          x={LEFT}
+          y={HEIGHT - 4}
+          fontFamily="var(--font-mono)"
+          fontSize={8}
+          fill="var(--color-text-muted)"
+        >
+          0s
+        </text>
+        <text
+          x={LEFT + TRACK_W}
+          y={HEIGHT - 4}
+          textAnchor="end"
+          fontFamily="var(--font-mono)"
+          fontSize={8}
+          fill="var(--color-text-muted)"
+        >
+          {DURATION_MS / 1000}s
+        </text>
+      </svg>
+    </motion.div>
+  );
+}
+
+function NarrowStats({
+  stats,
+  protocol,
+}: {
+  stats: Stats;
+  protocol: RowConfig["protocol"];
+}) {
+  const bytes =
+    stats.bytesSent >= 1000
+      ? `${(stats.bytesSent / 1000).toFixed(1)} KB`
+      : `${stats.bytesSent} B`;
+  const countLabel =
+    protocol === "polling"
+      ? `${stats.reqs} polls`
+      : protocol === "longpoll"
+        ? `${stats.reqs} cycles`
+        : `${stats.eventsDelivered} frames`;
+  return (
+    <span
+      className="font-mono tabular-nums"
+      style={{
+        fontSize: "var(--text-small)",
+        color: "var(--color-text-muted)",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {countLabel} · {bytes}
+    </span>
   );
 }
 
@@ -525,14 +827,32 @@ function ProtocolRow({
         strokeDasharray="3 4"
       />
 
-      {/* Events: stars on the server lifeline (only those that have fired) */}
+      {/* Events: stars on the server lifeline, only those that have fired.
+          Each star mounts the moment nowMs crosses EVENTS_MS[i] — the key
+          excludes time-variant values so React remounts exactly once per
+          event, which fires the scale-in + ring-ripple below. Delight that
+          teaches: "something happened on the server at this moment." */}
       {EVENTS_MS.filter((e) => e <= nowMs).map((e) => (
         <g key={`evt-${row.protocol}-${e}`} transform={`translate(${xOfT(e)}, ${SERVER_Y})`}>
-          <circle
+          <motion.circle
             r={3.2}
             cx={0}
             cy={0}
             fill="var(--color-accent)"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={SPRING.snappy}
+            style={{ transformOrigin: "0 0" }}
+          />
+          <motion.circle
+            cx={0}
+            cy={0}
+            fill="none"
+            stroke="var(--color-accent)"
+            strokeWidth={0.8}
+            initial={{ r: 3, opacity: 0.9 }}
+            animate={{ r: 12, opacity: 0 }}
+            transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
           />
           <circle
             r={6}

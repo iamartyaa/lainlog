@@ -461,6 +461,54 @@ html[data-theme-transitioning] {
   }
 }
 
+/* PipeCompare (the-browser-stopped-asking §3) — mobile-first. The default
+   layout stacks one row per protocol vertically with the label + stats
+   ABOVE its timeline, so phone widths never compress a 9-pt legend into
+   illegibility. At --flip-wide the three rows sit in a single canvas with
+   stats in a left gutter, giving the reader the side-by-side comparison
+   that carries the §3 pedagogy. Same JS state drives both. */
+.bs-pc-wide {
+  display: none;
+}
+@container widget (min-width: 640px) {
+  .bs-pc-narrow {
+    display: none;
+  }
+  .bs-pc-wide {
+    display: block;
+  }
+}
+
+/* UpgradeHandshake (§4) — mobile-first. Default is vertical: browser on
+   top, vertical pipe, server on the bottom. At --flip-wide the classic
+   horizontal sequence-diagram layout (browser ← pipe → server) returns. */
+.bs-uh-wide {
+  display: none;
+}
+@container widget (min-width: 640px) {
+  .bs-uh-narrow {
+    display: none;
+  }
+  .bs-uh-wide {
+    display: block;
+  }
+}
+
+/* ReconnectGap (§5) — mobile-first. Default labels each timeline row ABOVE
+   the lifeline; wide variant moves labels into a left gutter so the
+   timelines align vertically. */
+.bs-rg-wide {
+  display: none;
+}
+@container widget (min-width: 560px) {
+  .bs-rg-narrow {
+    display: none;
+  }
+  .bs-rg-wide {
+    display: block;
+  }
+}
+
 @keyframes ring-pulse {
   0% {
     box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-accent) 35%, transparent);

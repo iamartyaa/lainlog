@@ -93,7 +93,12 @@ export function UpgradeHandshake() {
         </div>
       }
     >
-      <HandshakeCanvas step={step} computed={computed} />
+      <div className="bs-uh-narrow">
+        <HandshakeCanvasNarrow step={step} computed={computed} />
+      </div>
+      <div className="bs-uh-wide">
+        <HandshakeCanvas step={step} computed={computed} />
+      </div>
     </WidgetShell>
   );
 }
@@ -117,22 +122,14 @@ function HandshakeCanvas({ step, computed }: { step: number; computed: Computed 
   const PIPE_X1 = BROWSER_X + BOX_W + 4;
   const PIPE_X2 = SERVER_X - 4;
 
-  const pipeColor =
-    step >= 2 ? "var(--color-accent)" : "var(--color-text-muted)";
-  const pipeWidth = step >= 2 ? 3.5 : 1.4;
-  const pipeDash = step >= 2 ? undefined : "4 4";
-
-  // Preserve intrinsic SVG size so 9-10pt text stays readable. Narrow
-  // containers scroll horizontally inside the outer div — DESIGN.md §7
-  // ("canvas is the subject"): shrinking text into illegibility would let
-  // chrome win over canvas.
+  // Wide variant — browser + server flanking a horizontal pipe. Used at
+  // container widths ≥ --flip-wide. Below that, HandshakeCanvasNarrow flips
+  // the whole arrangement vertical so 10 pt mono doesn't collapse on phone.
   return (
-    <div style={{ overflowX: "auto", overflowY: "hidden", maxWidth: "100%" }}>
     <svg
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-      width={WIDTH}
-      height={HEIGHT}
-      style={{ maxWidth: "100%", minWidth: 620, height: "auto", display: "block" }}
+      width="100%"
+      style={{ maxWidth: WIDTH, height: "auto", display: "block" }}
       role="img"
       aria-label={`Upgrade handshake step ${step + 1}`}
     >
@@ -188,16 +185,34 @@ function HandshakeCanvas({ step, computed }: { step: number; computed: Computed 
         active={step === 1}
       />
 
-      {/* The pipe (TCP socket) */}
+      {/* The pipe (TCP socket) — two layers. The muted HTTP base line stays
+          drawn; the terracotta WebSocket overlay strokes itself in when
+          step ≥ 2, left-to-right. Conveys the HTTP→socket transition as a
+          visible act instead of a discrete color swap. */}
       <line
         x1={PIPE_X1}
         x2={PIPE_X2}
         y1={PIPE_Y}
         y2={PIPE_Y}
-        stroke={pipeColor}
-        strokeWidth={pipeWidth}
-        strokeDasharray={pipeDash}
+        stroke="var(--color-text-muted)"
+        strokeWidth={1.4}
+        strokeDasharray="4 4"
+        opacity={step >= 2 ? 0.25 : 1}
       />
+      {step >= 2 ? (
+        <motion.line
+          key={`uh-wide-pipe-${step}`}
+          x1={PIPE_X1}
+          x2={PIPE_X2}
+          y1={PIPE_Y}
+          y2={PIPE_Y}
+          stroke="var(--color-accent)"
+          strokeWidth={3.5}
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ ...SPRING.smooth }}
+        />
+      ) : null}
       <text
         x={(PIPE_X1 + PIPE_X2) / 2}
         y={PIPE_Y - 10}
@@ -317,6 +332,498 @@ function HandshakeCanvas({ step, computed }: { step: number; computed: Computed 
         <Transcript step={step} computed={computed} width={WIDTH - BROWSER_X * 2} />
       </g>
     </svg>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*                              Narrow (mobile)                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * HandshakeCanvasNarrow — vertical orientation for phone widths. Browser
+ * panel sits above a vertical TCP pipe; server panel sits below. The
+ * request envelope drops down the pipe on step 0→1; the 101 reply rises
+ * on step 1→2; bidirectional frames fly up/down on step 3. The transcript
+ * panes render as plain HTML below the SVG — mono text readable at
+ * actual type size, not a shrunk SVG <text>.
+ */
+function HandshakeCanvasNarrow({
+  step,
+  computed,
+}: {
+  step: number;
+  computed: Computed;
+}) {
+  const WIDTH = 380;
+  const HEIGHT = 320;
+  const PIPE_X = WIDTH / 2;
+  const BROWSER_Y = 40;
+  const SERVER_Y = 224;
+  const BOX_W = 300;
+  const BOX_H = 84;
+  const BOX_X = (WIDTH - BOX_W) / 2;
+  const PIPE_Y1 = BROWSER_Y + BOX_H + 6;
+  const PIPE_Y2 = SERVER_Y - 6;
+
+  return (
+    <div className="flex flex-col gap-[var(--spacing-sm)]">
+      <svg
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        width="100%"
+        style={{ maxWidth: WIDTH, height: "auto", display: "block", margin: "0 auto" }}
+        role="img"
+        aria-label={`Upgrade handshake, step ${step + 1} of 3, compact layout`}
+      >
+        {/* Browser panel */}
+        <rect
+          x={BOX_X}
+          y={BROWSER_Y}
+          width={BOX_W}
+          height={BOX_H}
+          rx={6}
+          fill="color-mix(in oklab, var(--color-surface) 55%, transparent)"
+          stroke="var(--color-rule)"
+          strokeWidth={1}
+        />
+        <text
+          x={BOX_X + 10}
+          y={BROWSER_Y + 18}
+          fontFamily="var(--font-mono)"
+          fontSize={11}
+          fill="var(--color-text-muted)"
+        >
+          browser
+        </text>
+        <text
+          x={BOX_X + 10}
+          y={BROWSER_Y + 38}
+          fontFamily="var(--font-mono)"
+          fontSize={11}
+          fill={step === 0 ? "var(--color-accent)" : "var(--color-text)"}
+          fontWeight={step === 0 ? 500 : 400}
+        >
+          GET /chat HTTP/1.1
+        </text>
+        <text
+          x={BOX_X + 10}
+          y={BROWSER_Y + 56}
+          fontFamily="var(--font-mono)"
+          fontSize={11}
+          fill={step === 0 ? "var(--color-accent)" : "var(--color-text)"}
+        >
+          Upgrade: websocket
+        </text>
+        <text
+          x={BOX_X + 10}
+          y={BROWSER_Y + 72}
+          fontFamily="var(--font-mono)"
+          fontSize={10}
+          fill="var(--color-text-muted)"
+        >
+          key = {truncate(computed.key, 20)}
+        </text>
+
+        {/* Vertical pipe — two layers. The muted HTTP base line is always
+            there; the terracotta WebSocket overlay strokes itself in
+            (pathLength 0→1) when step ≥ 2. Conveys the "HTTP became a
+            socket" transformation as a visible act, not a discrete swap. */}
+        <line
+          x1={PIPE_X}
+          x2={PIPE_X}
+          y1={PIPE_Y1}
+          y2={PIPE_Y2}
+          stroke="var(--color-text-muted)"
+          strokeWidth={1.4}
+          strokeDasharray="4 4"
+          opacity={step >= 2 ? 0.25 : 1}
+        />
+        {step >= 2 ? (
+          <motion.line
+            key={`ws-pipe-${step}`}
+            x1={PIPE_X}
+            x2={PIPE_X}
+            y1={PIPE_Y1}
+            y2={PIPE_Y2}
+            stroke="var(--color-accent)"
+            strokeWidth={3.5}
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ ...SPRING.smooth }}
+          />
+        ) : null}
+        <text
+          x={PIPE_X + 10}
+          y={(PIPE_Y1 + PIPE_Y2) / 2}
+          fontFamily="var(--font-mono)"
+          fontSize={10}
+          fill={step >= 2 ? "var(--color-accent)" : "var(--color-text-muted)"}
+        >
+          {step >= 2 ? "WebSocket" : "HTTP/1.1"}
+        </text>
+
+        {/* Step 1: request envelope falls from browser to server */}
+        <motion.g
+          initial={false}
+          animate={{
+            opacity: step === 0 ? 1 : 0,
+            y: step >= 1 ? PIPE_Y2 - PIPE_Y1 - 24 : 0,
+          }}
+          transition={{ ...SPRING.smooth, delay: step === 0 ? 0.1 : 0 }}
+        >
+          <g transform={`translate(${PIPE_X - 38}, ${PIPE_Y1 + 8})`}>
+            <rect
+              x={0}
+              y={0}
+              width={76}
+              height={24}
+              rx={4}
+              fill="color-mix(in oklab, var(--color-surface) 70%, transparent)"
+              stroke="var(--color-text-muted)"
+              strokeWidth={1}
+            />
+            <text
+              x={38}
+              y={16}
+              textAnchor="middle"
+              fontFamily="var(--font-mono)"
+              fontSize={10}
+              fill="var(--color-text-muted)"
+            >
+              Upgrade req
+            </text>
+          </g>
+        </motion.g>
+
+        {/* Step 2: 101 response rises from server to browser */}
+        <motion.g
+          initial={false}
+          animate={{
+            opacity: step === 1 ? 1 : 0,
+            y: step >= 2 ? -(PIPE_Y2 - PIPE_Y1 - 30) : 0,
+          }}
+          transition={{ ...SPRING.smooth, delay: step === 1 ? 0.7 : 0 }}
+        >
+          <g transform={`translate(${PIPE_X - 42}, ${PIPE_Y2 - 32})`}>
+            <rect
+              x={0}
+              y={0}
+              width={84}
+              height={24}
+              rx={4}
+              fill="color-mix(in oklab, var(--color-accent) 16%, transparent)"
+              stroke="var(--color-accent)"
+              strokeWidth={1.2}
+            />
+            <text
+              x={42}
+              y={16}
+              textAnchor="middle"
+              fontFamily="var(--font-mono)"
+              fontSize={10}
+              fill="var(--color-accent)"
+            >
+              101 Switching
+            </text>
+          </g>
+        </motion.g>
+
+        {/* Step 3: bidirectional frames */}
+        {step >= 2 ? (
+          <NarrowFrameTraffic
+            pipeX={PIPE_X}
+            y1={PIPE_Y1 + 8}
+            y2={PIPE_Y2 - 8}
+          />
+        ) : null}
+
+        {/* Server panel */}
+        <rect
+          x={BOX_X}
+          y={SERVER_Y}
+          width={BOX_W}
+          height={BOX_H}
+          rx={6}
+          fill="color-mix(in oklab, var(--color-surface) 55%, transparent)"
+          stroke="var(--color-rule)"
+          strokeWidth={1}
+        />
+        <text
+          x={BOX_X + 10}
+          y={SERVER_Y + 18}
+          fontFamily="var(--font-mono)"
+          fontSize={11}
+          fill="var(--color-text-muted)"
+        >
+          server
+        </text>
+        <text
+          x={BOX_X + 10}
+          y={SERVER_Y + 38}
+          fontFamily="var(--font-mono)"
+          fontSize={11}
+          fill={step === 1 ? "var(--color-accent)" : "var(--color-text)"}
+          fontWeight={step === 1 ? 500 : 400}
+        >
+          SHA-1(key + GUID)
+        </text>
+        <NarrowAcceptSettle
+          accept={truncate(computed.accept, 20)}
+          x={BOX_X + 10}
+          y={SERVER_Y + 58}
+        />
+        <text
+          x={BOX_X + 10}
+          y={SERVER_Y + 74}
+          fontFamily="var(--font-mono)"
+          fontSize={9}
+          fill="var(--color-text-muted)"
+        >
+          GUID = 258EAFA5-E914-…
+        </text>
+      </svg>
+
+      {/* HTML transcript below. Renders at real --text-small so the reader
+          gets mono text at body-readable size instead of SVG-scaled. */}
+      <div
+        className="grid gap-[var(--spacing-sm)] sm:grid-cols-2"
+        style={{ fontSize: "var(--text-small)" }}
+      >
+        <TranscriptPane
+          title="client → server"
+          active={step === 0}
+          lines={[
+            "GET /chat HTTP/1.1",
+            "Host: docs.example",
+            "Upgrade: websocket",
+            "Connection: Upgrade",
+            `Sec-WebSocket-Key: ${truncate(computed.key, 20)}`,
+            "Sec-WebSocket-Version: 13",
+          ]}
+          highlight={(line) =>
+            step === 0 &&
+            (line.startsWith("Upgrade:") ||
+              line.startsWith("Connection:") ||
+              line.startsWith("Sec-WebSocket-Key"))
+          }
+        />
+        <TranscriptPane
+          title="server → client"
+          active={step >= 1}
+          lines={[
+            "HTTP/1.1 101 Switching Protocols",
+            "Upgrade: websocket",
+            "Connection: Upgrade",
+            `Sec-WebSocket-Accept: ${truncate(computed.accept, 20)}`,
+          ]}
+          highlight={(line) =>
+            step === 1 &&
+            (line.startsWith("HTTP/1.1 101") ||
+              line.startsWith("Sec-WebSocket-Accept"))
+          }
+        />
+      </div>
+    </div>
+  );
+}
+
+function NarrowFrameTraffic({
+  pipeX,
+  y1,
+  y2,
+}: {
+  pipeX: number;
+  y1: number;
+  y2: number;
+}) {
+  const span = y2 - y1;
+  return (
+    <g>
+      {/* Frame traveling ↓ */}
+      <motion.g
+        initial={{ y: 0, opacity: 0 }}
+        animate={{
+          y: [0, span, 0, span],
+          opacity: [0, 1, 0, 1, 0],
+        }}
+        transition={{
+          times: [0, 0.25, 0.5, 0.75, 1],
+          duration: 2.4,
+          ease: [0.22, 1, 0.36, 1],
+        }}
+      >
+        <rect
+          x={pipeX - 18}
+          y={y1}
+          width={14}
+          height={18}
+          rx={2}
+          fill="var(--color-accent)"
+        />
+        <text
+          x={pipeX - 11}
+          y={y1 + 12}
+          textAnchor="middle"
+          fontFamily="var(--font-mono)"
+          fontSize={8}
+          fill="var(--color-bg)"
+        >
+          0x1
+        </text>
+      </motion.g>
+      {/* Frame traveling ↑ */}
+      <motion.g
+        initial={{ y: 0, opacity: 0 }}
+        animate={{
+          y: [0, -span, 0, -span],
+          opacity: [0, 1, 0, 1, 0],
+        }}
+        transition={{
+          times: [0, 0.25, 0.5, 0.75, 1],
+          duration: 2.4,
+          ease: [0.22, 1, 0.36, 1],
+          delay: 0.9,
+        }}
+      >
+        <rect
+          x={pipeX + 4}
+          y={y2 - 18}
+          width={14}
+          height={18}
+          rx={2}
+          fill="var(--color-accent)"
+        />
+        <text
+          x={pipeX + 11}
+          y={y2 - 6}
+          textAnchor="middle"
+          fontFamily="var(--font-mono)"
+          fontSize={8}
+          fill="var(--color-bg)"
+        >
+          0x2
+        </text>
+      </motion.g>
+      {/* Ambient endpoint pulses */}
+      <motion.circle
+        cx={pipeX}
+        cy={y1}
+        r={3}
+        fill="var(--color-accent)"
+        initial={{ opacity: 0.5 }}
+        animate={{ opacity: [0.5, 0.9, 0.5] }}
+        transition={{ duration: 2.2, repeat: Infinity, ease: [0.22, 1, 0.36, 1] }}
+      />
+      <motion.circle
+        cx={pipeX}
+        cy={y2}
+        r={3}
+        fill="var(--color-accent)"
+        initial={{ opacity: 0.5 }}
+        animate={{ opacity: [0.5, 0.9, 0.5] }}
+        transition={{
+          duration: 2.2,
+          repeat: Infinity,
+          ease: [0.22, 1, 0.36, 1],
+          delay: 1.1,
+        }}
+      />
+    </g>
+  );
+}
+
+function NarrowAcceptSettle({
+  accept,
+  x,
+  y,
+}: {
+  accept: string;
+  x: number;
+  y: number;
+}) {
+  const SPLIT = Math.max(0, accept.length - 8);
+  const head = accept.slice(0, SPLIT);
+  const tail = accept.slice(SPLIT).split("");
+  return (
+    <text
+      key={accept}
+      x={x}
+      y={y}
+      fontFamily="var(--font-mono)"
+      fontSize={11}
+    >
+      <tspan fill="var(--color-accent)">{head}</tspan>
+      {tail.map((ch, i) => (
+        <motion.tspan
+          key={`${accept}-${i}`}
+          initial={{ fill: "var(--color-text-muted)" }}
+          animate={{ fill: "var(--color-accent)" }}
+          transition={{
+            duration: 0.24,
+            ease: [0.22, 1, 0.36, 1],
+            delay: 0.08 + i * 0.028,
+          }}
+        >
+          {ch}
+        </motion.tspan>
+      ))}
+    </text>
+  );
+}
+
+function TranscriptPane({
+  title,
+  lines,
+  active,
+  highlight,
+}: {
+  title: string;
+  lines: string[];
+  active: boolean;
+  highlight: (line: string) => boolean;
+}) {
+  return (
+    <div
+      className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)]"
+      style={{
+        background: "color-mix(in oklab, var(--color-surface) 50%, transparent)",
+        border: "1px solid var(--color-rule)",
+        opacity: active ? 1 : 0.6,
+      }}
+    >
+      <div
+        className="font-sans uppercase"
+        style={{
+          fontSize: "var(--text-small)",
+          letterSpacing: "0.04em",
+          color: "var(--color-text-muted)",
+          marginBottom: "var(--spacing-2xs)",
+        }}
+      >
+        {title}
+      </div>
+      <pre
+        className="font-mono"
+        style={{
+          fontSize: "var(--text-small)",
+          lineHeight: 1.5,
+          color: "var(--color-text)",
+          margin: 0,
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-all",
+        }}
+      >
+        {lines.map((line, i) => (
+          <div
+            key={i}
+            style={{
+              color: highlight(line) ? "var(--color-accent)" : undefined,
+              fontWeight: highlight(line) ? 500 : undefined,
+            }}
+          >
+            {line}
+          </div>
+        ))}
+      </pre>
     </div>
   );
 }
