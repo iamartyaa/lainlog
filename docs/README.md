@@ -5,7 +5,7 @@ The canonical reference set for authoring, reviewing, and shipping bytesize post
 ## Start here
 
 1. **[`voice-profile.md`](./voice-profile.md)** — how posts should *sound* and *feel*. Tone, framing, prose rules, widget rules, tone-calibration examples. The taste file.
-2. **[`interactive-components.md`](./interactive-components.md)** — widget-shape taxonomy, external primitives we've integrated (`TextHighlighter`, `DragElements`, `MediaBetweenText`), DESIGN.md compliance invariants, anti-patterns from actual review feedback, widget catalogue with per-widget lessons.
+2. **[`interactive-components.md`](./interactive-components.md)** — widget-shape taxonomy (§1), external primitives we've integrated (§2: `TextHighlighter`, `DragElements`, `MediaBetweenText`), the full Fancy-library curation with fit ratings for every upstream component (§2.5), DESIGN.md compliance invariants, anti-patterns from actual review feedback, widget catalogue with per-widget lessons.
 3. **[`pipeline-playbook.md`](./pipeline-playbook.md)** — the nine-phase authoring pipeline, per-phase lessons, session-resumption rules, checkpoint crib sheet, and per-skill lessons from Phase F design-review orchestration.
 
 ## Secondary references
@@ -29,13 +29,14 @@ The canonical reference set for authoring, reviewing, and shipping bytesize post
 | Run a single design-review skill | `pipeline-playbook.md §5` for the brief template |
 | Write a callout, aside, or microcopy | `voice-profile.md §3` |
 | Audit code for DESIGN.md compliance | `interactive-components.md §3` (the invariants checklist) |
+| Evaluate a Fancy component before installing | `interactive-components.md §2.5` (full upstream curation + promotion criteria) |
 
 ## Keeping these docs honest
 
 After a post ships, update the playbook:
 
 1. **Any new widget shape** → add to `interactive-components.md §1` with a canonical example.
-2. **Any new external primitive** → add to `interactive-components.md §2` with use-cases and anti-use-cases.
+2. **Any new external primitive** → add to `interactive-components.md §2` with use-cases and anti-use-cases; also update the corresponding row in §2.5 from `🔸 candidate` to `✅ shipped`.
 3. **Any new anti-pattern discovered during review** → add to `interactive-components.md §5`.
 4. **Any voice-drift the user corrected** → add to `voice-profile.md §9` (or the appropriate earlier section).
 5. **Any pipeline lesson learned** → add to `pipeline-playbook.md §2` for the phase or `§6` for common pitfalls.
