@@ -84,7 +84,56 @@ From the retired bloom-filters draft, all voice-drift:
 - ❌ *"For any m worth caring about is approximately e^(−kn/m)"* (paper voice)
 - ❌ *"The corrected formula was itself flawed, derives the correct exact formula using a balls-and-bins model, and provides a numerically stable way to compute it."* (derivation drift)
 
-## 9. Feedback memory cross-reference
+## 9. Post-style patterns (added after the agent-traps post)
+
+A post where the subject is an abstract framework (vs a concrete product moment) justifies some additional moves. These don't replace §§1–8; they extend them for framework-explaining posts.
+
+### Argument-claim H2s with a numeric eyebrow
+
+For taxonomy/framework posts with numbered classes, replace label-style H2s (*"1 · Content Injection — Perception"*) with argument-claim H2s preceded by a Plex Mono eyebrow carrying the numeric filing tag:
+
+```tsx
+<SectionH2 eyebrow="1 · Content Injection" id="content-injection">
+  The page the agent reads is not the page you see.
+</SectionH2>
+```
+
+The eyebrow does the encyclopedic work; the H2 carries the claim. Combined, they outperform a label by a wide margin — a scanner sees *"The page the agent reads is not the page you see."* and reads on; they see *"1 · Content Injection — Perception"* and skim past.
+
+### Lede pattern: inversion first, backstory as contrast
+
+For framework posts, open `§1` on the thesis itself, not on the history that led to it. The recap becomes a contrast clause in paragraph 2, not the opening move.
+
+```
+❌  For a decade, attacking a model meant …  [then arrives at the inversion in ¶2]
+✅  You don't break the model — you break the page it reads.  [¶1 opens here, already highlighted]
+    For a decade the fight was inside the network — gradients, adversarial pixels,
+    poisoned weights. That's not what's happening to AI agents on the web.  [¶2 contrast]
+```
+
+### Closer pattern: the inversion, alone
+
+Framework posts reward ending on the inversion stated plainly, often borrowing the paper's own closing line. The sibling post ends by correcting its own title in one italic sentence. The agent-traps post ends on *"what our most powerful tools will be made to believe."* followed by a single centred terracotta dot.
+
+Don't recap the sections. The dot-line ornament + the closing `<HL>` carry it.
+
+### `<TextHighlighter>` (HL) as a pacing device
+
+Used for the single load-bearing phrase of its paragraph — 1–2 per section, target ~10–17 across the post. Binds to `var(--color-accent)` at 28% via `color-mix`. Never a second colour, never a second direction. See [`interactive-components.md §2`](./interactive-components.md) for trigger discipline.
+
+### The "every defence is already bypassed" rhythm
+
+When demonstrating that the obvious defence has already failed, a three-item list with named CVEs / incidents hits harder than three chained sentences:
+
+```
+Every "obvious" defence a reader in 2023 might propose has been bypassed in a shipped POC:
+
+- **CSP** — bypassed, repeatedly. EchoLeak routed exfil through an open redirect on a Teams subdomain …
+- **User confirmation on tool calls** — bypassed (CVE-2025-53773). Copilot wrote …
+- **Command allowlists** — bypassed (CVE-2025-55284). Claude Code's allowlisted ping became …
+```
+
+## 10. Feedback memory cross-reference
 
 Four memories back this document. If any gets updated, this doc must update too.
 
