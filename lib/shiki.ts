@@ -30,6 +30,7 @@ export function getHighlighter(): Promise<HighlighterCore> {
           import("shiki/langs/python.mjs"),
           import("shiki/langs/json.mjs"),
           import("shiki/langs/http.mjs"),
+          import("shiki/langs/html.mjs"),
         ],
         engine: createJavaScriptRegexEngine(),
       });

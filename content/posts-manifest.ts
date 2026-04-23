@@ -23,6 +23,14 @@ export type PostMeta = {
 
 export const POSTS: PostMeta[] = [
   {
+    slug: "the-webpage-that-reads-the-agent",
+    title: "The webpage that reads the agent",
+    date: "2026-04-24",
+    hook: "you don't break the model — you break the page it reads. six ways the open web learned to trap an AI agent.",
+    readingMinutes: 18,
+    tags: ["ai", "security", "agents"],
+  },
+  {
     slug: "the-function-that-remembered",
     title: "The function that remembered",
     date: "2026-04-19",
