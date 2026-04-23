@@ -51,7 +51,7 @@ export const POSTS: PostMeta[] = [
     title: "Why `fetch` works in curl but the browser blocks it",
     date: "2026-04-20",
     hook: "the server did answer — your browser is just holding the response back from your JavaScript.",
-    readingMinutes: 7,
+    readingMinutes: 9,
     tags: ["web", "browser", "security"],
   },
   {

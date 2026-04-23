@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { PRESS } from "@/lib/motion";
 import { useTapPulse } from "@/lib/hooks/use-tap-pulse";
 
@@ -28,6 +28,7 @@ export function Stepper({ value, total, onChange, playable = true, playInterval 
   const [inView, setInView] = useState(true);
   const onChangeRef = useRef(onChange);
   const containerRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useReducedMotion();
   onChangeRef.current = onChange;
 
   const go = useCallback(
@@ -43,15 +44,18 @@ export function Stepper({ value, total, onChange, playable = true, playInterval 
 
   useEffect(() => {
     if (!playing || !inView) return;
+    // Slow the cadence to a readable 1800ms under reduced-motion so each step
+    // reads as an instant rather than a flicker-reel. DESIGN.md §9.
+    const interval = prefersReducedMotion ? 1800 : playInterval;
     const id = setInterval(() => {
       if (value >= total - 1) {
         setPlaying(false);
         return;
       }
       go(value + 1);
-    }, playInterval);
+    }, interval);
     return () => clearInterval(id);
-  }, [playing, inView, value, total, go, playInterval]);
+  }, [playing, inView, value, total, go, playInterval, prefersReducedMotion]);
 
   useEffect(() => {
     const el = containerRef.current;

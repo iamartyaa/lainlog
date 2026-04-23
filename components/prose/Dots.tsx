@@ -4,17 +4,28 @@ import { motion } from "motion/react";
 
 const DOT_COUNT = 20;
 
+type Variant = "default" | "centre-accent";
+
+type Props = {
+  /**
+   * - `default` — all dots muted at 40%.
+   * - `centre-accent` — the middle dot renders in `var(--color-accent)`. Use
+   *   sparingly, at most once per post, to punctuate the single heaviest beat.
+   */
+  variant?: Variant;
+};
+
 /**
  * Dots — section ornament between major blocks. Distinctive move #1 from
- * DESIGN.md. Twenty Plex Mono "·" glyphs at 40% opacity, centred, replacing
- * the conventional <hr>.
+ * DESIGN.md §10. Twenty Plex Mono "·" glyphs at 40% opacity, centred,
+ * replacing the conventional <hr>.
  *
  * On scroll-into-view the dots sweep in left-to-right over ~400 ms via a
- * 20 ms child stagger (decoupled from the global STAGGER.* tokens so the
- * sweep length reads as a single gesture rather than a stagger). Fires once
- * per viewport entry. Reduced-motion users see every dot at once.
+ * 20 ms child stagger. Fires once per viewport entry. Reduced-motion users
+ * see every dot at once.
  */
-export function Dots() {
+export function Dots({ variant = "default" }: Props = {}) {
+  const accentIndex = variant === "centre-accent" ? Math.floor(DOT_COUNT / 2) : -1;
   return (
     <motion.div
       role="separator"
@@ -41,9 +52,16 @@ export function Dots() {
             hidden: { opacity: 0 },
             show: { opacity: 1, transition: { duration: 0.24 } },
           }}
-          style={{ display: "inline-block" }}
+          style={{
+            display: "inline-block",
+            color:
+              i === accentIndex
+                ? "var(--color-accent)"
+                : undefined,
+            opacity: i === accentIndex ? 1 : undefined,
+          }}
         >
-          ·{i < DOT_COUNT - 1 ? "\u00a0" : ""}
+          ·{i < DOT_COUNT - 1 ? " " : ""}
         </motion.span>
       ))}
     </motion.div>

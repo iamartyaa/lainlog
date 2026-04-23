@@ -14,21 +14,39 @@ import {
   Term,
 } from "@/components/prose";
 import { CodeBlock } from "@/components/code";
+import { TextHighlighter, VerticalCutReveal } from "@/components/fancy";
 import { OriginMatrix, RequestJourney, RequestClassifier } from "./widgets";
 import { metadata } from "./metadata";
 
 export { metadata };
 
+const HL_TRANSITION = { type: "spring" as const, duration: 0.9, bounce: 0 };
+const HL_COLOR =
+  "color-mix(in oklab, var(--color-accent) 28%, transparent)";
+const HL_OPTS = { once: true, initial: false, amount: 0.55 } as const;
+
+/** Highlight a load-bearing phrase. inView, spring, ltr swipe. */
+function HL({ children }: { children: React.ReactNode }) {
+  return (
+    <TextHighlighter
+      transition={HL_TRANSITION}
+      highlightColor={HL_COLOR}
+      useInViewOptions={HL_OPTS}
+      className="rounded-[0.2em] px-[1px]"
+    >
+      {children}
+    </TextHighlighter>
+  );
+}
+
 export default function WhyFetchFailsOnlyInBrowser() {
   return (
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
-        <div className="mb-[var(--spacing-md)] hidden md:flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
+        <div className="mb-[var(--spacing-md)] hidden md:flex">
           <HeroTile slug="why-fetch-fails-only-in-browser" />
         </div>
-        <H1 style={{ fontSize: "clamp(2.5rem, 2rem + 3.5vw, 4rem)" }}>
-          Why <span style={{ fontFamily: "var(--font-mono)", fontWeight: 500, letterSpacing: "-0.01em" }}>fetch</span> works in curl but the browser blocks it
-        </H1>
+        <H1>The server already said yes. The browser threw the answer away.</H1>
         <p
           className="mt-[var(--spacing-sm)] font-mono tabular-nums"
           style={{
@@ -38,20 +56,20 @@ export default function WhyFetchFailsOnlyInBrowser() {
         >
           <time dateTime="2026-04-19">apr 19, 2026</time>
           <span className="mx-2">·</span>
-          <span>7 min read</span>
+          <span>9 min read</span>
         </p>
 
         {/* §1 — the paradox */}
         <P>
           You call an API from the browser. The Network tab shows <Code>200 OK</Code>.
           The Console right below shows <Code>TypeError: Failed to fetch</Code>. You
-          paste the same URL into a terminal, run <Code>curl</Code>, and get JSON back.
-          Same URL, same server, same five-second window. One works. The other doesn&apos;t.
+          paste the same URL into a terminal, run <Code>curl</Code>, and get JSON back.{" "}
+          <HL>Same URL, same server, same five-second window. One works. The other doesn&apos;t.</HL>
         </P>
       </div>
 
       <FullBleed>
-        <div className="grid gap-[var(--spacing-md)] md:grid-cols-[1fr_1.3fr]">
+        <div className="grid gap-[var(--spacing-md)] lg:grid-cols-[1fr_1fr]">
           <CodeBlock
             lang="bash"
             filename="terminal"
@@ -72,23 +90,23 @@ export default function WhyFetchFailsOnlyInBrowser() {
 
       <div>
         <P>
-          Almost every explanation of CORS gets the shape of this wrong. The server
-          didn&apos;t reject anything. Your browser did. And it waited until the
-          response was already in its hands before doing it.
+          Your browser rejected it. And it waited until the response was already
+          in its hands before doing so.
         </P>
       </div>
 
       {/* §2 — same origin */}
       <div>
         <Dots />
-        <H2>What &ldquo;same origin&rdquo; actually means</H2>
+        <H2>Same origin is three things, not one.</H2>
         <P>
           Before the mechanism makes sense, the vocabulary has to. An <Term>origin</Term>{" "}
-          is the triple <Code>(scheme, host, port)</Code>. Two URLs are the{" "}
-          <Em>same origin</Em>{" "}only if all three match. Path doesn&apos;t count.
-          Subdomains don&apos;t match. And yes, <Code>http</Code> vs <Code>https</Code>{" "}
-          on the exact same hostname is cross-origin — TLS changes the trust boundary.
-          Hover any row below to see which part differs.
+          is the triple <Code>(scheme, host, port)</Code>. Two URLs are the same origin
+          only if all three match.{" "}
+          <HL>Path doesn&apos;t count. Subdomains don&apos;t match.</HL>{" "}
+          And yes, <Code>http</Code> vs <Code>https</Code> on the exact same hostname
+          is cross-origin — TLS changes the trust boundary. Tap (or tab to) any row
+          below to see which part differs.
         </P>
       </div>
 
@@ -96,30 +114,30 @@ export default function WhyFetchFailsOnlyInBrowser() {
 
       <div>
         <P>
-          The <Em>same-origin policy</Em>{" "}is the browser&apos;s default. JS running in
-          one origin can&apos;t read a response from another. Loading assets across
-          origins — an <Code>&lt;img&gt;</Code>, a <Code>&lt;script&gt;</Code>, a
-          stylesheet — has always been allowed, which is why the restriction feels
-          arbitrary until you notice what <Em>is</Em>{" "}forbidden: reading a response
-          from JS. CORS is the opt-in mechanism for punching holes in that wall.
+          The <Em>same-origin policy</Em>{" "}is{" "}
+          <HL>the browser&apos;s default</HL>. JS running in one origin can&apos;t
+          read a response from another. Loading assets across origins — an{" "}
+          <Code>&lt;img&gt;</Code>, a <Code>&lt;script&gt;</Code>, a stylesheet —
+          has always been allowed, which is why the restriction feels arbitrary
+          until you notice what <Em>is</Em>{" "}forbidden:{" "}
+          <HL>reading a response from JS</HL>. CORS is the opt-in mechanism for
+          punching holes in that wall.
         </P>
         <Callout tone="note">
-          Subdomains are cross-origin. <Code>api.example.com</Code> and{" "}
-          <Code>app.example.com</Code> are as foreign to each other as{" "}
-          <Code>example.com</Code> and <Code>evil.com</Code> under the same-origin
-          rule.
+          Your dev setup on <Code>localhost:3000</Code> and your API on{" "}
+          <Code>localhost:4000</Code> are cross-origin. CORS is a localhost
+          problem before it&apos;s a production one.
         </Callout>
       </div>
 
       {/* §3 — THE reveal */}
       <div>
-        <Dots />
-        <H2>The browser is the enforcer, not the server</H2>
+        <Dots variant="centre-accent" />
+        <H2>The browser is the enforcer, not the server.</H2>
         <P>
-          Here&apos;s the shape most posts miss. Step through the widget below,
-          then flip the <Code>Access-Control-Allow-Origin</Code> pill and step through
-          it again. The network trace doesn&apos;t change. The only thing that
-          changes is what JS gets back at the end.
+          Step through the widget below, then flip the server&apos;s allow-list
+          toggle and step through it again. The network trace doesn&apos;t change.
+          The only thing that changes is what JS gets back at the end.
         </P>
       </div>
 
@@ -130,44 +148,54 @@ export default function WhyFetchFailsOnlyInBrowser() {
           Walk that back slowly. The fetch left the browser. The request reached
           the server. The server ran its handler — the same code it runs for any
           other client. It returned <Code>200 OK</Code> with a real body. The
-          response arrived in the browser. Only then, <Em>after</Em>{" "}the whole
-          round trip, did the browser look at the response headers, fail to find
-          an invitation for your page&apos;s origin, and throw the body away.
+          response arrived in the browser. Only then,{" "}
+          <HL>after the whole round trip</HL>, did the browser look at the
+          response headers, fail to find an invitation for your page&apos;s origin,
+          and throw the body away.
         </P>
+
+        <Dots />
+
         <p
+          className="font-serif"
           style={{
-            fontSize: "1.125em",
-            marginBlockStart: "1.5em",
-            marginBlockEnd: "0.2em",
+            fontSize: "var(--text-body)",
             lineHeight: 1.55,
+            marginBlock: "var(--spacing-lg)",
           }}
         >
-          <Em>
-            CORS does not block the request. It blocks the response.
-          </Em>
+          <VerticalCutReveal
+            className="font-serif"
+            transition={{ type: "spring", duration: 0.9, bounce: 0 }}
+            useInViewOptions={{ once: true, initial: false, amount: 0.6 }}
+            staggerDuration={0.035}
+          >
+            {"CORS does not block the request. It blocks the response."}
+          </VerticalCutReveal>
         </p>
+
         <Aside>
-          That phrasing is Ilija Eftimov&apos;s, from his{" "}
+          Phrasing: Ilija Eftimov,{" "}
           <A href="https://ieftimov.com/posts/deep-dive-cors-history-how-it-works-best-practices/">
-            deep dive on CORS
+            Deep dive on CORS
           </A>
-          . It&apos;s the one sentence that collapses the whole mechanism into a
-          usable mental model.
+          .
         </Aside>
+
         <P>
           That&apos;s why <Code>curl</Code> &ldquo;works.&rdquo; curl doesn&apos;t
           parse <Code>Access-Control-*</Code> headers. Neither does Postman, or
           Python&apos;s <Code>requests</Code>, or your backend calling your other
-          backend. CORS is a contract between a server&apos;s response headers and
-          a <Em>browser&apos;s</Em> JS sandbox. Outside the browser, there&apos;s no
-          one listening.
+          backend.{" "}
+          <HL>Outside the browser, there&apos;s no one listening.</HL>
         </P>
+
         <P>
-          And the point of the contract isn&apos;t to stop people from reaching
-          your server. It&apos;s to stop a page at <Code>evil.com</Code>, open in
-          your user&apos;s tab, from using the cookies already in that browser to
-          read a response from <Code>bank.com</Code>. The browser has the user&apos;s
-          authority; CORS is what keeps one page from borrowing it to read another
+          <HL>CORS isn&apos;t about your server. It&apos;s about the user&apos;s cookies.</HL>{" "}
+          A page at <Code>evil.com</Code>, open in your user&apos;s tab, could
+          otherwise use the cookies already in that browser to read a response
+          from <Code>bank.com</Code>. The browser has the user&apos;s authority;
+          CORS is what keeps one page from borrowing it to read another
           page&apos;s data.
         </P>
       </div>
@@ -175,7 +203,7 @@ export default function WhyFetchFailsOnlyInBrowser() {
       {/* §4 — preflight */}
       <div>
         <Dots />
-        <H2>Not every request even leaves the browser</H2>
+        <H2>Some requests never leave the browser.</H2>
         <P>
           The &ldquo;server runs, browser redacts&rdquo; rule holds for <Em>simple</Em>{" "}
           requests — roughly, what an HTML form could have sent without JS: a{" "}
@@ -200,38 +228,29 @@ export default function WhyFetchFailsOnlyInBrowser() {
           request will use, and any non-safelisted headers it plans to send. The
           server answers with a matching <Code>Access-Control-Allow-Methods</Code>{" "}
           and <Code>Access-Control-Allow-Headers</Code>, and <Em>only then</Em>{" "}does
-          the browser let the real request go. If any of those don&apos;t line up,
-          the real <Code>POST</Code>, <Code>DELETE</Code>, or <Code>PATCH</Code>{" "}
-          never reaches your backend. This is the one case where CORS genuinely
-          blocks the wire, not just the read.
+          the browser let the real request go. If any of those don&apos;t line up,{" "}
+          <HL>the real <Code>POST</Code>, <Code>DELETE</Code>, or <Code>PATCH</Code> never reaches your backend</HL>
+          . This is{" "}
+          <HL>the one case where CORS genuinely blocks the wire, not just the read</HL>
+          .
         </P>
         <P>
-          The practical consequence is blunt: switching a request from{" "}
-          <Code>text/plain</Code> to <Code>application/json</Code>, or adding an{" "}
-          <Code>Authorization</Code> header, doesn&apos;t just change whether JS can
-          read the reply — it changes whether the <Code>POST</Code> arrives at all.
-          Every modern JSON API preflights every call. Browsers cache the{" "}
-          <Code>OPTIONS</Code> result briefly (seconds to a couple of hours) via{" "}
-          <Code>Access-Control-Max-Age</Code> so the handshake doesn&apos;t repeat for
-          every request.
+          Switching a request from <Code>text/plain</Code> to{" "}
+          <Code>application/json</Code>, or adding an{" "}
+          <Code>Authorization</Code> header, doesn&apos;t just change whether JS
+          can read the reply — it changes whether the <Code>POST</Code> arrives
+          at all. Every modern JSON API preflights every call. Browsers cache the{" "}
+          <Code>OPTIONS</Code> result briefly via{" "}
+          <Code>Access-Control-Max-Age</Code> so the handshake doesn&apos;t
+          repeat every time.
         </P>
-        <Callout tone="warn">
-          If your server reflects the request&apos;s <Code>Origin</Code> header back
-          in <Code>Access-Control-Allow-Origin</Code> to support many origins, you
-          must also send <Code>Vary: Origin</Code>. Without it, a CDN or shared
-          proxy can serve origin A&apos;s allowed response to origin B&apos;s
-          request. It looks fine in dev and breaks on Tuesday.
-        </Callout>
-      </div>
 
-      {/* §5 — credentials */}
-      <div>
-        <Dots />
-        <H2>Cookies don&apos;t tag along by default</H2>
+        {/* §4.5 — credentials (folded in) */}
+        <H3Like>…and when credentials are in play, both sides opt in.</H3Like>
         <P>
-          <Code>fetch</Code> to a cross-origin URL does <Em>not</Em>{" "}send cookies or
-          HTTP auth unless you ask. You opt in; the server opts in separately. Both
-          sides have to agree.
+          <Code>fetch</Code> to a cross-origin URL does <Em>not</Em>{" "}send cookies
+          or HTTP auth unless you ask. You opt in; the server opts in separately.
+          Both sides have to agree.
         </P>
       </div>
 
@@ -254,43 +273,76 @@ await fetch('https://api.other.com/me', {
 
       <div>
         <P>
-          Notice what&apos;s missing: the wildcard. <Code>
-            Access-Control-Allow-Origin: *
-          </Code>{" "}
-          is illegal once credentials are in play, and the browser will reject the
-          response even if the server sends it. The origin has to be{" "}
-          <Em>named</Em> — which is the whole point. A wildcard would mean
-          &ldquo;any site can read this response using this user&apos;s cookies,&rdquo;
-          which is the thing CORS exists to prevent.
+          Notice what&apos;s missing: the wildcard.{" "}
+          <Code>{"Access-Control-Allow-Origin: *"}</Code>{" "}
+          is illegal once credentials are in play, and the browser will reject
+          the response even if the server sends it. The origin has to be{" "}
+          <Em>named</Em>{" "}— because a wildcard would mean &ldquo;any site can
+          read this response using this user&apos;s cookies,&rdquo; which is the
+          thing CORS exists to prevent.
         </P>
+        <Callout tone="warn">
+          If your server reflects the request&apos;s <Code>Origin</Code> header
+          back in <Code>Access-Control-Allow-Origin</Code> to support many
+          origins, you must also send <Code>Vary: Origin</Code>. Without it, a
+          CDN or shared proxy can serve origin A&apos;s allowed response to origin
+          B&apos;s request. Looks fine in dev; breaks the first time a CDN
+          promotes the wrong cached response.
+        </Callout>
       </div>
 
       {/* §6 — closer */}
       <div>
         <Dots />
-        <H2>Reading a failing network tab</H2>
-        <P>
-          Next time a red <Code>TypeError</Code> shows up in the console, the
-          Network tab is the first place to look. Did the request reach the
-          server? Usually yes — you&apos;ll see a <Code>200</Code>, or at least
-          some response. That alone tells you the server isn&apos;t refusing; the
-          response headers are.
-        </P>
-        <P>
+        <H2>Every CORS failure is one of three things.</H2>
+        <Callout tone="note">
           Three things to check, in order. Which origin is your page? Is the
-          server returning <Code>Access-Control-Allow-Origin</Code> matching that
-          origin exactly? And if there&apos;s an <Code>OPTIONS</Code> row before
-          your real request, does <Em>that</Em>{" "}response approve the method and
-          headers you&apos;re about to send? Almost every CORS failure is one of
-          those three, in that order.
-        </P>
+          server returning <Code>Access-Control-Allow-Origin</Code> matching
+          that origin <Em>exactly</Em>? And if there&apos;s an{" "}
+          <Code>OPTIONS</Code> row before your real request, does{" "}
+          <Em>that</Em>{" "}response approve the method and headers you&apos;re
+          about to send?{" "}
+          <HL>Almost every CORS failure is one of those three, in that order.</HL>
+        </Callout>
         <P>
           The browser isn&apos;t being rude. It&apos;s doing the thing that keeps
           every other site you&apos;re logged into — your bank, your email, your
-          account settings — from being read by whatever tab you just opened.
-          The <Code>TypeError</Code> is that protection, showing up for you too.
+          account settings — from being read by whatever tab you just opened.{" "}
+          <HL>The <Code>TypeError</Code> is that protection, showing up for you too.</HL>
         </P>
+        <p
+          aria-hidden
+          className="font-mono text-center select-none"
+          style={{
+            marginBlock: "var(--spacing-xl)",
+            color: "var(--color-accent)",
+            opacity: 0.8,
+            fontSize: "var(--text-body)",
+            letterSpacing: "0.2em",
+          }}
+        >
+          ·
+        </p>
       </div>
     </Prose>
+  );
+}
+
+/** Inline sub-head used for the folded credentials beat inside §4. */
+function H3Like({ children }: { children: React.ReactNode }) {
+  return (
+    <h3
+      className="font-sans"
+      style={{
+        marginBlockStart: "2em",
+        marginBlockEnd: "0.5em",
+        fontSize: "var(--text-h3)",
+        fontWeight: 600,
+        letterSpacing: "-0.005em",
+        color: "var(--color-text)",
+      }}
+    >
+      {children}
+    </h3>
   );
 }

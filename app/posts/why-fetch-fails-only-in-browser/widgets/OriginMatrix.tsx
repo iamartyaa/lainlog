@@ -101,7 +101,7 @@ export function OriginMatrix() {
 
   return (
     <WidgetShell
-      title="origin = (scheme, host, port) · hover any row"
+      title="origin · scheme · host · port"
       measurements={`base · ${BASE.url}`}
       caption={
         row ? (
@@ -111,15 +111,15 @@ export function OriginMatrix() {
             {row.caption}
           </span>
         ) : (
-          <span style={{ color: "var(--color-text-muted)" }}>
-            Each URL below is compared to the base. Hover or tab to any row to see
-            which component of the tuple differs and why it moves that URL
+          <span>
+            Tap any row. Terracotta marks the component that moves it
             cross-origin.
           </span>
         )
       }
     >
-      <HScroll ariaLabel="origin comparison matrix — swipe horizontally to compare">
+      <HScroll ariaLabel="origin comparison matrix, 5 rows, scrollable">
+
         <table
           className="w-full font-mono tabular-nums"
           style={{
