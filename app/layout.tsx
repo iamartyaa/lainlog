@@ -7,13 +7,7 @@ import { Footer } from "@/components/nav/Footer";
 import { CozyFrame } from "@/components/nav/CozyFrame";
 import { MotionConfigProvider } from "@/components/providers/motion-config";
 import { GoatCounter } from "@/components/analytics/GoatCounter";
-import {
-  SITE_AUTHOR,
-  SITE_AUTHOR_URL,
-  SITE_DESCRIPTION,
-  SITE_NAME,
-  SITE_URL,
-} from "@/lib/site";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
 // Path B-lite: pre-flight grep found no `font-bold` / fontWeight 700 usage
 // (600 is the heaviest actually rendered weight via `font-semibold`), so we
@@ -49,7 +43,6 @@ export const metadata: Metadata = {
     template: `%s · ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
-  authors: [{ name: SITE_AUTHOR, url: SITE_AUTHOR_URL }],
   openGraph: {
     title: SITE_NAME,
     description: SITE_DESCRIPTION,

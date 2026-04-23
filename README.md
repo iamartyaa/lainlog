@@ -59,4 +59,4 @@ See [`DESIGN.md`](./DESIGN.md) — the single source of truth for tokens, palett
 
 ## Author
 
-Built by [An Anonymous Engineer](https://github.com/iamartyaa).
+Built by An Anonymous Engineer.
