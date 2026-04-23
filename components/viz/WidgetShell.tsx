@@ -9,6 +9,13 @@ type Props = {
   title: string;
   measurements?: string;
   caption?: ReactNode;
+  /**
+   * Visual weight of the caption.
+   * - `muted` (default) — sidenote-voice, Plex Sans small, muted colour.
+   * - `prominent` — teacher-voice. Plex Serif body, full contrast, with
+   *   a leading terracotta marker so the eye lands on it naturally.
+   */
+  captionTone?: "muted" | "prominent";
   controls?: ReactNode;
   children: ReactNode;
 };
@@ -26,7 +33,14 @@ type Props = {
  * SPRING.smooth — consistent brand grammar across all 13 widgets, in place
  * of ad-hoc spinners or skeleton shimmer.
  */
-export function WidgetShell({ title, measurements, caption, controls, children }: Props) {
+export function WidgetShell({
+  title,
+  measurements,
+  caption,
+  captionTone = "muted",
+  controls,
+  children,
+}: Props) {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
 
@@ -92,16 +106,42 @@ export function WidgetShell({ title, measurements, caption, controls, children }
         {controls ? <div className="pt-[var(--spacing-sm)]">{controls}</div> : null}
 
         {caption ? (
-          <div
-            className="pt-[var(--spacing-sm)] font-sans"
-            style={{
-              fontSize: "var(--text-small)",
-              color: "var(--color-text-muted)",
-              lineHeight: 1.5,
-            }}
-          >
-            {caption}
-          </div>
+          captionTone === "prominent" ? (
+            <div
+              className="pt-[var(--spacing-md)] flex gap-[var(--spacing-sm)] items-start"
+              style={{
+                fontSize: "var(--text-body)",
+                fontFamily: "var(--font-serif)",
+                color: "var(--color-text)",
+                lineHeight: 1.55,
+              }}
+            >
+              <span
+                aria-hidden
+                className="shrink-0 select-none"
+                style={{
+                  display: "inline-block",
+                  width: 10,
+                  height: 10,
+                  marginTop: "0.5em",
+                  background: "var(--color-accent)",
+                  transform: "rotate(45deg)",
+                }}
+              />
+              <div>{caption}</div>
+            </div>
+          ) : (
+            <div
+              className="pt-[var(--spacing-sm)] font-sans"
+              style={{
+                fontSize: "var(--text-small)",
+                color: "var(--color-text-muted)",
+                lineHeight: 1.5,
+              }}
+            >
+              {caption}
+            </div>
+          )
         ) : null}
       </div>
     </FullBleed>
