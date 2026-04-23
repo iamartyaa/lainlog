@@ -86,12 +86,12 @@ export function RequestClassifier({
 
   return (
     <WidgetShell
-      title="RequestClassifier · will this preflight?"
-      measurements={verdict.preflight ? "preflight · OPTIONS first" : "simple · no preflight"}
+      title="preflight classifier · does this OPTIONS first?"
+      measurements={verdict.preflight ? "OPTIONS first" : "sends directly"}
       caption={
         verdict.preflight
-          ? "The browser sends an OPTIONS handshake before your real request. If the server doesn't approve, the real request is never sent."
-          : "The request is safelisted. The browser sends it directly — the server runs the handler, and only the response is subject to the CORS check."
+          ? "OPTIONS goes first. If the server doesn't approve it, the real request never leaves your browser."
+          : "Safelisted. The request goes straight out; only the response is gated."
       }
     >
       <div className="flex flex-col gap-[var(--spacing-md)]">

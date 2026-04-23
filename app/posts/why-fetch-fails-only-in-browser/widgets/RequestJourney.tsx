@@ -132,8 +132,8 @@ export function RequestJourney({
 
   return (
     <WidgetShell
-      title="RequestJourney · same network, different outcomes"
-      measurements={`step ${step + 1}/${STEPS.length} · Allow-Origin ${allow ? "on" : "off"}`}
+      title="request journey · same wire, different verdict"
+      measurements={`step ${step + 1}/${STEPS.length} · allow-origin ${allow ? "sent" : "missing"}`}
       caption={current.caption(allow)}
       controls={
         <div className="flex items-center gap-[var(--spacing-md)] flex-wrap">
@@ -142,6 +142,7 @@ export function RequestJourney({
             type="button"
             onClick={() => setAllow((v) => !v)}
             aria-pressed={allow}
+            aria-label={`Toggle Access-Control-Allow-Origin header — currently ${allow ? "sent" : "missing"}`}
             className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] min-h-[44px] inline-flex items-center font-mono transition-colors"
             style={{
               fontSize: "var(--text-small)",
@@ -468,15 +469,18 @@ function NarrowJourney({
   current: Step;
   messages: Message[];
 }) {
-  const WIDTH = 380;
-  const LEFT_PAD = 68;
-  const RIGHT_PAD = 16;
+  // ViewBox widened from 380→420 and font-sizes bumped (10→12, 9→11) so that
+  // at the narrowest mobile widget canvas (~300 px), SVG text still renders
+  // above the --text-small floor. Per `interactive-components.md §3`.
+  const WIDTH = 420;
+  const LEFT_PAD = 76;
+  const RIGHT_PAD = 18;
   const TOP_PAD = 24;
   const ROW_H = 44;
   const ROWS = 4;
   const LIFELINE_BOT = TOP_PAD + ROWS * ROW_H;
   const LABEL_BAND = 56;
-  const DEVTOOLS_H = 64;
+  const DEVTOOLS_H = 68;
   const HEIGHT = LIFELINE_BOT + LABEL_BAND + DEVTOOLS_H + 16;
   const rowY = (i: number) => TOP_PAD + i * ROW_H + ROW_H / 2;
 
@@ -489,7 +493,7 @@ function NarrowJourney({
     <svg
       viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
       width="100%"
-      style={{ maxWidth: WIDTH, height: "auto", display: "block" }}
+      style={{ height: "auto", display: "block" }}
       role="img"
       aria-label={`Request journey step ${step + 1}: ${current.label}`}
     >
@@ -550,7 +554,7 @@ function NarrowJourney({
         x={LEFT_PAD}
         y={TOP_PAD - 8}
         fontFamily="var(--font-sans)"
-        fontSize={10}
+        fontSize={12}
         fill="var(--color-text-muted)"
       >
         time →
@@ -644,7 +648,7 @@ function NarrowJourney({
               y={Math.min(rowY(m.fromCol), rowY(m.toCol)) - 6}
               textAnchor="middle"
               fontFamily="var(--font-mono)"
-              fontSize={9}
+              fontSize={11}
               fill={isCurrent ? "var(--color-text)" : "var(--color-text-muted)"}
             >
               {token}
@@ -683,9 +687,9 @@ function NarrowJourney({
         />
         <text
           x={LEFT_PAD + 8}
-          y={HEIGHT - DEVTOOLS_H + 12}
+          y={HEIGHT - DEVTOOLS_H + 14}
           fontFamily="var(--font-mono)"
-          fontSize={10}
+          fontSize={12}
           fill="var(--color-text-muted)"
         >
           DevTools
