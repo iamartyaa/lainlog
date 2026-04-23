@@ -6,6 +6,7 @@ import { Header } from "@/components/nav/Header";
 import { Footer } from "@/components/nav/Footer";
 import { CozyFrame } from "@/components/nav/CozyFrame";
 import { MotionConfigProvider } from "@/components/providers/motion-config";
+import { GoatCounter } from "@/components/analytics/GoatCounter";
 import {
   SITE_AUTHOR,
   SITE_AUTHOR_URL,
@@ -92,6 +93,7 @@ export default function RootLayout({
             </CozyFrame>
           </MotionConfigProvider>
         </ThemeProvider>
+        <GoatCounter />
       </body>
     </html>
   );

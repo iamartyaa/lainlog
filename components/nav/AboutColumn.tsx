@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { PRESS, SPRING } from "@/lib/motion";
 import { useFirstVisit } from "@/lib/hooks/use-first-visit";
 import { useTapPulse } from "@/lib/hooks/use-tap-pulse";
+import { ReaderCount } from "@/components/nav/ReaderCount";
 import {
   SITE_ABOUT,
   SITE_AUTHOR_DISPLAY,
@@ -30,7 +31,11 @@ const COPYRIGHT_NOW = new Date().getFullYear();
  *   - Return visit: a short 60 ms stagger across the four children.
  * Reduced-motion users collapse to the final state via MotionConfigProvider.
  */
-export function AboutColumn() {
+type AboutColumnProps = {
+  readerCount: number | null;
+};
+
+export function AboutColumn({ readerCount }: AboutColumnProps) {
   const { ready, firstVisit } = useFirstVisit();
   const subscribe = useTapPulse<HTMLAnchorElement>();
   const years =
@@ -167,6 +172,7 @@ export function AboutColumn() {
         >
           <GitHubIcon />
         </Link>
+        <ReaderCount count={readerCount} />
         <span className="tabular-nums" aria-label={`copyright ${years}`}>
           © {years}
         </span>

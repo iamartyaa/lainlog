@@ -26,3 +26,6 @@ export const SITE_TAGLINE = "engineering essays with widgets you can take apart.
 /** Longer blurb for the home's about column — Phase 3. */
 export const SITE_ABOUT =
   "one question per post. ten minutes of prose, twenty of widgets you can poke at. for engineers who want the details beneath the abstractions.";
+
+/** GoatCounter subdomain for the analytics account backing the reader counter. */
+export const GOATCOUNTER_CODE = "bytesize";
