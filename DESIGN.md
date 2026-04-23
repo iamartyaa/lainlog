@@ -152,7 +152,7 @@ Every custom widget follows this skeleton. This is what "uniform UI" means.
 - **Sliders**: native `<input type="range">` styled — thumb visual is 14 px terracotta square. **Hit target is 44 × 44 px** via transparent `padding` + `background-clip: content-box` on the thumb pseudo-element; the visible square stays 14 px while the draggable region grows to meet the WCAG 44-px minimum.
 - **Focus rings**: 2px solid `--color-accent`, 2px offset. Never removed.
 - **"State set" color**: always `--color-accent`. Readers learn `terracotta = the algorithm is doing something here.`
-- **Press identity**: every interactive surface gets `PRESS` feedback (`whileTap: { scale: 0.96 }` + `SPRING.snappy`). High-frequency controls (Stepper prev/next, subscribe CTA) add a `.bs-press` ring pulse ≤ 300 ms on commit. Consistent across buttons, toggles, links — so the site speaks one tactile language.
+- **Press identity**: every interactive surface gets `PRESS` feedback (`whileTap: { scale: 0.96 }` + `SPRING.snappy`). High-frequency controls (Stepper prev/next) add a `.bs-press` ring pulse ≤ 300 ms on commit. Consistent across buttons, toggles, links — so the site speaks one tactile language.
 - **Hydration canvas**: every widget SSR-renders a single 6 × 6 terracotta square centred in its canvas container; the real interactive surface fades in on hydrate with `SPRING.smooth`. No spinners, no skeleton shimmer — the dot is the loading state.
 - **Orientation flips**: widgets drive layout via `@container widget (…)` queries against `--flip-narrow` / `--flip-wide`, not global viewport breakpoints, so a widget embedded in a narrow column flips for its container rather than waiting for the viewport.
 
@@ -174,16 +174,14 @@ Home splits into two columns at ≥ 768px:
 │ │   per post. ten     ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌       │ │
 │ │   minutes of …      [ico]  (next post)                       │ │
 │ │                                                              │ │
-│ │  [subscribe]                                                 │ │
+│ │  Read by 12,483 readers   © 2026                             │ │
 │ │                                                              │ │
-│ │  ⌂ github     © 2026                                         │ │
-│ │                                                              │ │
-│ │ bytesize · built by An Anonymous Engineer </> subscribe (rss) │ │
+│ │ bytesize · built by An Anonymous Engineer </>                │ │
 │ └──────────────────────────────────────────────────────────────┘ │
 └ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ╲ ┘
 ```
 
-- **Left column** (`AboutColumn`, 320px fixed): big Plex Serif wordmark (clamp 3–4.5rem, 0.95 line-height, -0.03em tracking), about paragraph (Plex Serif body, muted, max 26ch), terracotta **subscribe** pill (`--color-accent` fill, `--color-bg` text, `--radius-md`), bottom-left meta row (GitHub icon + copyright in Plex Mono small). Sticky on md+.
+- **Left column** (`AboutColumn`, 320px fixed): big Plex Serif wordmark (clamp 3–4.5rem, 0.95 line-height, -0.03em tracking), about paragraph (Plex Serif body, muted, max 26ch), bottom-left meta row (reader count as a terracotta dot-matrix glyph + copyright, both in Plex Mono small). Sticky on md+.
 - **Right column** (`PostList`): year heading (small muted Plex Sans caps) + list of rows. Each row is a 4-column grid on md+ (`80px · 1.1fr · 1.2fr · 32px`): square cover tile · title + date stacked · hook description · arrow. On mobile it collapses to `64px · 1fr · 24px` with the hook stacking on a second row spanning all columns. Dashed top-border (`--color-rule`) separates rows; the first row has none.
 - Covers are auto-generated at `/cover/[slug]` via `@vercel/og`, per-slug hue-shifted within the terracotta family; optional `coverImage?: string` on `PostMeta` for hand-crafted overrides.
 - Row hover: subtle background tint (`color-mix(accent 4%, transparent)`), cover lifts `-2px`, title shifts to `--color-accent`, arrow translates 3px right. All on the same 200ms timing.

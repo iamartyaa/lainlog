@@ -8,8 +8,8 @@ import { useCallback, useRef } from "react";
  * class; forcing a reflow between remove and add is the cheapest way to
  * restart the animation reliably across browsers.
  *
- * Reserved for heavy-commit actions (Stepper advance, subscribe CTA). Other
- * buttons should stick to `PRESS` scale-only to avoid visual noise.
+ * Reserved for heavy-commit actions (Stepper advance). Other buttons should
+ * stick to `PRESS` scale-only to avoid visual noise.
  */
 export function useTapPulse<T extends HTMLElement = HTMLButtonElement>() {
   const ref = useRef<T | null>(null);

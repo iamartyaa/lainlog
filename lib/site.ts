@@ -8,14 +8,6 @@ export const SITE_URL = "https://bytesize.vercel.app";
 
 export const SITE_NAME = "bytesize";
 
-/** SEO / metadata truth. Used by `app/layout.tsx` metadata.authors only. */
-export const SITE_AUTHOR = "Amartya";
-
-export const SITE_AUTHOR_URL = "https://github.com/iamartyaa";
-
-/** User-visible label. Every rendered surface (footer, nav, aria) uses this. */
-export const SITE_AUTHOR_DISPLAY = "An Anonymous Engineer";
-
 /** Meta description, RSS channel description, OG default subtitle. */
 export const SITE_DESCRIPTION =
   "long-form essays on software and AI, each built around interactive widgets that show how the thing actually works.";

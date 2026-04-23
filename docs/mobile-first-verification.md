@@ -55,9 +55,9 @@ re-walk the same flow.
 | MacBook Safari               | 1280 / 1920              |  |
 
 **Pass criteria**: no horizontal overflow, no stuck hover after tap-release
-on PostList rows or prose links, ring-pulse visible on Stepper prev/next
-and subscribe CTA, address bar doesn't flash a white background on first
-paint, slider thumb draggable with a thumb finger (44 × 44 hit target).
+on PostList rows or prose links, ring-pulse visible on Stepper prev/next,
+address bar doesn't flash a white background on first paint, slider thumb
+draggable with a thumb finger (44 × 44 hit target).
 
 ---
 
@@ -72,11 +72,7 @@ covers every consumer.
 
 1. Header → `bytesize` wordmark (`<MotionLink href="/">`)
 2. Header → theme toggle (`<motion.button>`)
-3. AboutColumn → subscribe CTA (`<MotionLink href="/rss.xml">`)
-4. AboutColumn → GitHub icon link
-5. PostList → each row (`<MotionLink>`) in document order
-6. Footer → author GitHub link
-7. Footer → `subscribe (rss)` link
+3. PostList → each row (`<MotionLink>`) in document order
 
 ### Tab order inside a widget
 
