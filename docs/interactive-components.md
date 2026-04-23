@@ -70,6 +70,19 @@ Inline text reveal: `<firstText> [media that expands on trigger] <secondText>`.
 - **Media payload**: a small terracotta chip (not a photo) keeps it editorial. See `DomReveal.tsx`.
 - **RSC caveat**: `renderMedia` is a function prop — not serialisable across the RSC boundary. If your page.tsx is RSC (no `"use client"`), wrap the `MediaBetweenText` usage in its own `"use client"` component and import it into the page. We do this with `DomReveal.tsx` exactly because `page.tsx` is RSC.
 
+### `VerticalCutReveal` (✅ climax-only)
+
+Character-level reveal: each letter slides up from a clipped baseline, staggered across the line. Shipped in the fetch-polish run (PR #27) for the post's load-bearing thesis sentence.
+
+- **Use case**: one-shot climax moments. *The* sentence the whole post exists for. Not paragraphs. Not decoration.
+- **Trigger**: `inView`, `once: true`, `amount: 0.55+`. The reveal is a payoff, not a pacing device — wait until most of the line is visible.
+- **Character stagger**: 35 ms is the default for prose-length lines. DESIGN.md §9 prescribes 60 ms between *siblings*, but a sentence is sub-word units composed into one gesture — 35 ms reads as a single settle rather than a march. Do not go above 60.
+- **Transform + opacity only** — the component uses `translateY` + `opacity` (DESIGN.md §9). No height or top animations.
+- **Reduced motion**: auto via project-level `MotionConfig reducedMotion="user"` — transforms collapse to instant. Screen readers get the full text via `.sr-only`; per-letter spans are `aria-hidden`.
+- **Layout**: renders `inline-block` with `overflow: hidden` on each word-span. Don't wrap it in flex containers that would stretch the baseline.
+- **Budget**: one use per post, absolute max. Two is decoration.
+- **Caveat**: the staggered reveal *is* the meaning — save it for sentences whose *pacing* carries the argument. In fetch-polish it landed *"CORS does not block the request. [beat] It blocks the response."* — request-vs-response is exactly what the character-stagger dramatises.
+
 ## 2.5. The full Fancy library — curation for bytesize
 
 `fancycomponents.dev` ships 38 components. Only three are worth shipping by default; the rest land on a spectrum from *"wait for the right article"* to *"never in this register."* Consult this table before installing anything from upstream.
@@ -88,7 +101,7 @@ Every rating is against bytesize's editorial-calm voice (DESIGN.md §1: *precise
 |---|---|---|
 | **Text Highlighter** | ✅ shipped | Ubiquitous pacing device. See §2.1. |
 | **Typewriter** | 🔸 candidate | Progressive reveal of code or a definition. Tempo teaches. Use with `once: true` and avoid cursor-blink decoration that violates §9. |
-| **Vertical Cut Reveal** | 🔸 candidate | One-shot headline reveal on inView. Works for the post's H1 or a §10 closer line if it earns the drama. |
+| **Vertical Cut Reveal** | ✅ shipped | One-shot climax-sentence reveal. Shipped for the thesis in the fetch-polish post (PR #27). See §2 for use. |
 | **Scramble In** | 🔸 candidate | A one-shot "decoding" reveal. Perfect for a post that's about *encoded* text — e.g. the invisible-Unicode-tags moment in the agent-traps post could have used this on the de-obfuscated payload. |
 | **Basic Number Ticker** | 🔸 candidate | Animated stat reveal on scroll. The agent-traps post stacks numbers (15–29%, 80%+, 23.6% → 11.2%); on a future post where numbers are the argument, animate them in. |
 | **Underline Animation** | 🔸 candidate | Subtler emphasis than `TextHighlighter`. Could carry link-hover states in prose. |
@@ -266,6 +279,22 @@ Every widget wraps in `<WidgetShell>`. Consistent header/canvas/controls/caption
 ### The drop-shadow decorative glow trap
 **What happened**: whenever a widget wants to signal "something important is happening here", the first instinct is a coloured glow. Banned.
 **Fix**: use typography, position, size, or a single transient press-pulse on commit (the §9 carve-out).
+
+### Hover-only cues on a touch-first brief
+**What happened**: the fetch-polish review caught the shipped post directing readers to *"Hover any row below to see which part differs."* on a page whose own brief said "mobile-first." The widget itself already handled `onFocus` and `onMouseEnter`; only the prose was stranded. The same cue was triplicated — prose, widget `title`, caption — so the mismatch compounded.
+
+**Why it slips through**: the widget works; only the *verb cue* is wrong. Authors on a desktop mouse never feel the bug. Reviewers catch it only when the brief explicitly names touch/mobile, so it can persist silently in older posts.
+
+**Fix**:
+- Verb the cue around intent, not gesture: *"Switch sides"*, *"Step through"*, *"Tap a row"* — not *"hover"*.
+- If the widget supports focus/tap, add *"(or tab to)"* as the one-phrase second-best: *"Tap (or tab to) any row."*
+- One cue, one location. Caption owns the verb. Title names the widget, not the interaction. Prose mentions the *mechanism*, not the affordance.
+- Grep new posts for `\bhover\b` before Checkpoint 3. Any match is a candidate for review.
+
+### Widget titles leaking CamelCase component names
+**What happened**: the fetch-polish review caught `"RequestJourney · same network, different outcomes"` and `"RequestClassifier · will this preflight?"` as `WidgetShell` titles. The CamelCase identifier was reader-facing.
+
+**Fix**: title the widget, not the component. Lowercase Plex-Sans-muted per `§4`. Strip the component name. E.g. `"request journey · same wire, different verdict"`. Add a grep for `/[A-Z][a-z]+[A-Z]/` inside `title=` props to catch this.
 
 ## 6. Widget catalogue — lessons from each
 
