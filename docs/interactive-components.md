@@ -70,6 +70,104 @@ Inline text reveal: `<firstText> [media that expands on trigger] <secondText>`.
 - **Media payload**: a small terracotta chip (not a photo) keeps it editorial. See `DomReveal.tsx`.
 - **RSC caveat**: `renderMedia` is a function prop — not serialisable across the RSC boundary. If your page.tsx is RSC (no `"use client"`), wrap the `MediaBetweenText` usage in its own `"use client"` component and import it into the page. We do this with `DomReveal.tsx` exactly because `page.tsx` is RSC.
 
+## 2.5. The full Fancy library — curation for bytesize
+
+`fancycomponents.dev` ships 38 components. Only three are worth shipping by default; the rest land on a spectrum from *"wait for the right article"* to *"never in this register."* Consult this table before installing anything from upstream.
+
+Ratings:
+- ✅ **shipped** — already in [`components/fancy/`](../components/fancy/).
+- 🔸 **candidate** — register-compatible, would earn its place on the right article. Install on demand.
+- 🔹 **niche** — one very specific use-case only. Requires strong teaching justification.
+- ❌ **skip** — wrong register for bytesize, or collides with a DESIGN.md ban. Don't install.
+
+Every rating is against bytesize's editorial-calm voice (DESIGN.md §1: *precise, warm, uncompromising*) and the §9 rule that *every animation teaches*. "Skip" doesn't mean "bad component" — it means *wrong home*.
+
+### Text components (18)
+
+| Component | Fit | Note |
+|---|---|---|
+| **Text Highlighter** | ✅ shipped | Ubiquitous pacing device. See §2.1. |
+| **Typewriter** | 🔸 candidate | Progressive reveal of code or a definition. Tempo teaches. Use with `once: true` and avoid cursor-blink decoration that violates §9. |
+| **Vertical Cut Reveal** | 🔸 candidate | One-shot headline reveal on inView. Works for the post's H1 or a §10 closer line if it earns the drama. |
+| **Scramble In** | 🔸 candidate | A one-shot "decoding" reveal. Perfect for a post that's about *encoded* text — e.g. the invisible-Unicode-tags moment in the agent-traps post could have used this on the de-obfuscated payload. |
+| **Basic Number Ticker** | 🔸 candidate | Animated stat reveal on scroll. The agent-traps post stacks numbers (15–29%, 80%+, 23.6% → 11.2%); on a future post where numbers are the argument, animate them in. |
+| **Underline Animation** | 🔸 candidate | Subtler emphasis than `TextHighlighter`. Could carry link-hover states in prose. |
+| **Underline To Background** | 🔸 candidate | Essentially what `TextHighlighter` does in `ltr` direction. Install only if we decide to switch vocabulary — two components for one job is overkill. |
+| **Text Rotate** | 🔹 niche | "This has many names: X / Y / Z." Useful for a glossary beat. Never as ambient cycling decoration. |
+| **Letter Swap** / **Random Letter Swap** | 🔹 niche | Hover-only. Could swap letters on a defined `<Term>` to signal interactivity, but the `H2` hover-anchor already occupies that gesture space. Rarely the right reach. |
+| **Scramble Hover** | 🔹 niche | Hover-scramble. Could work on a term that deliberately obfuscates — a self-referential moment about encoding. Otherwise decoration. |
+| **Scroll and Swap Text** | 🔹 niche | Scroll-linked letter swap. High distraction budget. Use once, on the lede, or not at all. |
+| **Text Along Path** | ❌ skip | Decorative unless the path is itself the teaching object (rare — e.g. a data-flow article). |
+| **Breathing Text** | ❌ skip | Infinite ambient motion. Violates *every animation teaches* (§9). |
+| **Letter 3D Swap** | ❌ skip | 3D + playful. Register mismatch. |
+| **Text Cursor Proximity** | ❌ skip | Cursor decoration. No teaching payload. |
+| **Variable Font And Cursor** | ❌ skip | Decorative cursor-driven font weight. |
+| **Variable Font Cursor Proximity** | ❌ skip | Same. |
+| **Variable Font Hover By Letter** | ❌ skip | Decorative per-letter hover. |
+| **Variable Font Hover By Random Letter** | ❌ skip | Decorative. |
+
+### Block / layout components (11)
+
+| Component | Fit | Note |
+|---|---|---|
+| **Media Between Text** | ✅ shipped | Surgical use only — one per article. See §2.3. |
+| **Drag Elements** | ⚠️ installed, niche | Not a good hero interaction. See §2.2 for constraints. |
+| **Stacking Cards** | 🔹 niche | bytesize isn't a card-grid site (DESIGN.md §12 bans card grids on home), but for *within* a post this could work for a "peel through six traps" reveal. Reader has to scroll to advance — teaches pacing. Still tentative. |
+| **Marquee Along SVG Path** | 🔹 niche | The path can be the teaching object: e.g. HTTP request/response flow along a path. Rare but powerful when it fits. |
+| **Float** | 🔹 niche | Subtle ambient float on a single element. 90% decorative; 10% of the time it hints at "untethered / drifting" (e.g. an agent exploring). Use the 10%. |
+| **Simple Marquee** | 🔹 niche | Scrolling headline crawl. Almost never the right reach for editorial-calm. Exception: a literal ticker of shipped CVEs or incidents. |
+| **Sticky Footer** | 🔹 niche | Layout concern, not a teaching primitive. If we want one site-wide, install once; don't per-article. |
+| **3D CSS Box** | ❌ skip | 3D + playful. Register mismatch. |
+| **Box Carousel** | ❌ skip | 3D carousel. Playful + §12 "no card grids" grey area. |
+| **Circling Elements** | ❌ skip | Infinite ambient circling. §9 violation. |
+| **Screensaver** | ❌ skip | Literal screensaver bounce. Register mismatch. |
+
+### Background components (2)
+
+| Component | Fit | Note |
+|---|---|---|
+| **Animated Gradient With SVG** | ❌ skip | Decorative gradient animation. §12 one-accent + §9 every-motion-teaches. |
+| **Pixel Trail** | ❌ skip | Cursor-driven pixel decoration. §9 violation. |
+
+### Filter components (2)
+
+| Component | Fit | Note |
+|---|---|---|
+| **Pixelate SVG Filter** | 🔹 niche | **The** component to reach for in a post about image steganography / LSB / pixel-level encoding — the agent-traps post discussed LSB steganography; a follow-up on adversarial images could use this to literally pixelate a sample image as the reader scrubs a bit-depth slider. Safari unsupported — check the audience. |
+| **Gooey SVG Filter** | 🔹 niche | Could teach a "merging entities" concept (two nodes becoming one). Safari limited. Mostly decoration. |
+
+### Image components (2)
+
+| Component | Fit | Note |
+|---|---|---|
+| **Image Trail** | ❌ skip | Cursor-followed image trail. Pure decoration. |
+| **Parallax Floating** | ❌ skip | Parallax on cursor. §9 violation. |
+
+### Physics components (3)
+
+| Component | Fit | Note |
+|---|---|---|
+| **Elastic Line** | 🔹 niche | A "tension" visual — could teach stress/constraint in a rare article. Mostly decorative. |
+| **Cursor Attractor & Gravity** | ❌ skip | Playful physics toy. Register mismatch. |
+| **Gravity** | ❌ skip | Same. |
+
+### Installation discipline
+
+- Install a Fancy component only when a specific article needs it. Don't stock the `components/fancy/` folder "for later."
+- When installing, open a small PR that adds the component file only, explains which upcoming article needs it, and registers it in this doc's §2 with a real use-case entry.
+- If a component turns out to be shipped-and-unused across two consecutive article ideas, remove it. The folder should never grow to look like a library shrine.
+- Upstream URL convention: append `.md` to any `fancycomponents.dev/docs/...` URL to get an LLM-friendly markdown version. Useful when evaluating a component before installing it.
+
+### Promotion criteria (🔸 → ✅)
+
+A 🔸 candidate graduates to ✅ shipped when:
+1. An article identifies a teaching moment the component uniquely serves, AND
+2. The implementation clears all bans in §3, AND
+3. Its caption / interaction cue can be written in one sentence, AND
+4. The post ships with it.
+
+No "just in case" installs. The Fancy library is big; bytesize stays small.
+
 ## 3. Design-system invariants — the non-negotiables
 
 Every widget must clear every bullet. Reviewer's first pass checks these mechanically.
