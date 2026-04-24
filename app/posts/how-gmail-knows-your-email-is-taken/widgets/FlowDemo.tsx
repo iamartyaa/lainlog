@@ -24,9 +24,7 @@ type Scenario = {
   label: string;
   typed: string;
   canonical: string;
-  /** Which branch exits early (if any). undefined means no fast-path; the flow reaches Spanner. */
   earlyExit?: BranchId;
-  /** Final answer. */
   finalAnswer: "available" | "taken";
 };
 
@@ -61,9 +59,7 @@ type Stage = {
   id: StageId;
   label: string;
   sublabel?: string;
-  /** Caption shown below canvas when this stage is active. */
   caption: (s: Scenario) => string;
-  /** If this stage can short-circuit, the branch id + label. */
   branch?: { id: BranchId; label: string; to: (s: Scenario) => string };
 };
 
@@ -72,19 +68,19 @@ const TRUNK_STAGES: Stage[] = [
     id: "input",
     label: "you type the email",
     caption: (s) =>
-      `The browser has the full string ${s.typed} once you pause for ~300 ms. It doesn't fire one request per keystroke.`,
+      `The browser has the full string ${s.typed} once you pause for ~300 ms — not one request per keystroke.`,
   },
   {
     id: "edge",
     label: "Google Front End",
-    sublabel: "Maglev + GFE + abuse",
+    sublabel: "Maglev · GFE · abuse",
     caption: () =>
       "The request arrives at the closest Google edge. Maglev routes the TCP flow, GFE terminates TLS, and Cloud-Armor-class rules cap abuse and feed a reCAPTCHA score in.",
   },
   {
     id: "frontend",
     label: "identity frontend shard",
-    sublabel: "ALTS over Stubby · Slicer",
+    sublabel: "ALTS · Stubby · Slicer",
     caption: () =>
       "An internal RPC routes to a specific Gaia frontend. Slicer hashes on the canonical email so the same address always lands on the same warm shard.",
   },
@@ -99,30 +95,22 @@ const TRUNK_STAGES: Stage[] = [
   {
     id: "nearCache",
     label: "in-process near-cache",
-    sublabel: "hot entries, per-shard",
+    sublabel: "hot entries · per shard",
     caption: (s) =>
       s.earlyExit === "nearCacheHit"
         ? `The cache hits. This email was asked about recently on the same shard — the answer is already in memory. The server responds without touching the distributed tier or the database.`
         : `The cache misses. Nothing recent for this canonical email on this shard. The server asks the distributed cache next.`,
-    branch: {
-      id: "nearCacheHit",
-      label: "hit",
-      to: (s) => s.finalAnswer,
-    },
+    branch: { id: "nearCacheHit", label: "hit", to: (s) => s.finalAnswer },
   },
   {
     id: "distCache",
     label: "distributed cache",
-    sublabel: "Memcache-class (not Redis)",
+    sublabel: "Memcache-class · not Redis",
     caption: (s) =>
       s.earlyExit === "distCacheHit"
         ? `The distributed cache hits. Another shard saw this email recently and stashed the answer. The server responds.`
         : `The distributed cache misses. No one's seen this email recently, anywhere. The server asks the Bloom filter next.`,
-    branch: {
-      id: "distCacheHit",
-      label: "hit",
-      to: (s) => s.finalAnswer,
-    },
+    branch: { id: "distCacheHit", label: "hit", to: (s) => s.finalAnswer },
   },
   {
     id: "bloom",
@@ -132,11 +120,7 @@ const TRUNK_STAGES: Stage[] = [
       s.earlyExit === "bloomNo"
         ? `The filter says no. One of the three hashed bits is zero — nobody with this canonical email could have been inserted. The server responds without touching the database.`
         : `The filter says maybe. All three hashed bits are on. Could be a real account, could be a coincidence. The server asks the database.`,
-    branch: {
-      id: "bloomNo",
-      label: "no",
-      to: () => "available",
-    },
+    branch: { id: "bloomNo", label: "no", to: () => "available" },
   },
   {
     id: "spanner",
@@ -158,19 +142,15 @@ type Props = {
 };
 
 /**
- * FlowDemo — the post's integrated pipeline widget. Nine stages in a vertical
- * trunk with three branch-off "respond" exits: near-cache hit, distributed
- * cache hit, and Bloom-filter "definitely not". Three scenarios each exercise
- * a different path:
- *   - fresh       → trunk to Bloom, Bloom says "no", respond fast
- *   - hotTaken    → trunk to near-cache, hit, respond fastest
- *   - dottedCold  → trunk all the way to Spanner, respond
+ * FlowDemo — mobile-first single-column pipeline. Trunk nodes stack vertically;
+ * when a scenario short-circuits, the "exit here" chip renders *inline below*
+ * the branching stage. All nine trunk rows + a branch-slot are authored into
+ * the SVG so the canvas height is stable across every scenario.
  */
 export function FlowDemo({ initialScenario = "fresh", initialStep = 0 }: Props) {
   const [scenarioId, setScenarioId] = useState<Scenario["id"]>(initialScenario);
   const scenario = SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[0];
 
-  // Visible stages: if earlyExit fires at stage S, stop after S (drop later trunk stages).
   const visibleStages = useMemo(() => {
     if (!scenario.earlyExit) return TRUNK_STAGES;
     const exitStageIndex = TRUNK_STAGES.findIndex(
@@ -184,21 +164,37 @@ export function FlowDemo({ initialScenario = "fresh", initialStep = 0 }: Props) 
   const clamped = Math.max(0, Math.min(step, visibleStages.length - 1));
   const current = visibleStages[clamped];
 
-  // Layout
-  const WIDTH = 820;
-  const TOP_PAD = 16;
-  const NODE_W = 280;
-  const NODE_H = 50;
-  const ROW_GAP = 22;
-  const TRUNK_X = 160;
-  const BRANCH_X = TRUNK_X + NODE_W + 60;
-  const BRANCH_W = 240;
+  // Mobile-first geometry. 360 wide fits a 360 px phone container without scroll.
+  const WIDTH = 360;
+  const NODE_W = 320;
+  const NODE_H = 46;
+  const ROW_GAP = 14;
+  const BRANCH_H = 34;
+  const TRUNK_X = (WIDTH - NODE_W) / 2;
+  const TOP_PAD = 12;
 
-  const rowY = (i: number) => TOP_PAD + i * (NODE_H + ROW_GAP);
+  // Reserve vertical space for ALL trunk stages + a branch slot after each
+  // branch-capable stage. Canvas height never changes across scenarios.
+  const BRANCH_ROWS = TRUNK_STAGES.filter((s) => s.branch).length;
+  const HEIGHT =
+    TOP_PAD +
+    TRUNK_STAGES.length * (NODE_H + ROW_GAP) +
+    BRANCH_ROWS * (BRANCH_H + ROW_GAP) +
+    10;
 
-  // Height: we render ALL TRUNK_STAGES (dimmed when not visible) so the geometry stays stable.
-  const totalRows = TRUNK_STAGES.length;
-  const HEIGHT = TOP_PAD + totalRows * (NODE_H + ROW_GAP) + 24;
+  // Compute y-offsets for each trunk stage accounting for branch slots above it.
+  const trunkYs = useMemo(() => {
+    const ys: number[] = [];
+    let cursor = TOP_PAD;
+    for (let i = 0; i < TRUNK_STAGES.length; i++) {
+      ys.push(cursor);
+      cursor += NODE_H + ROW_GAP;
+      if (TRUNK_STAGES[i].branch) {
+        cursor += BRANCH_H + ROW_GAP;
+      }
+    }
+    return ys;
+  }, []);
 
   const visibleIds = new Set(visibleStages.map((s) => s.id));
   const isActive = (id: StageId) => current.id === id;
@@ -211,34 +207,33 @@ export function FlowDemo({ initialScenario = "fresh", initialStep = 0 }: Props) 
   const answerTone =
     scenario.finalAnswer === "available" ? "var(--color-accent)" : "var(--color-text)";
 
-  // Detect whether the current stage triggered the early exit (to show the branch arrow)
-  const branchFired = (stg: Stage): boolean => {
-    return (
-      !!stg.branch &&
-      scenario.earlyExit === stg.branch.id &&
-      // Branch only after reader reaches that stage
-      (clamped >= TRUNK_STAGES.findIndex((s) => s.id === stg.id))
-    );
-  };
+  const branchFired = (stg: Stage): boolean =>
+    !!stg.branch &&
+    scenario.earlyExit === stg.branch.id &&
+    clamped >= TRUNK_STAGES.findIndex((s) => s.id === stg.id);
 
   return (
     <WidgetShell
-      title="FlowDemo · end-to-end"
-      measurements={`scenario = ${scenario.label} · step = ${clamped + 1}/${visibleStages.length}`}
+      title="flow · end-to-end"
+      measurements={`step ${clamped + 1}/${visibleStages.length}`}
       caption={current.caption(scenario)}
       controls={
-        <div className="flex items-center gap-[var(--spacing-md)] flex-wrap">
+        <div className="flex flex-col gap-[var(--spacing-sm)]">
           <Stepper value={clamped} total={visibleStages.length} onChange={setStep} />
           <div
-            className="flex items-center gap-[var(--spacing-2xs)] font-sans"
-            style={{ fontSize: "var(--text-ui)" }}
+            className="flex flex-wrap items-center gap-x-[var(--spacing-2xs)] gap-y-[var(--spacing-2xs)] font-sans"
+            style={{ fontSize: "var(--text-ui)", minHeight: 44 }}
           >
             {SCENARIOS.map((s, i) => {
               const active = scenarioId === s.id;
               return (
                 <span key={s.id} className="flex items-center">
                   {i > 0 ? (
-                    <span className="mx-1" style={{ color: "var(--color-text-muted)" }}>
+                    <span
+                      className="mx-[var(--spacing-2xs)]"
+                      style={{ color: "var(--color-text-muted)" }}
+                      aria-hidden
+                    >
                       ·
                     </span>
                   ) : null}
@@ -249,6 +244,7 @@ export function FlowDemo({ initialScenario = "fresh", initialStep = 0 }: Props) 
                       setStep(0);
                     }}
                     aria-pressed={active}
+                    aria-label={`scenario: ${s.label}`}
                     className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] min-h-[44px] transition-colors hover:text-[color:var(--color-accent)] inline-flex items-center gap-[var(--spacing-2xs)]"
                     style={{
                       color: active ? "var(--color-accent)" : "var(--color-text-muted)",
@@ -276,17 +272,15 @@ export function FlowDemo({ initialScenario = "fresh", initialStep = 0 }: Props) 
         </div>
       }
     >
-      <div className="bs-widget-scroll-at-narrow">
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         width="100%"
-        style={{ maxWidth: WIDTH, height: "auto", display: "block" }}
+        style={{ maxWidth: WIDTH, height: "auto", display: "block", margin: "0 auto" }}
         role="img"
         aria-label={`Flow demo, scenario: ${scenario.label}, step ${clamped + 1}: ${current.label}`}
       >
-        {/* Trunk: render every stage (grey out the ones not visible this scenario) */}
         {TRUNK_STAGES.map((stg, i) => {
-          const y = rowY(i);
+          const y = trunkYs[i];
           const active = isActive(stg.id);
           const past = isPast(stg.id);
           const vis = isVisible(stg.id);
@@ -297,7 +291,14 @@ export function FlowDemo({ initialScenario = "fresh", initialStep = 0 }: Props) 
               ? "var(--color-text-muted)"
               : "var(--color-rule)";
 
-          // Bracket shape for the branch-capable stages (nearCache/distCache/bloom) — small indicator on the right edge
+          const fired = branchFired(stg);
+          const branchY = y + NODE_H + ROW_GAP;
+
+          const nextVisibleIdx = TRUNK_STAGES.findIndex(
+            (s, j) => j > i && isVisible(s.id),
+          );
+          const drawEdge = !fired && nextVisibleIdx !== -1;
+
           return (
             <motion.g
               key={stg.id}
@@ -323,8 +324,8 @@ export function FlowDemo({ initialScenario = "fresh", initialStep = 0 }: Props) 
               />
               <text
                 x={TRUNK_X + 14}
-                y={y + (stg.sublabel ? 20 : NODE_H / 2)}
-                dominantBaseline={stg.sublabel ? "central" : "central"}
+                y={y + (stg.sublabel ? 18 : NODE_H / 2)}
+                dominantBaseline="central"
                 fontFamily="var(--font-sans)"
                 fontSize={13}
                 fill={active || past ? "var(--color-text)" : "var(--color-text-muted)"}
@@ -334,20 +335,39 @@ export function FlowDemo({ initialScenario = "fresh", initialStep = 0 }: Props) 
               {stg.sublabel ? (
                 <text
                   x={TRUNK_X + 14}
-                  y={y + 36}
+                  y={y + 33}
                   fontFamily="var(--font-mono)"
-                  fontSize={10}
+                  fontSize={9}
                   fill="var(--color-text-muted)"
                 >
                   {stg.sublabel}
                 </text>
               ) : null}
 
-              {/* Downstream edge (vertical line between trunk nodes). Only draw if next stage is visible. */}
-              {i < TRUNK_STAGES.length - 1 && isVisible(TRUNK_STAGES[i + 1].id) ? (
+              {/* Canonical chip under normalise, once reached */}
+              {stg.id === "normalise" &&
+              clamped >= visibleStages.findIndex((s) => s.id === "normalise") ? (
+                <motion.text
+                  key={`can-${scenario.id}`}
+                  x={TRUNK_X + NODE_W - 14}
+                  y={y + NODE_H - 6}
+                  textAnchor="end"
+                  fontFamily="var(--font-mono)"
+                  fontSize={10}
+                  fill="var(--color-accent)"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={SPRING.smooth}
+                >
+                  → {scenario.canonical}
+                </motion.text>
+              ) : null}
+
+              {/* Trunk-to-next edge — only if the next visible stage lives directly below */}
+              {drawEdge ? (
                 <line
-                  x1={TRUNK_X + NODE_W / 2}
-                  x2={TRUNK_X + NODE_W / 2}
+                  x1={WIDTH / 2}
+                  x2={WIDTH / 2}
                   y1={y + NODE_H}
                   y2={y + NODE_H + ROW_GAP}
                   stroke="var(--color-text-muted)"
@@ -355,114 +375,80 @@ export function FlowDemo({ initialScenario = "fresh", initialStep = 0 }: Props) 
                   opacity={0.5}
                 />
               ) : null}
+
+              {/* Inline branch chip — reserved slot beneath every branch-capable stage */}
+              {stg.branch ? (
+                <motion.g
+                  initial={false}
+                  animate={{ opacity: fired ? 1 : 0 }}
+                  transition={SPRING.smooth}
+                >
+                  {/* Connector from the trunk into the branch chip */}
+                  <motion.line
+                    x1={WIDTH / 2}
+                    x2={WIDTH / 2}
+                    y1={y + NODE_H}
+                    y2={branchY}
+                    stroke="var(--color-accent)"
+                    strokeWidth={1.6}
+                    initial={false}
+                    animate={{ pathLength: fired ? 1 : 0 }}
+                    transition={SPRING.smooth}
+                  />
+                  <rect
+                    x={TRUNK_X + 24}
+                    y={branchY}
+                    width={NODE_W - 48}
+                    height={BRANCH_H}
+                    rx={3}
+                    fill="color-mix(in oklab, var(--color-accent) 16%, transparent)"
+                    stroke="var(--color-accent)"
+                    strokeWidth={1.4}
+                  />
+                  <text
+                    x={TRUNK_X + 36}
+                    y={branchY + BRANCH_H / 2}
+                    dominantBaseline="central"
+                    fontFamily="var(--font-mono)"
+                    fontSize={11}
+                    fill="var(--color-accent)"
+                  >
+                    {stg.branch.label}
+                  </text>
+                  <text
+                    x={TRUNK_X + NODE_W - 36}
+                    y={branchY + BRANCH_H / 2}
+                    textAnchor="end"
+                    dominantBaseline="central"
+                    fontFamily="var(--font-mono)"
+                    fontSize={12}
+                    fill="var(--color-text)"
+                  >
+                    → {stg.branch.to(scenario)}
+                  </text>
+                </motion.g>
+              ) : null}
             </motion.g>
           );
         })}
 
-        {/* Branch-out nodes — rendered for each stage with a branch, but only "active" when the scenario took this path. */}
-        {TRUNK_STAGES.filter((s) => s.branch).map((stg, branchIdx) => {
-          const trunkIdx = TRUNK_STAGES.findIndex((s) => s.id === stg.id);
-          const y = rowY(trunkIdx) + NODE_H / 2 - 22;
-          const fired = branchFired(stg);
-          const label = stg.branch!.to(scenario);
-          // 60 ms stagger on non-fired branches so they fade down in order rather than as a block.
-          const staggerDelay = fired ? 0 : branchIdx * 0.06;
-          return (
-            <motion.g
-              key={`branch-${stg.id}`}
-              initial={false}
-              animate={{ opacity: fired ? 1 : 0.25 }}
-              transition={{ ...SPRING.smooth, delay: staggerDelay }}
-            >
-              {/* Arrow from trunk out to the branch box */}
-              <line
-                x1={TRUNK_X + NODE_W}
-                y1={rowY(trunkIdx) + NODE_H / 2}
-                x2={BRANCH_X}
-                y2={rowY(trunkIdx) + NODE_H / 2}
-                stroke={fired ? "var(--color-accent)" : "var(--color-rule)"}
-                strokeWidth={fired ? 1.6 : 1}
-              />
-              {/* Branch label (hit / no) */}
-              <text
-                x={TRUNK_X + NODE_W + 32}
-                y={rowY(trunkIdx) + NODE_H / 2 - 8}
-                fontFamily="var(--font-mono)"
-                fontSize={11}
-                fill={fired ? "var(--color-accent)" : "var(--color-text-muted)"}
-              >
-                {stg.branch!.label}
-              </text>
-              {/* Branch-out box */}
-              <rect
-                x={BRANCH_X}
-                y={y}
-                width={BRANCH_W}
-                height={44}
-                rx={3}
-                fill={fired ? "color-mix(in oklab, var(--color-accent) 16%, transparent)" : "transparent"}
-                stroke={fired ? "var(--color-accent)" : "var(--color-rule)"}
-                strokeWidth={fired ? 1.6 : 1}
-                strokeDasharray={fired ? undefined : "4 3"}
-              />
-              <text
-                x={BRANCH_X + BRANCH_W / 2}
-                y={y + 22}
-                textAnchor="middle"
-                dominantBaseline="central"
-                fontFamily="var(--font-mono)"
-                fontSize={12}
-                fill={fired ? "var(--color-text)" : "var(--color-text-muted)"}
-              >
-                {label}
-              </text>
-            </motion.g>
-          );
-        })}
-
-        {/* Final-answer emphasis under the bottom node when scenario reaches the trunk's end */}
+        {/* Final-answer emphasis when scenario reaches Spanner */}
         {!scenario.earlyExit && clamped === visibleStages.length - 1 ? (
-          <motion.g
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ...SPRING.smooth, delay: 0.2 }}
+          <motion.text
+            x={WIDTH / 2}
+            y={HEIGHT - 2}
+            textAnchor="middle"
+            fontFamily="var(--font-mono)"
+            fontSize={12}
+            fill={answerTone}
+            initial={{ opacity: 0, y: HEIGHT + 4 }}
+            animate={{ opacity: 1, y: HEIGHT - 2 }}
+            transition={{ ...SPRING.smooth, delay: 0.08 }}
           >
-            <text
-              x={TRUNK_X + NODE_W / 2}
-              y={HEIGHT - 6}
-              textAnchor="middle"
-              fontFamily="var(--font-mono)"
-              fontSize={13}
-              fill={answerTone}
-            >
-              answer: <tspan fontWeight={600}>{scenario.finalAnswer}</tspan>
-            </text>
-          </motion.g>
+            answer: <tspan fontWeight={600}>{scenario.finalAnswer}</tspan>
+          </motion.text>
         ) : null}
-
-        {/* Canonical form label under "normalise" */}
-        {(() => {
-          const idx = TRUNK_STAGES.findIndex((s) => s.id === "normalise");
-          if (idx < 0 || clamped < visibleStages.findIndex((s) => s.id === "normalise")) return null;
-          return (
-            <motion.text
-              key={`can-${scenario.id}`}
-              x={TRUNK_X + NODE_W / 2}
-              y={rowY(idx) + NODE_H + 14}
-              textAnchor="middle"
-              fontFamily="var(--font-mono)"
-              fontSize={11}
-              fill="var(--color-accent)"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={SPRING.smooth}
-            >
-              → {scenario.canonical}
-            </motion.text>
-          );
-        })()}
       </svg>
-      </div>
     </WidgetShell>
   );
 }

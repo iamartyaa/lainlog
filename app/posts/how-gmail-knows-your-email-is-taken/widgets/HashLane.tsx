@@ -6,7 +6,7 @@ import { Arrow } from "@/components/viz/Arrow";
 import { Stepper } from "@/components/viz/Stepper";
 import { SvgDefs } from "@/components/viz/SvgDefs";
 import type { BlockState } from "@/components/viz/Block";
-import { SPRING } from "@/lib/motion";
+import { SPRING, SVG_SONAR } from "@/lib/motion";
 import { BitArray } from "./BitArray";
 import { WidgetShell } from "./WidgetShell";
 
@@ -81,15 +81,15 @@ export function HashLane({ m = 16, script = DEFAULT_SCRIPT, initialStep = 0 }: P
     return state;
   }, [script, step, m]);
 
-  // Geometry: 16 cells × 34px = 544. Plus padding → 576 wide canvas.
-  const CELL = 28;
-  const GAP = 4;
+  // Mobile-first geometry: 16 cells × 20px stride = 320. Plus padding → 360 wide.
+  const CELL = 18;
+  const GAP = 2;
   const rowWidth = m * (CELL + GAP) - GAP;
-  const PADDING_X = 32;
+  const PADDING_X = 20;
   const WIDTH = rowWidth + PADDING_X * 2;
-  const LANE_Y = 48;
-  const LANE_LABEL_Y = 28;
-  const ARRAY_Y = 168;
+  const LANE_Y = 44;
+  const LANE_LABEL_Y = 24;
+  const ARRAY_Y = 150;
   const HEIGHT = ARRAY_Y + CELL + 28;
 
   // Lane x positions — evenly distributed across the canvas.
@@ -118,12 +118,11 @@ export function HashLane({ m = 16, script = DEFAULT_SCRIPT, initialStep = 0 }: P
 
   return (
     <WidgetShell
-      title={`HashLane · ${current.kind} ${current.key}`}
+      title={`bloom · ${current.kind} "${current.key}"`}
       measurements={measurements}
       caption={current.caption}
       controls={<Stepper value={step} total={script.length} onChange={setStep} />}
     >
-      <div className="bs-widget-scroll-at-narrow">
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         width="100%"
@@ -191,7 +190,7 @@ export function HashLane({ m = 16, script = DEFAULT_SCRIPT, initialStep = 0 }: P
           );
         })}
 
-        {/* Query pulse rings — drawn over bits for query steps */}
+        {/* Query pulse rings — one-shot sonar ping for "just checked" bits. */}
         {isQuery
           ? current.bitIndices.map((bitIdx) => {
               const { x, y } = bitCenter(bitIdx);
@@ -205,9 +204,7 @@ export function HashLane({ m = 16, script = DEFAULT_SCRIPT, initialStep = 0 }: P
                   fill="none"
                   stroke={isMiss ? "var(--color-text)" : "var(--color-accent)"}
                   strokeWidth={1.5}
-                  initial={{ scale: 0.7, opacity: 0 }}
-                  animate={{ scale: 1, opacity: isMiss ? 0.9 : 0.6 }}
-                  transition={SPRING.smooth}
+                  {...SVG_SONAR}
                 />
               );
             })
@@ -236,13 +233,12 @@ export function HashLane({ m = 16, script = DEFAULT_SCRIPT, initialStep = 0 }: P
             fill={queryAnswer === "no" ? "var(--color-text-muted)" : "var(--color-accent)"}
             initial={{ opacity: 0, y: HEIGHT - 2 }}
             animate={{ opacity: 1, y: HEIGHT - 8 }}
-            transition={{ ...SPRING.smooth, delay: 0.35 }}
+            transition={{ ...SPRING.smooth, delay: 0.08 }}
           >
             answer: <tspan fontWeight={600}>{queryAnswer === "maybe" ? "maybe" : "no"}</tspan>
           </motion.text>
         ) : null}
       </svg>
-      </div>
     </WidgetShell>
   );
 }

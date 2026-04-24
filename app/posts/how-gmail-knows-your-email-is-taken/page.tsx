@@ -11,6 +11,7 @@ import {
   A,
   HeroTile,
 } from "@/components/prose";
+import { TextHighlighter, VerticalCutReveal } from "@/components/fancy";
 import {
   FlowDemo,
   NormalisationMap,
@@ -20,6 +21,24 @@ import {
 import { metadata } from "./metadata";
 
 export { metadata };
+
+const HL_TRANSITION = { type: "spring" as const, duration: 0.9, bounce: 0 };
+const HL_COLOR = "color-mix(in oklab, var(--color-accent) 28%, transparent)";
+const HL_OPTS = { once: true, initial: false, amount: 0.55 } as const;
+
+/** Highlight a load-bearing phrase. Default ltr swipe, spring, inView once. */
+function HL({ children }: { children: React.ReactNode }) {
+  return (
+    <TextHighlighter
+      transition={HL_TRANSITION}
+      highlightColor={HL_COLOR}
+      useInViewOptions={HL_OPTS}
+      className="rounded-[0.2em] px-[1px]"
+    >
+      {children}
+    </TextHighlighter>
+  );
+}
 
 export default function HowGmailKnowsYourEmailIsTaken() {
   return (
@@ -46,8 +65,7 @@ export default function HowGmailKnowsYourEmailIsTaken() {
         {/* §1 — Scene */}
         <P>
           You type an email on the Gmail sign-up page, reach for Tab, and — before your finger
-          lifts — the form says <Em>already taken</Em>. It doesn&apos;t feel like a check. It
-          feels like Gmail already knew.
+          lifts — the form says <HL>already taken</HL>. It feels like Gmail already knew.
         </P>
         <P>
           Pick a scenario below and step through what actually happens. Then we&apos;ll zoom in
@@ -57,20 +75,20 @@ export default function HowGmailKnowsYourEmailIsTaken() {
 
       <FlowDemo />
 
-      <div>
+      <div className="pt-[var(--spacing-md)]">
         <P>
           Three things to notice in the widget. First, the answer can come out of any of several
-          layers — not just the database. Second, the very first thing the server does is
-          rewrite your email into a form you didn&apos;t type. Third, whatever the flow above
-          says while you&apos;re typing, it&apos;s not what decides anything when you actually
-          click <Em>Sign up</Em>. We&apos;ll work through each.
+          layers — not just the database. Second, the very first thing the server does is{" "}
+          <HL>rewrite your email into a form you didn&apos;t type</HL>. Third, whatever the flow
+          above says while you&apos;re typing, it&apos;s not what decides anything when you
+          actually click <Em>Sign up</Em>. We&apos;ll work through each.
         </P>
       </div>
 
       {/* §2 — Canonical form */}
       <div>
         <Dots />
-        <H2>Your email gets rewritten</H2>
+        <H2>The thing you typed is not what gets checked.</H2>
         <P>
           Before the accounts table is consulted, your address is lowered, stripped of dots in
           the local part, and trimmed of anything after a plus. So{" "}
@@ -81,11 +99,12 @@ export default function HowGmailKnowsYourEmailIsTaken() {
 
       <NormalisationMap />
 
-      <div>
+      <div className="pt-[var(--spacing-md)]">
         <P>
           Google&apos;s own help docs confirm this for consumer <Code>@gmail.com</Code>{" "}
           addresses. It&apos;s why <Code>j.o.h.n.d.o.e@gmail.com</Code> can&apos;t register if{" "}
-          <Code>johndoe@gmail.com</Code> already exists. The thing you typed was discarded.
+          <Code>johndoe@gmail.com</Code> already exists.{" "}
+          <HL>The thing you typed was discarded.</HL>
         </P>
         <Aside>
           Workspace accounts — Google Workspace on a custom domain — don&apos;t follow this
@@ -94,27 +113,21 @@ export default function HowGmailKnowsYourEmailIsTaken() {
         </Aside>
       </div>
 
-      {/* §3 — The cache tier (the Redis question, answered honestly) */}
+      {/* §3 — The cache tier */}
       <div>
         <Dots />
-        <H2>Two caches before the database</H2>
+        <H2>Most requests never reach the database.</H2>
         <P>
-          A <Em>very</Em>{" "}common question about this flow: what&apos;s the cache doing in front
-          of the database? Most real identity systems put at least one — often two — in-memory
-          cache tiers between the request and the authoritative store, and Gmail is no
-          exception.
-        </P>
-        <P>
-          The first one is an <Em>in-process</Em>{" "}near-cache, right inside the Gaia frontend
+          The first stop is an <Em>in-process</Em>{" "}near-cache, right inside the Gaia frontend
           that handles your request. If the same canonical email was asked about in the last few
-          seconds on the same shard (which happens a lot — popular names get typed constantly),
-          the answer is still in memory. No further work.
+          seconds on the same shard — popular names get typed constantly —{" "}
+          <HL>the answer is still in memory</HL>. No further work.
         </P>
         <P>
-          The second is a <Em>distributed</Em>{" "}cache that spans many frontends, so a warm
-          answer from one shard can serve another. In the FlowDemo widget above, the{" "}
-          <Em>someone just checked this name</Em>{" "}scenario lights this up: the request
-          terminates at the near-cache and never reaches the Bloom filter or Spanner.
+          The second is a distributed cache that spans many frontends, so a warm answer from one
+          shard can serve another. In the FlowDemo widget above, the{" "}
+          <Em>someone just checked this name</Em>{" "}scenario lights this up: the request{" "}
+          <HL>never reaches the Bloom filter or Spanner</HL>.
         </P>
         <Callout tone="note">
           Google&apos;s internal stack uses in-house Memcache-class caches (see{" "}
@@ -132,31 +145,28 @@ export default function HowGmailKnowsYourEmailIsTaken() {
       {/* §4 — Bloom filter */}
       <div>
         <Dots />
-        <H2>The Bloom filter: a cheap, one-sided answer</H2>
+        <H2>The filter can lie about yes, never about no.</H2>
         <P>
           When both caches miss, the server asks one more cheap thing before touching the
-          database: a <Em>Bloom filter</Em>. A row of bits, all zero to start. When an account
-          is created, a few hash functions of the canonical email each pick a bit, and those
-          bits get flipped on. To check an email, hash it the same way and look at those bits:
-          if any one of them is <Code>0</Code>, it&apos;s definitely not in the set. If
-          they&apos;re all <Code>1</Code>, it <Em>might</Em>{" "}be.
+          database: a <Em>Bloom filter</Em>. A row of bits, all zero. When an account is
+          created, a few hash functions pick a few of those bits and flip them on. To check an
+          email, hash it the same way and look at those bits: if any one of them is{" "}
+          <Code>0</Code>, it&apos;s <HL>definitely not in the set</HL>. If they&apos;re all{" "}
+          <Code>1</Code>, it <Em>might</Em>{" "}be.
         </P>
-        <P>
-          Step through a handful of inserts and queries below.
-        </P>
+        <P>Step through a handful of inserts and queries below.</P>
       </div>
 
       <BloomProbe />
 
-      <div>
+      <div className="pt-[var(--spacing-md)]">
         <P>
-          The filter can lie about <Em>yes</Em>, never about <Em>no</Em>. A <Em>no</Em>{" "}alone is
-          enough to answer the user — no database round-trip needed. A <Em>maybe</Em>{" "}has to go
-          to Spanner to be sure.
+          A <Em>no</Em>{" "}answers the user. A maybe pays the database. The asymmetry is the
+          whole reason the filter pays rent.
         </P>
       </div>
 
-      {/* §5 — The two paths after Bloom */}
+      {/* §5 — The four paths */}
       <div>
         <Dots />
         <H2>Three fast paths, one slow one</H2>
@@ -180,23 +190,20 @@ export default function HowGmailKnowsYourEmailIsTaken() {
           </li>
           <li>
             <Em>Bloom filter says maybe</Em> — point-read on Spanner. Google&apos;s published
-            target for Spanner point reads is under 5 ms at the median. The only path that
-            actually talks to the authoritative store.
+            target for Spanner point reads is under 5 ms at the median.{" "}
+            <HL>The only path that actually talks to the authoritative store.</HL>
           </li>
         </ul>
-        <P>
-          Scroll back to the top widget and switch between scenarios. The diagram re-routes to
-          match.
-        </P>
+        <P>Four answers to one question. Only one of them ever asks the database.</P>
       </div>
 
-      {/* §6 — Submit moment / race */}
+      {/* §6 — Submit / race */}
       <div>
         <Dots />
         <H2>Submit — the check you didn&apos;t see</H2>
         <P>
           Everything above was the check that runs <Em>while you&apos;re typing</Em>. It&apos;s
-          a UX hint, and it&apos;s allowed to be wrong, stale, or racing someone else.
+          a UX hint, and it&apos;s <HL>allowed to be wrong, stale, or racing someone else</HL>.
         </P>
         <P>
           When you actually click Sign up, a different thing happens. A database transaction
@@ -211,11 +218,12 @@ export default function HowGmailKnowsYourEmailIsTaken() {
 
       <SignupRace />
 
-      <div>
+      <div className="pt-[var(--spacing-md)]">
         <P>
-          The winner is whichever INSERT Spanner committed first — not whichever user clicked
-          Submit first in their browser. Both clients saw <Em>available</Em>{" "}while typing; only
-          the database&apos;s serial ordering at commit decides who actually got the address.
+          The winner is whichever INSERT Spanner committed first —{" "}
+          <HL>not whichever user clicked Submit first</HL> in their browser. Both clients saw{" "}
+          <Em>available</Em>{" "}while typing; only the database&apos;s serial ordering at commit
+          decides who actually got the address.
         </P>
         <Callout tone="note">
           The one rule to remember: the pre-check (cache, Bloom, point-read) is for UX. The
@@ -228,7 +236,7 @@ export default function HowGmailKnowsYourEmailIsTaken() {
       {/* §7 — Netflix dot-scam */}
       <div>
         <Dots />
-        <H2>When it goes wrong: the Netflix dot-scam</H2>
+        <H2>Other services don&apos;t normalise. That&apos;s the attack surface.</H2>
         <P>
           The reason the rewrite step mattered is that other services don&apos;t always do it
           the same way Gmail does. In 2018, an engineer{" "}
@@ -242,23 +250,37 @@ export default function HowGmailKnowsYourEmailIsTaken() {
           both addresses land in your inbox. You, confused, helpfully pay.
         </P>
         <P>
-          Google knew there was one canonical form; Netflix didn&apos;t. That gap is the attack
-          surface. If you&apos;re storing emails, normalise on write, put your uniqueness
-          constraint on the normalised column, and keep the raw version only for display.
+          <HL>Google knew there was one canonical form; Netflix didn&apos;t.</HL> If you&apos;re
+          storing emails, normalise on write, put your uniqueness constraint on the normalised
+          column, and keep the raw version only for display.
         </P>
       </div>
 
-      {/* §8 — Wrap */}
+      {/* §8 — Closer */}
       <div>
         <Dots />
-        <H2>Sticking the landing</H2>
+        <H2>Two questions, two versions of your email.</H2>
         <P>
-          So: a pause, a trip through Google&apos;s edge, a rewrite, two caches, a Bloom filter,
-          maybe a database — and, at Submit, a real transaction against a uniqueness constraint
-          that does the only check that actually matters. Two different questions on two
-          different versions of your email. The fast one is for the UI. The slow one is for the
-          truth.
+          <VerticalCutReveal
+            useInViewOptions={{ once: true, amount: 0.55 }}
+            staggerDuration={0.035}
+          >
+            The fast one is for the UI. The slow one is for the truth.
+          </VerticalCutReveal>
         </P>
+        <p
+          aria-hidden
+          className="font-mono text-center select-none"
+          style={{
+            marginBlock: "var(--spacing-xl)",
+            color: "var(--color-accent)",
+            opacity: 0.8,
+            fontSize: "var(--text-body)",
+            letterSpacing: "0.2em",
+          }}
+        >
+          ·
+        </p>
       </div>
     </Prose>
   );

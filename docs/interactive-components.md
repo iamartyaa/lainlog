@@ -25,7 +25,7 @@ Every widget we've shipped collapses to one of seven shapes. Pick the shape that
 
 ## 2. External primitives we've integrated
 
-All three live under [`components/fancy/`](../components/fancy/) and were added in the AI-agent-traps post. Keep this folder small and deliberate — every new primitive is overhead.
+Five live under [`components/fancy/`](../components/fancy/). First four landed in the AI-agent-traps post; `ScrambleIn` landed in the gmail polish pass. Keep this folder small and deliberate — every new primitive is overhead.
 
 ### `TextHighlighter` (✅ ubiquitous)
 
@@ -83,6 +83,17 @@ Character-level reveal: each letter slides up from a clipped baseline, staggered
 - **Budget**: one use per post, absolute max. Two is decoration.
 - **Caveat**: the staggered reveal *is* the meaning — save it for sentences whose *pacing* carries the argument. In fetch-polish it landed *"CORS does not block the request. [beat] It blocks the response."* — request-vs-response is exactly what the character-stagger dramatises.
 
+### `ScrambleIn` (✅ decode-moment)
+
+Progressive character reveal with a brief scrambled tail — text assembles left-to-right while the trailing 2 characters flicker through a random alphabet until settling. Shipped in the gmail polish pass (PR for #posts/how-gmail-knows-your-email-is-taken-polish) on `NormalisationMap`'s canonical chip — every time the reader picks a new typed row, the canonical form re-scrambles and settles.
+
+- **Use case**: a stable token that is *decoded* in place. Canonical forms (normalisation), de-obfuscated strings (steganography), hash outputs, post-decryption reveals. Not a generic "typewriter" replacement.
+- **Trigger**: re-key on the upstream source value (e.g. `key={\`sc-${step}\`}`) so the component re-mounts on each change; `autoStart={true}` then scrambles on mount. For hand-controlled replays, use the `ref.start()` imperative.
+- **Reduced motion**: local `useReducedMotion()` guard renders `text` directly — no intervals, no scrambled tail. Screen readers get the full value via `.sr-only` regardless.
+- **Cadence**: `scrambleSpeed={60}` matches the §9 60 ms stagger grid. Defaults to 60. Do not go below 40 — characters blur together.
+- **Alphabet**: scoped per-article. For email/identifier reveals, use `characters="abcdefghijklmnopqrstuvwxyz0123456789.@+"` (this is the local file's default). Never a glyph-soup alphabet with symbols that can't legally appear in the target string.
+- **Budget**: one per article max — twice reads as decoration. Must teach "decode" or "normalise"; if the payload is a literal that the reader didn't type and doesn't know, don't use this primitive.
+
 ## 2.5. The full Fancy library — curation for bytesize
 
 `fancycomponents.dev` ships 38 components. Only three are worth shipping by default; the rest land on a spectrum from *"wait for the right article"* to *"never in this register."* Consult this table before installing anything from upstream.
@@ -102,7 +113,7 @@ Every rating is against bytesize's editorial-calm voice (DESIGN.md §1: *precise
 | **Text Highlighter** | ✅ shipped | Ubiquitous pacing device. See §2.1. |
 | **Typewriter** | 🔸 candidate | Progressive reveal of code or a definition. Tempo teaches. Use with `once: true` and avoid cursor-blink decoration that violates §9. |
 | **Vertical Cut Reveal** | ✅ shipped | One-shot climax-sentence reveal. Shipped for the thesis in the fetch-polish post (PR #27). See §2 for use. |
-| **Scramble In** | 🔸 candidate | A one-shot "decoding" reveal. Perfect for a post that's about *encoded* text — e.g. the invisible-Unicode-tags moment in the agent-traps post could have used this on the de-obfuscated payload. |
+| **Scramble In** | ✅ shipped | Decode-moment reveal. Landed in the gmail polish pass on `NormalisationMap`'s canonical chip — the chip re-scrambles each time the reader picks a new typed row, teaching "the server rewrote this." See §2. |
 | **Basic Number Ticker** | 🔸 candidate | Animated stat reveal on scroll. The agent-traps post stacks numbers (15–29%, 80%+, 23.6% → 11.2%); on a future post where numbers are the argument, animate them in. |
 | **Underline Animation** | 🔸 candidate | Subtler emphasis than `TextHighlighter`. Could carry link-hover states in prose. |
 | **Underline To Background** | 🔸 candidate | Essentially what `TextHighlighter` does in `ltr` direction. Install only if we decide to switch vocabulary — two components for one job is overkill. |
@@ -222,6 +233,17 @@ Every widget must clear every bullet. Reviewer's first pass checks these mechani
 - [ ] On mount, widgets must sit at state 0 and **wait for user interaction**. Never auto-play a teaching animation before the reader has agency.
 - [ ] Captions in state 0 explicitly tell the reader what interaction to perform ("Press scan", "Tap a row", "Step through"). Highlight that verb with `TextHighlighter triggerType="auto"`.
 - [ ] Reset returns to state 0, not a "nearly-done" intermediate.
+
+### Fixed outer window (mobile-first)
+
+Added after the gmail-polish pass. The widget's outer frame — the `WidgetShell` card — must not change size while the reader interacts with it. Content inside the frame can animate, appear, disappear, rearrange; the frame stays still. When the frame reflows under a thumb, reading position jumps and focus breaks.
+
+- [ ] **Mobile-first SVG authoring**: widget canvas widths target ~360 units as the authored width. The canvas scales *up* fluidly on desktop via `width: 100%` + `viewBox`. Never author 680-wide "desktop" canvases and bolt on `.bs-widget-scroll-at-narrow` as the mobile fallback — that's a layout leak we migrated away from.
+- [ ] **Caption min-height**: `WidgetShell.tsx` caption slot reserves `min-height: 5.25em` so state-dependent caption length changes don't reflow the card. If your caption needs more than 3–4 prose lines at body size, shorten the caption — don't grow the slot.
+- [ ] **Measurements-string min-width**: `WidgetShell.tsx` measurements span reserves `min-width: 8ch` and is `shrink-0`. State-dependent digit-count or label changes no longer shift the title column.
+- [ ] **Stepper-total stability**: if the stepper's `total` varies between states, wrap the controls row in a `min-height` so the chips row can't collapse from two lines to one.
+- [ ] **No outside-SVG widgets that appear conditionally**: if your widget wants a tie-state note, a "congratulations" message, or a "that was wrong" callout, render it *inside* the SVG with `animate={{ opacity }}`, not as an `AnimatePresence` sibling below the canvas. Otherwise the card grows and shrinks under the reader's thumb.
+- [ ] **Title string must be static-shape**: pin the word count. Don't let a widget render `title={\`HashLane · ${kind} ${key}\`}` where `kind` flips between *insert* / *query* / *remove* — the title length shifts, the measurements column shifts, everything jitters. Build a stable template (e.g. `bloom · ${kind} "${key}"` where `kind` is always non-empty and one word).
 
 ## 4. `WidgetShell` conventions
 

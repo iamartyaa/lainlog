@@ -60,8 +60,12 @@ export function WidgetShell({
           </span>
           {measurements ? (
             <span
-              className="font-mono tabular-nums text-right"
-              style={{ fontSize: "var(--text-small)", color: "var(--color-text-muted)" }}
+              className="font-mono tabular-nums text-right shrink-0"
+              style={{
+                fontSize: "var(--text-small)",
+                color: "var(--color-text-muted)",
+                minWidth: "8ch",
+              }}
             >
               {measurements}
             </span>
@@ -114,6 +118,7 @@ export function WidgetShell({
                 fontFamily: "var(--font-serif)",
                 color: "var(--color-text)",
                 lineHeight: 1.55,
+                minHeight: "5.25em",
               }}
             >
               <span
@@ -137,6 +142,7 @@ export function WidgetShell({
                 fontSize: "var(--text-small)",
                 color: "var(--color-text-muted)",
                 lineHeight: 1.5,
+                minHeight: "5.25em",
               }}
             >
               {caption}

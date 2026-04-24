@@ -6,15 +6,13 @@ import { Stepper } from "@/components/viz/Stepper";
 import { SvgDefs } from "@/components/viz/SvgDefs";
 import { Arrow } from "@/components/viz/Arrow";
 import { SPRING } from "@/lib/motion";
+import { ScrambleIn } from "@/components/fancy";
 import { WidgetShell } from "./WidgetShell";
 
 type Row = {
   typed: string;
-  /** One-line caption that appears below the canvas when this row becomes active. */
   caption: string;
-  /** If true, this row does NOT map to the default canonical form. */
   separate?: boolean;
-  /** When separate=true, the alternate canonical form. */
   alternate?: string;
 };
 
@@ -46,7 +44,7 @@ const DEFAULT_ROWS: Row[] = [
     separate: true,
     alternate: "johndoe@company.com",
     caption:
-      "Workspace addresses play by the tenant admin's rules, not Gmail's — so @company.com is its own namespace.",
+      "Workspace addresses follow tenant rules, not Gmail's. So @company.com is its own namespace.",
   },
 ];
 
@@ -57,8 +55,12 @@ type Props = {
 };
 
 /**
- * NormalisationMap — §4. Several typed inputs collapse by curved arrows into
- * one canonical form (with one intentional exception for the Workspace row).
+ * NormalisationMap — mobile-first. Typed rows stack vertically; curved arrows
+ * sweep down into one canonical chip pinned at the bottom. The Workspace row
+ * breaks sideways into its own dashed alternate chip to teach the exception.
+ *
+ * Canonical chip uses `ScrambleIn` so the rewrite re-plays on every step —
+ * teaching "the server rewrote this" even when the final string is unchanged.
  */
 export function NormalisationMap({
   rows = DEFAULT_ROWS,
@@ -66,101 +68,206 @@ export function NormalisationMap({
   initialStep = 0,
 }: Props) {
   const [step, setStep] = useState(initialStep);
-  const current = rows[Math.max(0, Math.min(step, rows.length - 1))];
+  const clampedStep = Math.max(0, Math.min(step, rows.length - 1));
+  const current = rows[clampedStep];
 
-  // Geometry
-  const WIDTH = 680;
-  const ROW_H = 34;
+  // Mobile-first geometry — 360 wide, stacked vertically.
+  const WIDTH = 360;
+  const ROW_H = 30;
   const ROW_GAP = 4;
-  const PAD_T = 12;
-  const PAD_B = 12;
-  const PAD_L = 18;
-  const PAD_R = 28;
-  const LEFT_W = 280;
-  const RIGHT_X = WIDTH - PAD_R - 220;
-  const HEIGHT = PAD_T + rows.length * (ROW_H + ROW_GAP) - ROW_GAP + PAD_B;
-  const CANONICAL_Y = HEIGHT / 2;
+  const PAD_T = 10;
+  const PAD_L = 20;
+  const GAP_TO_CANONICAL = 24;
+  const CANONICAL_H = 44;
+  const ROWS_BLOCK_H = rows.length * (ROW_H + ROW_GAP) - ROW_GAP;
+  const CANONICAL_Y = PAD_T + ROWS_BLOCK_H + GAP_TO_CANONICAL;
+  const HEIGHT = CANONICAL_Y + CANONICAL_H + 8;
+  const ROW_W = WIDTH - PAD_L * 2;
+
+  // Resolve the canonical form shown in the chip for the current step:
+  // Workspace row exposes its alternate, everyone else points at default.
+  const displayCanonical = current.separate
+    ? current.alternate ?? current.typed
+    : canonical;
 
   return (
     <WidgetShell
-      title="NormalisationMap"
-      measurements={`step = ${step + 1}/${rows.length}`}
+      title="normalisation · one canonical form"
+      measurements={`step ${clampedStep + 1}/${rows.length}`}
       caption={current.caption}
-      controls={<Stepper value={step} total={rows.length} onChange={setStep} />}
+      controls={<Stepper value={clampedStep} total={rows.length} onChange={setStep} />}
     >
-      <div className="bs-widget-scroll-at-narrow">
-      <svg
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        width="100%"
-        style={{ maxWidth: WIDTH, height: "auto", display: "block" }}
-        role="img"
-        aria-label={`Normalisation map, step ${step + 1} of ${rows.length}: ${current.typed}`}
-      >
-        <defs>
-          <SvgDefs />
-        </defs>
+      <div className="relative" style={{ maxWidth: WIDTH, margin: "0 auto" }}>
+        <svg
+          viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+          width="100%"
+          style={{ maxWidth: WIDTH, height: "auto", display: "block" }}
+          role="img"
+          aria-label={`Normalisation map, step ${clampedStep + 1} of ${rows.length}: ${current.typed}`}
+        >
+          <defs>
+            <SvgDefs />
+          </defs>
 
-        {/* Typed inputs on the left */}
-        {rows.map((row, i) => {
-          const y = PAD_T + i * (ROW_H + ROW_GAP) + ROW_H / 2;
-          const revealed = i <= step;
-          const active = i === step;
-          return (
-            <motion.g
-              key={`row-${i}`}
-              initial={false}
-              animate={{ opacity: revealed ? 1 : 0.15 }}
-              transition={SPRING.smooth}
-            >
-              {active ? (
-                <rect
-                  x={PAD_L - 6}
-                  y={y - ROW_H / 2}
-                  width={LEFT_W + 8}
-                  height={ROW_H}
-                  rx={2}
-                  fill="color-mix(in oklab, var(--color-accent) 12%, transparent)"
-                />
-              ) : null}
-              <text
-                x={PAD_L}
-                y={y}
-                dominantBaseline="central"
-                fontFamily="var(--font-mono)"
-                fontSize={13}
-                fill={active ? "var(--color-text)" : "var(--color-text-muted)"}
+          {/* Typed rows, stacked */}
+          {rows.map((row, i) => {
+            const y = PAD_T + i * (ROW_H + ROW_GAP) + ROW_H / 2;
+            const revealed = i <= clampedStep;
+            const active = i === clampedStep;
+            return (
+              <motion.g
+                key={`row-${i}`}
+                initial={false}
+                animate={{ opacity: revealed ? 1 : 0.18 }}
+                transition={SPRING.smooth}
               >
-                {row.typed}
-              </text>
-            </motion.g>
-          );
-        })}
+                {active ? (
+                  <rect
+                    x={PAD_L - 6}
+                    y={y - ROW_H / 2}
+                    width={ROW_W + 12}
+                    height={ROW_H}
+                    rx={2}
+                    fill="color-mix(in oklab, var(--color-accent) 12%, transparent)"
+                  />
+                ) : null}
+                <text
+                  x={PAD_L}
+                  y={y}
+                  dominantBaseline="central"
+                  fontFamily="var(--font-mono)"
+                  fontSize={12}
+                  fill={active ? "var(--color-text)" : "var(--color-text-muted)"}
+                >
+                  {row.typed}
+                </text>
+                {row.separate ? (
+                  <text
+                    x={WIDTH - PAD_L}
+                    y={y}
+                    textAnchor="end"
+                    dominantBaseline="central"
+                    fontFamily="var(--font-mono)"
+                    fontSize={9}
+                    fill="var(--color-text-muted)"
+                    letterSpacing="0.08em"
+                  >
+                    WORKSPACE
+                  </text>
+                ) : null}
+              </motion.g>
+            );
+          })}
 
-        {/* Canonical form on the right */}
-        <g>
+          {/* Converging arrows from each revealed row into the canonical chip */}
+          {rows.map((row, i) => {
+            if (i > clampedStep) return null;
+            if (row.separate) return null; // workspace branches sideways, not down
+            const y = PAD_T + i * (ROW_H + ROW_GAP) + ROW_H / 2;
+            const x1 = PAD_L + 240;
+            const x2 = WIDTH / 2;
+            const y2 = CANONICAL_Y;
+            const tone = i === clampedStep ? "active" : "muted";
+            const curvature = (i - rows.length / 2) * 3;
+            return (
+              <Arrow
+                key={`arr-${i}-${row.typed}`}
+                x1={x1}
+                y1={y}
+                x2={x2}
+                y2={y2 - 2}
+                tone={tone}
+                curvature={curvature}
+                animateIn={i === clampedStep}
+                strokeWidth={1.2}
+              />
+            );
+          })}
+
+          {/* Sideways arrow for Workspace row — draws toward an offset chip */}
+          {(() => {
+            const separateIdx = rows.findIndex((r) => r.separate);
+            if (separateIdx === -1 || clampedStep < separateIdx) return null;
+            const separateRow = rows[separateIdx];
+            const y = PAD_T + separateIdx * (ROW_H + ROW_GAP) + ROW_H / 2;
+            const altCx = WIDTH / 2;
+            const altCy = CANONICAL_Y + CANONICAL_H + 6;
+            const altW = 200;
+            const altH = 28;
+            return (
+              <motion.g
+                initial={false}
+                animate={{ opacity: 1 }}
+                transition={SPRING.smooth}
+              >
+                <motion.path
+                  d={`M ${PAD_L + 240} ${y} Q ${WIDTH - PAD_L + 8} ${y} ${altCx + altW / 2 - 4} ${altCy - 6}`}
+                  fill="none"
+                  stroke="var(--color-text-muted)"
+                  strokeWidth={1}
+                  strokeDasharray="4 3"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  transition={SPRING.smooth}
+                />
+                <rect
+                  x={altCx - altW / 2}
+                  y={altCy - altH / 2 + 6}
+                  width={altW}
+                  height={altH}
+                  rx={3}
+                  fill="none"
+                  stroke="var(--color-text-muted)"
+                  strokeWidth={1}
+                  strokeDasharray="4 4"
+                />
+                <text
+                  x={altCx}
+                  y={altCy + 11}
+                  textAnchor="middle"
+                  fontFamily="var(--font-mono)"
+                  fontSize={11}
+                  fill="var(--color-text-muted)"
+                >
+                  {separateRow.alternate ?? separateRow.typed}
+                </text>
+              </motion.g>
+            );
+          })()}
+
+          {/* Canonical chip — ScrambleIn payload rendered as a foreignObject
+              so the typographic re-reveal stays DOM-driven with reduced-motion
+              support, while sitting inside our SVG frame. */}
           <rect
-            x={RIGHT_X}
-            y={CANONICAL_Y - 20}
-            width={220}
-            height={40}
+            x={WIDTH / 2 - 130}
+            y={CANONICAL_Y}
+            width={260}
+            height={CANONICAL_H}
             rx={3}
             fill="color-mix(in oklab, var(--color-accent) 18%, transparent)"
             stroke="var(--color-accent)"
             strokeWidth={1.2}
           />
-          <text
-            x={RIGHT_X + 110}
-            y={CANONICAL_Y - 2}
-            textAnchor="middle"
-            fontFamily="var(--font-mono)"
-            fontSize={14}
-            fill="var(--color-text)"
+          <foreignObject
+            x={WIDTH / 2 - 128}
+            y={CANONICAL_Y + 4}
+            width={256}
+            height={CANONICAL_H - 18}
           >
-            {canonical}
-          </text>
+            <div
+              className="h-full w-full flex items-center justify-center font-mono tabular-nums"
+              style={{
+                color: "var(--color-text)",
+                fontSize: 13,
+                letterSpacing: "-0.005em",
+              }}
+            >
+              <ScrambleIn key={`sc-${clampedStep}`} text={displayCanonical} />
+            </div>
+          </foreignObject>
           <text
-            x={RIGHT_X + 110}
-            y={CANONICAL_Y + 12}
+            x={WIDTH / 2}
+            y={CANONICAL_Y + CANONICAL_H - 6}
             textAnchor="middle"
             fontFamily="var(--font-sans)"
             fontSize={9}
@@ -169,68 +276,7 @@ export function NormalisationMap({
           >
             CANONICAL FORM
           </text>
-        </g>
-
-        {/* Workspace alternate target — only visible once the separate row is reached */}
-        {(() => {
-          const separateRow = rows.find((r) => r.separate);
-          const separateIdx = rows.findIndex((r) => r.separate);
-          if (!separateRow || separateIdx === -1) return null;
-          const revealed = step >= separateIdx;
-          const altY = PAD_T + separateIdx * (ROW_H + ROW_GAP) + ROW_H / 2;
-          return (
-            <motion.g
-              initial={false}
-              animate={{ opacity: revealed ? 1 : 0 }}
-              transition={SPRING.smooth}
-            >
-              <rect
-                x={RIGHT_X}
-                y={altY - 16}
-                width={220}
-                height={32}
-                rx={3}
-                fill="none"
-                stroke="var(--color-text-muted)"
-                strokeWidth={1}
-                strokeDasharray="4 4"
-              />
-              <text
-                x={RIGHT_X + 110}
-                y={altY + 3}
-                textAnchor="middle"
-                fontFamily="var(--font-mono)"
-                fontSize={12}
-                fill="var(--color-text-muted)"
-              >
-                {separateRow.alternate ?? separateRow.typed}
-              </text>
-            </motion.g>
-          );
-        })()}
-
-        {/* Arrows from each revealed typed row to its destination */}
-        {rows.map((row, i) => {
-          if (i > step) return null;
-          const y = PAD_T + i * (ROW_H + ROW_GAP) + ROW_H / 2;
-          const toY = row.separate ? y : CANONICAL_Y;
-          const curvature = row.separate ? 0 : (i - rows.length / 2) * 5;
-          const tone = i === step ? "active" : "muted";
-          return (
-            <Arrow
-              key={`arr-${i}-${row.typed}`}
-              x1={PAD_L + LEFT_W + 6}
-              y1={y}
-              x2={RIGHT_X - 4}
-              y2={toY}
-              tone={tone}
-              curvature={curvature}
-              animateIn={i === step}
-              strokeWidth={1.2}
-            />
-          );
-        })}
-      </svg>
+        </svg>
       </div>
     </WidgetShell>
   );

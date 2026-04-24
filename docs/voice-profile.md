@@ -117,9 +117,11 @@ Framework posts reward ending on the inversion stated plainly, often borrowing t
 
 Don't recap the sections. The dot-line ornament + the closing `<HL>` carry it.
 
-### `<TextHighlighter>` (HL) as a pacing device
+### `<TextHighlighter>` (HL) as a pacing device — required on every post
 
 Used for the single load-bearing phrase of its paragraph — 1–2 per section, target ~10–17 across the post. Binds to `var(--color-accent)` at 28% via `color-mix`. Never a second colour, never a second direction. See [`interactive-components.md §2`](./interactive-components.md) for trigger discipline.
+
+**Enforcement rule**: every new post and every polish pass lands an `HL` helper in `page.tsx` (identical signature across the catalogue — copy from `app/posts/the-webpage-that-reads-the-agent/page.tsx:28–52`) and wraps 10–17 load-bearing phrases. A post without TextHighlighter is a post that hasn't gone through Phase E. Candidates: the inversion in the lede, the one-line thesis, mechanism first-appearances, section-closing punches. Never wrap connective tissue; never wrap two adjacent phrases; never wrap the same phrase twice.
 
 ### The "every defence is already bypassed" rhythm
 
