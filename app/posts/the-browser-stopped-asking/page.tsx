@@ -2,7 +2,6 @@ import {
   Prose,
   H1,
   H2,
-  H3,
   P,
   Code,
   Callout,
@@ -15,7 +14,7 @@ import {
 } from "@/components/prose";
 import { CodeBlock } from "@/components/code";
 import { TextHighlighter, VerticalCutReveal } from "@/components/fancy";
-import { PipeCompare, UpgradeHandshake, ReconnectGap } from "./widgets";
+import { PipeCompare, UpgradeHandshake, ReconnectGap, CostMatrix } from "./widgets";
 import { metadata } from "./metadata";
 
 export { metadata };
@@ -410,62 +409,39 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=`}
         <Dots />
         <H2>The cost moved. It didn&apos;t vanish.</H2>
         <P>
-          Three places the cost reappears — one for each mechanism. None of them
-          are in the tutorials.
-        </P>
-
-        <H3>&ldquo;Just use WebSockets&rdquo; still opens with long polling</H3>
-        <P>
-          Open the docs for the most widely deployed real-time library in the JS
-          world and read carefully.{" "}
-          <A href="https://socket.io/docs/v4/how-it-works/">Socket.IO v4</A>{" "}
-          <Em>still starts every connection with HTTP long polling</Em>, and only
-          upgrades to WebSocket once the handshake clears. Corporate proxies,
-          older transparent caches, and some antivirus software silently mis-handle
-          the <Code>Upgrade</Code>{" "}header. The fallback isn&apos;t legacy — it&apos;s
-          2026 insurance.
+          Three failure modes show up the moment you ship any of these to
+          production. None are in the tutorials. The matrix below is one row per
+          failure mode, one column per protocol — tap a row to read what each
+          cell means. The pattern that falls out is the point of this section.
         </P>
       </div>
 
-      <FullBleed>
-        <CodeBlock
-          lang="javascript"
-          filename="socket.io-client · the default nobody reads"
-          code={`import { io } from "socket.io-client";
-
-const socket = io("https://…", {
-  transports: ["polling", "websocket"],  // ← polling first. on purpose.
-});`}
-        />
-      </FullBleed>
+      <CostMatrix />
 
       <div>
-        <H3>A gateway restarts, and every client knocks at once</H3>
         <P>
-          Discord learned this at five million concurrent sessions. One gateway
-          blipped and the stampede of reconnects hit a ring-lookup process that{" "}
+          Each row tells a different story. Proxies and corporate networks{" "}
+          <A href="https://socket.io/docs/v4/how-it-works/">
+            silently break the WebSocket Upgrade
+          </A>
+          , which is why Socket.IO still opens every connection on long polling
+          first — the fallback isn&apos;t legacy; it&apos;s 2026 insurance. When
+          a gateway blips, every long-poll and WebSocket client races back at
+          the same instant: Discord&apos;s reconnect stampede{" "}
           <A href="https://discord.com/blog/how-discord-scaled-elixir-to-5-000-000-concurrent-users">
-            took 17.5 seconds just to answer the queries
+            took 17.5 seconds on a ring-lookup
           </A>{" "}
-          until they cached the results. Slack&apos;s{" "}
+          until they cached, and Slack built{" "}
           <A href="https://slack.engineering/flannel-an-application-level-edge-cache-to-make-slack-scale/">
             Flannel
-          </A>{" "}was motivated by the same shape: one office loses network, and the
-          retry wave costs more than the outage that caused it. The tutorial writes{" "}
-          <Code>ws.onclose = () =&gt; reconnect()</Code>{" "}and moves on; production
-          writes randomized backoff, per-tenant semaphores, and lazy payloads so the
-          next herd can&apos;t trample the server that just recovered.
-        </P>
-
-        <H3>Fanout is the real ceiling</H3>
-        <P>
-          Phoenix held two million idle WebSocket connections on one box. So that
-          part isn&apos;t the problem. The problem is writing to all of them at the
-          same moment — Discord&apos;s publish to a single 30,000-member guild took{" "}
-          <strong>900 ms – 2.1 s</strong>{" "}before they parallelized fanout with
-          Manifold. The reader&apos;s mental model flips: the hard part of
-          real-time isn&apos;t holding the connection. It&apos;s the{" "}
-          <Code>O(N)</Code>{" "}write on every event.
+          </A>{" "}
+          for the same shape. SSE alone has automatic resume on the protocol;
+          the others need it written by hand. And on the third row, the hard
+          part of real-time isn&apos;t holding the connection — it&apos;s the{" "}
+          <Code>O(N)</Code>{" "}write on every event. Phoenix held two million
+          idle sockets on one box; Discord&apos;s publish to a single
+          30,000-member guild still took <strong>900 ms – 2.1 s</strong>{" "}
+          before they parallelized fanout with Manifold.
         </P>
 
         <P>
