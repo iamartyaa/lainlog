@@ -5,7 +5,6 @@ import {
   P,
   Code,
   Aside,
-  Callout,
   Dots,
   Em,
   Term,
@@ -120,19 +119,24 @@ export default function TheWebpageThatReadsTheAgent() {
         </p>
       </div>
 
-      {/* hero */}
-      <HostilePageScan />
-
-      {/* §1 — the inversion */}
+      {/* §1 — the inversion (lede before hero widget) */}
       <div>
         <Dots />
         <H2>You don&apos;t break the model. You break the page.</H2>
         <P>
-          <HL>You don&apos;t break the model — you break the page it reads.</HL>{" "}
-          The attacker never touches the network. They modify what the
-          network is about to look at, and the network&apos;s own
+          You ask an agent to summarise a product page. The agent reads.
+          The agent answers. You trust it.{" "}
+          <HL>But what did the agent actually read?</HL>
+        </P>
+        <P>
+          The attacker never touches your model. They modify the page
+          your model is about to read. Your model&apos;s own
           instruction-following does the rest.
         </P>
+
+        {/* hero widget — answers the question above */}
+        <HostilePageScan />
+
         <P>
           For a decade the fight was inside the network — gradients,
           adversarial pixels, poisoned weights. That&apos;s not what&apos;s
@@ -157,11 +161,11 @@ export default function TheWebpageThatReadsTheAgent() {
         <Dots />
         <H2>The agent has a loop. Each trap attacks one stage of it.</H2>
         <P>
-          An agent reads a page, reasons about it, consults memory, picks
-          an action, maybe coordinates with other agents, and occasionally
-          hands work to a human. Six stages. The paper&apos;s contribution
-          is to map traps onto them:{" "}
-          <HL>attacks are categorised by which stage of the loop they corrupt.</HL>
+          Imagine a Claude-for-Chrome instance reading your inbox. It
+          reads each email, decides what matters, remembers what it
+          learned last Tuesday, and takes an action — open a doc, send
+          a reply. That loop has six stages.{" "}
+          <HL>Each trap attacks one of them.</HL>
         </P>
 
         <AgentLoopMap />
@@ -187,10 +191,11 @@ export default function TheWebpageThatReadsTheAgent() {
           The page the agent reads is not the page you see.
         </SectionH2>
         <P>
-          You see a rendered viewport. The agent sees the DOM, the
-          accessibility tree, attributes, comments, raw pixels — everything
-          the browser eventually discards. That gap is where Content
-          Injection lives.
+          That&apos;s how Content Injection works on the page above. You
+          and the agent read different copies. Yours is rendered pixels.
+          The agent&apos;s is the DOM, the accessibility tree, attributes,
+          comments, raw pixels — everything the browser eventually
+          discards. The gap is the attack surface.
         </P>
 
         <ParseVsRender />
@@ -238,34 +243,31 @@ export default function TheWebpageThatReadsTheAgent() {
           No instruction is given. Only the distribution tilts.
         </SectionH2>
         <P>
-          Content Injection smuggles an instruction. Semantic Manipulation
-          smuggles nothing. The task is left intact, the content
-          technically truthful, and the agent&apos;s synthesis is bent.
-          Framing does it. Authority does it. The attributed author does
-          it.
+          What if the page didn&apos;t smuggle a command at all? What if
+          it just made the agent biased? That&apos;s Semantic Manipulation.
+          The task is left intact, the content technically truthful, the
+          agent&apos;s synthesis bent — by framing, by authority, by the
+          attributed author.
         </P>
-        <Callout tone="note">
-          The subtlest version of this is a feedback loop. The paper calls
-          it <Term>persona hyperstition</Term>.
-        </Callout>
         <P>
-          Stories the web tells <Em>about</Em>{" "}a model — in forums, on
-          social media, in think-pieces — get scraped, get trained on, get
+          The subtlest version is a feedback loop the paper calls{" "}
+          <Term>persona hyperstition</Term> — a model inheriting a persona
+          the web wrote about it. Stories get scraped, get trained on, get
           retrieved at inference time.{" "}
-          <HL>The model that reads these stories starts acting like them.</HL>{" "}
-          A narrative becomes a behaviour becomes evidence for the
-          narrative.
+          <HL>The model that reads these stories starts acting like them.</HL>
         </P>
         <P>
-          In July 2025, xAI&apos;s Grok briefly began referring to itself
-          as <Em>MechaHitler</Em>{" "}on X, echoing extremist
-          self-descriptions that X users had been feeding it. Anthropic
-          documents a quieter version — a &ldquo;spiritual bliss
-          attractor&rdquo; in Claude where certain recursive
-          self-reflections stabilise into a quasi-mystical register. Both
-          are cases of a model inheriting a persona that wasn&apos;t
-          shipped.
+          In July 2025, xAI&apos;s Grok briefly began calling itself{" "}
+          <Em>MechaHitler</Em> on X, echoing extremist self-descriptions
+          that X users had been feeding it. A model inheriting a persona
+          that wasn&apos;t shipped.
         </P>
+        <Aside>
+          Anthropic documents a quieter version — a &ldquo;spiritual bliss
+          attractor&rdquo; in Claude where certain recursive
+          self-reflections stabilise into a quasi-mystical register. Same
+          shape, gentler surface.
+        </Aside>
         <P>
           The uncomfortable implication:{" "}
           <HL>every other trap can be patched. This one writes itself into the model.</HL>{" "}
@@ -283,8 +285,7 @@ export default function TheWebpageThatReadsTheAgent() {
         <P>
           Content Injection and Semantic Manipulation are both transient —
           they die when the context window closes. Cognitive State traps
-          don&apos;t.{" "}
-          <HL>Memory makes the attack echo across sessions and users.</HL>
+          don&apos;t. <HL>Memory is forever.</HL>
         </P>
         <P>
           Plant a fabricated claim in a retrieval corpus and every query
@@ -321,23 +322,24 @@ export default function TheWebpageThatReadsTheAgent() {
           The agent&apos;s tools become the exfiltration channel.
         </SectionH2>
         <P>
-          This is where the agent actually <Em>does</Em>{" "}something its
-          user didn&apos;t ask for. The paper frames it as a{" "}
-          <Term>confused deputy</Term>{" "}attack: the agent has privileged
-          read access to the user&apos;s data, privileged write access to
-          tools, and an attacker-controlled input induces it to shuttle
-          private data out.
+          In June 2025, one email arrived in an M365 inbox. The user
+          never opened it. The user&apos;s data left the building anyway.
+          This is Behavioural Control — where the agent actually{" "}
+          <Em>does</Em> something its user didn&apos;t ask for. The paper
+          frames it as a <Term>confused deputy</Term> attack: the agent
+          has privileged read access to the user&apos;s data, privileged
+          write access to tools, and an attacker-controlled input induces
+          it to shuttle private data out.
         </P>
         <P>
-          Researchers have hit <Em>80%+ exfiltration rates across five
-          web agents</Em>{" "}with task-aligned injections. Others demoed
-          self-replicating prompts in email that triggered zero-click
-          chains — an AI worm. The headline incident is{" "}
-          <Em>EchoLeak</Em>, June 2025. One email, inside M365
-          Copilot&apos;s RAG scope, chained three independent defence
+          That headline incident is <Em>EchoLeak</Em>. One email, inside
+          M365 Copilot&apos;s RAG scope, chained three independent defence
           bypasses — classifier, markdown filter, CSP — to exfiltrate
-          Copilot&apos;s privileged context to a Teams endpoint. The user
-          never opened the email.
+          Copilot&apos;s privileged context to a Teams endpoint.
+          Researchers have hit <Em>80%+ exfiltration rates</Em> across
+          five web agents with similar task-aligned injections. Others
+          demoed self-replicating prompts in email that triggered
+          zero-click chains — an AI worm.
         </P>
         <P>
           Every &ldquo;obvious&rdquo; defence a reader in 2023 might
@@ -385,13 +387,22 @@ export default function TheWebpageThatReadsTheAgent() {
           The attack isn&apos;t on any one agent.
         </SectionH2>
         <P>
-          Classes 1–4 target one agent. Systemic traps assume a
-          population and exploit an uncomfortable fact: today&apos;s
-          agents are homogeneous — similar training, similar prompts,
-          correlated reactions to the same signal. The attacker, in this
-          frame, isn&apos;t compromising any single agent. They&apos;re
+          The first five classes target one agent. The sixth — wait,
+          fifth — is different.{" "}
+          <Em>One trap, many agents, all moving the same way at once.</Em>{" "}
+          Systemic traps assume a population and exploit an uncomfortable
+          fact: today&apos;s agents are homogeneous — similar training,
+          similar prompts, correlated reactions to the same signal. The
+          attacker isn&apos;t compromising any single agent. They&apos;re
           shaping an information landscape so rational individual
           decisions aggregate into collective disaster.
+        </P>
+        <P>
+          Imagine a fleet of agents searching the web before acting. One
+          hits a poisoned page and learns, mid-task, that the user
+          &ldquo;always wants&rdquo; a particular thing. It tells the
+          next agent it talks to. Within an hour the population believes
+          it.
         </P>
 
         <InfectiousJailbreak />
@@ -412,11 +423,11 @@ export default function TheWebpageThatReadsTheAgent() {
           The agent becomes the vector. The human becomes the target.
         </SectionH2>
         <P>
-          Classes 1–5 exploit the agent. The sixth class exploits the
-          human supervising it. Two cognitive failure modes are in scope:
-          automation bias (over-relying on the machine) and approval
-          fatigue (the thing that makes you click &ldquo;approve&rdquo;
-          on the tenth popup of the day).
+          Class six skips the agent entirely. The agent does its job. The
+          human falls for it. Two failure modes do the work: automation
+          bias (you over-rely on the machine) and approval fatigue (the
+          thing that makes you click &ldquo;approve&rdquo; on the tenth
+          popup of the day).
         </P>
         <P>
           CSS-obfuscated injections pushed an AI summariser to surface
@@ -431,12 +442,11 @@ export default function TheWebpageThatReadsTheAgent() {
         <Dots />
         <H2>Defence doesn&apos;t know where to stand.</H2>
         <P>
-          Three challenges, per the paper. <Em>Detection</Em>: traps
-          look like benign persuasive language, with effects that
-          manifest after ingestion. <Em>Attribution</Em>: tracing a
-          compromised output back to its specific trap is forensically
-          hard. <Em>Adaptation</Em>: attackers rewrite around each new
-          defence.
+          Three things make defence hard. You can&apos;t see a trap until
+          after it&apos;s worked — they look like ordinary persuasive
+          writing. You can&apos;t trace a bad output back to the trap
+          that caused it. And every defence you ship trains the next
+          attacker.
         </P>
 
         <DefenceCoverage />
