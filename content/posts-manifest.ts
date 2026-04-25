@@ -27,6 +27,14 @@ export type PostMeta = {
 
 export const POSTS: PostMeta[] = [
   {
+    slug: "how-javascript-reads-its-own-future",
+    title: "JavaScript Hoisting, the TDZ, and the Call Stack Explained",
+    date: "2026-04-25",
+    hook: "before line 1 runs, the engine has already walked your file — and that walk is why hoisting, the TDZ, and the call stack are one mechanism, not three quirks.",
+    readingMinutes: 15,
+    tags: ["javascript", "language-internals"],
+  },
+  {
     slug: "the-line-that-waits-its-turn",
     title:
       "How the JavaScript event loop, microtasks, and the call stack work",

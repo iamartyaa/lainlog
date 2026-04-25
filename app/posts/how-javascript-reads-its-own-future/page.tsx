@@ -1,0 +1,336 @@
+import {
+  Prose,
+  H1,
+  H2,
+  P,
+  Code,
+  Dots,
+  Em,
+  Aside,
+  A,
+  HeroTile,
+} from "@/components/prose";
+import { PostBackLink } from "@/components/nav/PostBackLink";
+import { PostNavCards } from "@/components/nav/PostNavCards";
+import { TextHighlighter, VerticalCutReveal } from "@/components/fancy";
+import {
+  CreationVsExecution,
+  DeclarationStates,
+  CallStackECs,
+  WhyTwoPasses,
+} from "./widgets";
+import { metadata, subtitle } from "./metadata";
+
+export { metadata };
+
+const HL_TRANSITION = { type: "spring" as const, duration: 0.9, bounce: 0 };
+const HL_COLOR = "color-mix(in oklab, var(--color-accent) 28%, transparent)";
+const HL_OPTS = { once: true, initial: false, amount: 0.55 } as const;
+
+/**
+ * `<HL>` — load-bearing-phrase highlighter. Used sparingly (~5 per post).
+ * Reserve for inversions, mechanism first-appearances, and section payoffs.
+ */
+function HL({ children }: { children: React.ReactNode }) {
+  return (
+    <TextHighlighter
+      transition={HL_TRANSITION}
+      highlightColor={HL_COLOR}
+      useInViewOptions={HL_OPTS}
+      className="rounded-[0.2em] px-[1px]"
+    >
+      {children}
+    </TextHighlighter>
+  );
+}
+
+/** Eyebrow — the small all-caps numeric label that sits above each H2. */
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      className="mt-[var(--spacing-md)] font-sans"
+      style={{
+        fontSize: "var(--text-small)",
+        color: "var(--color-text-muted)",
+        letterSpacing: "0.12em",
+        textTransform: "uppercase",
+      }}
+    >
+      {children}
+    </p>
+  );
+}
+
+export default function HowJavaScriptReadsItsOwnFuture() {
+  return (
+    <Prose>
+      <div className="pt-[var(--spacing-xl)]">
+        <PostBackLink />
+        <div className="mt-[var(--spacing-md)] mb-[var(--spacing-md)] hidden md:flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
+          <HeroTile slug="how-javascript-reads-its-own-future" />
+        </div>
+        <H1 style={{ fontSize: "clamp(2.5rem, 2rem + 3.5vw, 4rem)" }}>
+          How JavaScript reads its own future
+        </H1>
+        <p
+          className="mt-[var(--spacing-sm)] font-mono tabular-nums"
+          style={{
+            fontSize: "var(--text-small)",
+            color: "var(--color-text-muted)",
+          }}
+        >
+          <time dateTime="2026-04-25">apr 25, 2026</time>
+          <span className="mx-2">·</span>
+          <span>15 min read</span>
+        </p>
+        <p
+          className="mt-[var(--spacing-md)]"
+          style={{
+            fontSize: "var(--text-medium)",
+            color: "var(--color-text-muted)",
+            fontStyle: "normal",
+            maxWidth: "56ch",
+            lineHeight: "1.45",
+          }}
+        >
+          {subtitle}
+        </p>
+
+        {/* §0 — Scene */}
+        <P>
+          You type two lines into a console:{" "}
+          <Code>console.log(x); var x = 5;</Code>. You expect an error — line 1
+          reads a name that line 2 hasn&apos;t introduced yet. Instead, the
+          console prints <Code>undefined</Code>. The error never comes. By the
+          time line 1 ran, the engine had already read line 2.
+        </P>
+      </div>
+
+      {/* §1 — The pre-walk */}
+      <div>
+        <Dots />
+        <Eyebrow>1 · the pre-walk</Eyebrow>
+        <H2>The engine reads your file before it runs line 1.</H2>
+        <P>
+          The trick isn&apos;t that <Code>var</Code> moved anywhere.{" "}
+          <HL>
+            Nothing moves. The engine walks the body once before any of it
+            runs.
+          </HL>{" "}
+          On that first pass — call it the <Em>creation phase</Em> — every{" "}
+          <Code>var</Code>, every <Code>let</Code>, every function declaration,
+          every parameter gets a binding installed in the function&apos;s
+          memory. Only after the whole body has been scanned does line 1
+          actually start.
+        </P>
+        <P>
+          Drag the scrubber below across the labelled boundary. To the left,
+          the engine is still scanning; the binding for <Code>x</Code> is
+          already there with value <Code>undefined</Code>, but no source line
+          has run. To the right, line 1 finally executes. It reads what was
+          installed on the left.
+        </P>
+      </div>
+
+      <CreationVsExecution />
+
+      <div className="pt-[var(--spacing-md)]">
+        <Aside>
+          The spec name for this pre-walk is{" "}
+          <Code>FunctionDeclarationInstantiation</Code> for function bodies
+          and <Code>GlobalDeclarationInstantiation</Code> for the script. See{" "}
+          <A href="https://tc39.es/ecma262/multipage/ecmascript-language-functions-and-classes.html#sec-functiondeclarationinstantiation">
+            ECMA-262 §10.2.11
+          </A>
+          . Throughout this post we&apos;ll just call it the creation phase.
+        </Aside>
+      </div>
+
+      {/* §2 — Declaration states */}
+      <div>
+        <Dots />
+        <Eyebrow>2 · what the pre-walk records</Eyebrow>
+        <H2>Different declarations arrive at line 1 in different shapes.</H2>
+        <P>
+          The pre-walk isn&apos;t uniform. It looks at the syntactic kind of
+          each declaration and decides what state the binding is in when
+          execution begins. Four cases cover almost everything you&apos;ll
+          ever hit.
+        </P>
+        <P>
+          A <Code>var</Code> binding is created and initialised to{" "}
+          <Code>undefined</Code> — that&apos;s the case the opening scene
+          showed. A function declaration goes further: the binding exists{" "}
+          <Em>and</Em> already points at the function value, which is why{" "}
+          <Code>f()</Code> can call <Code>f</Code> two lines above the{" "}
+          <Code>function f(){}</Code> that defines it. A{" "}
+          <Code>var x = function(){}</Code> is the deceptive one: only the{" "}
+          <Code>var x = undefined</Code> half survives the pre-walk; the
+          function value attaches when the assignment line runs, so calling{" "}
+          <Code>f()</Code> above it throws <Code>TypeError</Code>.
+        </P>
+        <P>
+          And then there&apos;s <Code>let</Code>, <Code>const</Code>, and{" "}
+          <Code>class</Code>. Their bindings are created on the pre-walk too,
+          but they arrive at line 1 in a fourth state: uninitialised. The TC39
+          spec has a name for it — the <Em>temporal dead zone</Em> — and a
+          rule for it:{" "}
+          <HL>the binding exists, but reading it throws.</HL>
+        </P>
+        <P>
+          Switch declaration kinds in the widget below to see the four memory
+          shapes side by side. The hatched cell is the TDZ — the binding
+          isn&apos;t missing, it&apos;s on hold.
+        </P>
+      </div>
+
+      <DeclarationStates />
+
+      <div className="pt-[var(--spacing-md)]">
+        <P>
+          One detail worth keeping: a <Code>let</Code> inside a block creates
+          its binding in a fresh inner <Em>lexical environment</Em> attached
+          to that block, not in the function&apos;s top-level memory. That&apos;s
+          why <Code>{"{ let x = 2 }"}</Code> doesn&apos;t collide with an
+          outer <Code>let x</Code> — same name, different environment record.
+          See <A href="https://developer.mozilla.org/en-US/docs/Glossary/Hoisting">MDN&apos;s hoisting catalogue</A>{" "}
+          for the full taxonomy.
+        </P>
+      </div>
+
+      {/* §3 — Call stack of ECs */}
+      <div>
+        <Dots />
+        <Eyebrow>3 · the call stack, plural</Eyebrow>
+        <H2>The call stack is a stack of execution contexts, not function calls.</H2>
+        <P>
+          Hoisting, the TDZ, and the question the opening scene started with
+          all live inside one frame: the global execution context. Every
+          script begins with that frame at the bottom of a stack. The frame is
+          a structure, not a name on a list — it carries its own variable
+          environment (where <Code>var</Code> and function-declaration
+          bindings live) and its own lexical environment (where{" "}
+          <Code>let</Code>, <Code>const</Code>, and block scopes live).
+        </P>
+        <P>
+          When a function is invoked, the engine pushes a new execution
+          context on top. That new frame runs its own creation phase —
+          parameters, vars, function declarations, the TDZ rules — and starts
+          executing line 1 of the function body. When the function returns,
+          its frame pops, and whichever frame is now on top resumes wherever
+          it had paused.
+        </P>
+        <P>
+          Step through the widget below. Two columns, one cursor. The left
+          column is the call stack growing and shrinking. The right column is
+          the variable environment of whichever frame is on top — the running
+          execution context. They move together because they&apos;re the same
+          thing seen twice. <HL>Whichever frame is on top is the engine&apos;s thread of execution.</HL>
+        </P>
+      </div>
+
+      <CallStackECs />
+
+      <div className="pt-[var(--spacing-md)]">
+        <P>
+          That&apos;s also the answer to the opening scene. The line that
+          printed <Code>undefined</Code> was running inside the global EC.
+          Its <Em>variable environment</Em> already held{" "}
+          <Code>x: undefined</Code>, courtesy of the pre-walk. The console
+          asked memory; memory answered.
+        </P>
+      </div>
+
+      {/* §4 — Why two passes */}
+      <div>
+        <Dots />
+        <Eyebrow>4 · why two passes</Eyebrow>
+        <H2>The two-pass model is required, not an optimisation.</H2>
+        <P>
+          A reasonable question at this point: couldn&apos;t the engine just
+          run the file top to bottom and look up names as it goes? It would be
+          simpler. It would also be wrong — three different ways. Toggle
+          through the reasons below.
+        </P>
+      </div>
+
+      <WhyTwoPasses />
+
+      <div className="pt-[var(--spacing-md)]">
+        <P>
+          The first reason is the most visible. The language guarantees that a{" "}
+          <Code>function</Code> declaration is callable from anywhere in its
+          scope, including before its textual position. If the engine tried to
+          run line 1 without scanning ahead, a function call on line 1 to a{" "}
+          <Code>function</Code> declared on line 200 would fail. The
+          guarantee forces the scan.
+        </P>
+        <P>
+          The second is the spec being strict. Two <Code>let</Code>{" "}
+          declarations of the same name in the same scope must throw a{" "}
+          <Code>SyntaxError</Code> — and crucially, that error has to fire
+          before any of the surrounding code runs. The only way to enforce
+          that is to walk the scope first and refuse to start. V8&apos;s
+          preparser was{" "}
+          <A href="https://v8.dev/blog/preparser">extended specifically</A> to
+          catch these conflicts on the first pass.
+        </P>
+        <P>
+          The third is the subtlest. A <Code>const</Code> binding has to be
+          immutable from the moment it has a value. If the pre-walk gave it{" "}
+          <Code>undefined</Code> first and the initialiser later flipped it to
+          something else, the binding would have changed value once — by
+          definition not <Em>const</Em>. The TDZ resolves this:{" "}
+          <HL>required, not an optimisation.</HL>
+        </P>
+        <Aside>
+          The spec describes two passes; V8&apos;s pipeline (parser → AST →
+          Ignition bytecode → TurboFan) implements them lazily — a function
+          body is preparsed once for syntax + variable refs, and only fully
+          parsed on first invocation. A{" "}
+          <A href="https://v8.dev/blog/preparser">syntax error inside an
+          unused function still throws at script load</A>, but its variable
+          bindings aren&apos;t fully resolved until the call.
+        </Aside>
+      </div>
+
+      {/* §5 — Closer */}
+      <div>
+        <Dots />
+        <P>
+          The opening scene wasn&apos;t a quirk. Hoisting, TDZ errors,
+          functions callable from above their declaration — every weird
+          ordering rule you&apos;ve hit is the same mechanism, surfacing in
+          three places.
+        </P>
+        <p
+          className="[margin-block-start:1.25em]"
+          style={{ fontFamily: "var(--font-serif)", fontSize: "var(--text-body)" }}
+        >
+          <VerticalCutReveal as="span">
+            The engine reads your future to run your present.
+          </VerticalCutReveal>
+        </p>
+        <P>
+          What happens when the stack empties — when the engine starts
+          listening for events instead of running lines — is a different
+          post.
+        </P>
+        <p
+          aria-hidden
+          className="font-mono text-center select-none"
+          style={{
+            marginBlock: "var(--spacing-xl)",
+            color: "var(--color-accent)",
+            opacity: 0.8,
+            fontSize: "var(--text-body)",
+            letterSpacing: "0.2em",
+          }}
+        >
+          ·
+        </p>
+      </div>
+      <PostNavCards slug="how-javascript-reads-its-own-future" />
+    </Prose>
+  );
+}
