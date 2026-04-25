@@ -16,7 +16,16 @@ import { PostBackLink } from "@/components/nav/PostBackLink";
 import { PostNavCards } from "@/components/nav/PostNavCards";
 import { CodeBlock } from "@/components/code";
 import { TextHighlighter } from "@/components/fancy";
-import { PipeCompare, UpgradeHandshake, ReconnectGap, CostMatrix } from "./widgets";
+import {
+  Polling,
+  LongPoll,
+  WebSocketStream,
+  HandshakeSteps,
+  KeyDerivation,
+  DropTiming,
+  GapDuration,
+  CostMatrix,
+} from "./widgets";
 import { metadata, subtitle } from "./metadata";
 
 export { metadata };
@@ -230,15 +239,32 @@ Content-Length: 1432
         </P>
       </div>
 
-      <PipeCompare />
+      <Polling />
 
       <div>
         <P>
-          Watch the long-polling row. The browser still asked — it just stopped
-          hanging up when the server had nothing to say. That one change —{" "}
-          <HL>refusing to finish the question</HL> — is what every later protocol
-          inherits. Long polling is also a hack: every reply still pays a full HTTP
-          round-trip of overhead. Someone was going to want to skip that.
+          Polling burns most of its bytes saying nothing. The natural next
+          move: don&apos;t hang up until there <Em>is</Em> news.
+        </P>
+      </div>
+
+      <LongPoll />
+
+      <div>
+        <P>
+          Long polling earns the latency back, but every reply still pays a
+          full HTTP round-trip of overhead. The next move skips that.
+        </P>
+      </div>
+
+      <WebSocketStream />
+
+      <div>
+        <P>
+          Three frames cost 562 bytes; polling spent 7.5 KB <Em>asking</Em>.{" "}
+          <HL>Refusing to finish the question</HL> is the move every later
+          protocol inherits — long polling did it inside HTTP, WebSocket did
+          it by ending HTTP mid-socket.
         </P>
       </div>
 
@@ -288,9 +314,25 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=`}
         </P>
       </div>
 
-      <UpgradeHandshake />
+      <HandshakeSteps />
 
       <div>
+        <P>
+          The widget walks the spec sample. Now compute it on your own
+          machine — the next widget runs that derivation in <Em>your
+          browser</Em> against a fresh random key.
+        </P>
+      </div>
+
+      <KeyDerivation />
+
+      <div>
+        <P>
+          The widget runs the computation through your browser&apos;s Web
+          Crypto API, so the <Code>Sec-WebSocket-Accept</Code>{" "}you see is the
+          real SHA-1 your machine just computed. Nothing in the reveal is
+          faked.
+        </P>
         <P>
           What you just watched was a SHA-1 over your random key with one very
           strange suffix glued on. That suffix is a literal string, written into
@@ -328,9 +370,7 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=`}
           know exactly what string to glue on{" "}
           <A href="https://www.rfc-editor.org/rfc/rfc6455#section-1.3">
             (RFC 6455 §1.3)
-          </A>. The widget runs the computation through your browser&apos;s Web
-          Crypto API, so the <Code>Sec-WebSocket-Accept</Code>{" "}you see is the
-          real SHA-1 your machine just computed. Nothing in the reveal is faked.
+          </A>.
         </P>
         <P>
           After that reply is written and read, the same TCP socket is{" "}
@@ -405,17 +445,24 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=`}
         </P>
       </div>
 
-      <ReconnectGap />
+      <DropTiming />
 
       <div>
         <P>
-          Drag the dropout in the widget. Both rows experience the same outage; only
-          one of them quietly heals. This is why SSE is not a weaker WebSocket —
-          it&apos;s a different trade. For one-way flows (notifications, logs,
-          progress streams, a live leaderboard), SSE gives you resilience for free.
-          For real two-way exchanges — say, sending Jordan&apos;s keystrokes back to
-          Google&apos;s ack path — you need <Term>full-duplex</Term>, both ends
-          talking at once instead of in turns. SSE can&apos;t give you that.
+          The dropout has two dials: <HL>when</HL> it starts, and{" "}
+          <HL>how long</HL>{" "}it lasts. Hold the timing fixed and stretch the
+          gap.
+        </P>
+      </div>
+
+      <GapDuration />
+
+      <div>
+        <P>
+          Both dials compose into the shape §6 names: every long-poll and
+          WebSocket client racing back the moment the gateway heals, the same
+          instant. SSE absorbs that storm on the protocol; the others invent
+          it.
         </P>
       </div>
 

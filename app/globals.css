@@ -517,6 +517,20 @@ html[data-theme-transitioning] {
   }
 }
 
+/* KeyDerivation (§4) — single server-pane canvas. Narrow keeps the 340-unit
+   compact authoring; wide stretches to 540 for breathing room on tablet+. */
+.bs-kd-wide {
+  display: none;
+}
+@container widget (min-width: 640px) {
+  .bs-kd-narrow {
+    display: none;
+  }
+  .bs-kd-wide {
+    display: block;
+  }
+}
+
 @keyframes ring-pulse {
   0% {
     box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-accent) 35%, transparent);

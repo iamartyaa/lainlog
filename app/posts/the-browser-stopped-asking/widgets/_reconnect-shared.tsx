@@ -1,35 +1,28 @@
 "use client";
 
-import { memo, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { SPRING } from "@/lib/motion";
-import { Scrubber } from "@/components/viz/Scrubber";
-import { TextHighlighter } from "@/components/fancy";
-import { WidgetShell } from "./WidgetShell";
 
-const HL_COLOR =
-  "color-mix(in oklab, var(--color-accent) 28%, transparent)";
-const HL_TX = { type: "spring" as const, duration: 0.9, bounce: 0 };
+export const DURATION_MS = 10_000;
+export const EVENT_TIMES_MS = [800, 2200, 4700, 6200, 8400] as const;
 
-const DURATION_MS = 10_000;
-const EVENT_TIMES_MS = [800, 2200, 4700, 6200, 8400] as const;
-
-type EventFate =
+export type EventFate =
   | { kind: "delivered"; at: number }
   | { kind: "replayed"; at: number }
   | { kind: "lost" };
 
-type ClassifiedEvent = {
+export type ClassifiedEvent = {
   id: number;
   t: number;
   ws: EventFate;
   sse: EventFate;
 };
 
-function classify(t: number, dropAt: number, dropEnd: number): {
-  ws: EventFate;
-  sse: EventFate;
-} {
+export function classify(
+  t: number,
+  dropAt: number,
+  dropEnd: number,
+): { ws: EventFate; sse: EventFate } {
   const beforeDrop = t < dropAt;
   const duringDrop = t >= dropAt && t < dropEnd;
   if (beforeDrop) {
@@ -38,119 +31,77 @@ function classify(t: number, dropAt: number, dropEnd: number): {
   if (duringDrop) {
     return { ws: { kind: "lost" }, sse: { kind: "replayed", at: dropEnd } };
   }
-  return {
-    ws: { kind: "lost" },
-    sse: { kind: "delivered", at: t },
-  };
+  return { ws: { kind: "lost" }, sse: { kind: "delivered", at: t } };
 }
 
-export function ReconnectGap() {
-  const [dropAt, setDropAt] = useState(3500);
-  const [dropMs, setDropMs] = useState(2200);
-  const dropEnd = Math.min(dropAt + dropMs, DURATION_MS);
+/* -------------------------------------------------------------------------- */
+/*                                TwoRowCanvas                                */
+/* -------------------------------------------------------------------------- */
 
-  // Memoise so the classified array is stable when neither dial moved — both
-  // canvases (memoised below) can short-circuit re-renders. (R6.)
-  const classified: ClassifiedEvent[] = useMemo(
-    () =>
-      EVENT_TIMES_MS.map((t, idx) => ({
-        id: idx + 1,
-        t,
-        ...classify(t, dropAt, dropEnd),
-      })),
-    [dropAt, dropEnd],
-  );
-
-  const wsLost = classified.filter((e) => e.ws.kind === "lost").length;
-  const sseDelivered = classified.filter((e) => e.sse.kind !== "lost").length;
-
-  const lastBeforeDrop = classified.filter((e) => e.t < dropAt).slice(-1)[0];
-  const lastSseId = lastBeforeDrop?.id ?? 0;
-
+/**
+ * TwoRowCanvas — the §5 reconnect canvas: two horizontal lifelines, WS above
+ * and SSE below, with a dropout band overlaid on both. Renders the events
+ * and the SSE replay arcs. The `scrubbedEdge` prop drives the visual
+ * distinctness affordance (B5):
+ *
+ * - `scrubbedEdge="left"` → DropTiming. The dropout band's LEFT edge carries
+ *   a 1px terracotta tick + a `cliff` label rising 8px above the WS row.
+ *   The right edge is plain.
+ * - `scrubbedEdge="right"` → GapDuration. The band's RIGHT edge carries the
+ *   tick + a `gap end` label. The left edge is plain.
+ *
+ * Together the two affordances make adjacent canvases visually different at
+ * default scrubber values, before the reader has touched a control.
+ */
+export function TwoRowCanvas({
+  classified,
+  dropAt,
+  dropEnd,
+  lastSseId,
+  variant,
+  scrubbedEdge,
+}: {
+  classified: ClassifiedEvent[];
+  dropAt: number;
+  dropEnd: number;
+  lastSseId: number;
+  variant: "wide" | "narrow";
+  scrubbedEdge: "left" | "right";
+}) {
+  if (variant === "wide") {
+    return (
+      <WideCanvas
+        classified={classified}
+        dropAt={dropAt}
+        dropEnd={dropEnd}
+        lastSseId={lastSseId}
+        scrubbedEdge={scrubbedEdge}
+      />
+    );
+  }
   return (
-    <WidgetShell
-      title="WebSocket forgets, SSE remembers"
-      measurements={`delivered: WS ${classified.length - wsLost}/${classified.length} · SSE ${sseDelivered}/${classified.length}`}
-      captionTone="prominent"
-      caption={
-        <>
-          <TextHighlighter
-            triggerType="auto"
-            transition={HL_TX}
-            highlightColor={HL_COLOR}
-            className="rounded-[0.2em] px-[1px]"
-          >
-            Drag the dropout
-          </TextHighlighter>{" "}
-          and watch what happens to each row. WebSocket has no built-in
-          reconnect. SSE auto-reconnects with a{" "}
-          <code>Last-Event-ID</code>{" "}header so the server can replay whatever
-          the browser missed.
-        </>
-      }
-      controls={
-        <div className="grid grid-cols-1 gap-[var(--spacing-sm)] sm:grid-cols-2">
-          <Scrubber
-            label="drop@"
-            value={dropAt}
-            min={400}
-            max={DURATION_MS - 1400}
-            step={100}
-            onChange={setDropAt}
-            format={(v) => `${(v / 1000).toFixed(1)}s`}
-          />
-          <Scrubber
-            label="for"
-            value={dropMs}
-            min={400}
-            max={4500}
-            step={100}
-            onChange={setDropMs}
-            format={(v) => `${(v / 1000).toFixed(1)}s`}
-          />
-        </div>
-      }
-    >
-      {/* Both SVGs render; CSS container query picks which is visible. Each
-          canvas is React.memo'd so the hidden variant short-circuits when
-          props haven't changed. (R6.) */}
-      <div className="bs-rg-narrow">
-        <MemoNarrowCanvas
-          classified={classified}
-          dropAt={dropAt}
-          dropEnd={dropEnd}
-          lastSseId={lastSseId}
-        />
-      </div>
-      <div className="bs-rg-wide">
-        <MemoWideCanvas
-          classified={classified}
-          dropAt={dropAt}
-          dropEnd={dropEnd}
-          lastSseId={lastSseId}
-        />
-      </div>
-    </WidgetShell>
+    <NarrowCanvas
+      classified={classified}
+      dropAt={dropAt}
+      dropEnd={dropEnd}
+      lastSseId={lastSseId}
+      scrubbedEdge={scrubbedEdge}
+    />
   );
 }
-
-/* -------------------------------------------------------------------------- */
-/*                               Wide (desktop)                               */
-/* -------------------------------------------------------------------------- */
-
-const MemoWideCanvas = memo(WideCanvas);
-const MemoNarrowCanvas = memo(NarrowCanvas);
 
 function WideCanvas({
   classified,
   dropAt,
   dropEnd,
   lastSseId,
+  scrubbedEdge,
 }: {
   classified: ClassifiedEvent[];
   dropAt: number;
   dropEnd: number;
   lastSseId: number;
+  scrubbedEdge: "left" | "right";
 }) {
   const WIDTH = 760;
   const HEIGHT = 260;
@@ -183,6 +134,7 @@ function WideCanvas({
         dropEnd={dropEnd}
         yTop={WS_Y - 22}
         bandHeight={SSE_Y - WS_Y + 44}
+        scrubbedEdge={scrubbedEdge}
       />
 
       <ReconnectLabel
@@ -207,29 +159,24 @@ function WideCanvas({
   );
 }
 
-/* -------------------------------------------------------------------------- */
-/*                              Narrow (mobile)                               */
-/* -------------------------------------------------------------------------- */
-
 function NarrowCanvas({
   classified,
   dropAt,
   dropEnd,
   lastSseId,
+  scrubbedEdge,
 }: {
   classified: ClassifiedEvent[];
   dropAt: number;
   dropEnd: number;
   lastSseId: number;
+  scrubbedEdge: "left" | "right";
 }) {
-  // Authored at 340 to read clean at iPhone SE (375 viewport, ~343 usable px).
-  // interaction-rules R5 + user directive 5.
   const WIDTH = 340;
   const HEIGHT = 320;
   const LEFT = 14;
   const RIGHT = 14;
   const TRACK_W = WIDTH - LEFT - RIGHT;
-  // Labels sit ABOVE each timeline at narrow widths instead of in a left gutter.
   const WS_LABEL_Y = 22;
   const WS_Y = 72;
   const SSE_LABEL_Y = 154;
@@ -258,6 +205,7 @@ function NarrowCanvas({
         dropEnd={dropEnd}
         yTop={WS_Y - 22}
         bandHeight={SSE_Y - WS_Y + 44}
+        scrubbedEdge={scrubbedEdge}
       />
 
       <ReconnectLabel
@@ -404,13 +352,20 @@ function DropoutBand({
   dropEnd,
   yTop,
   bandHeight,
+  scrubbedEdge,
 }: {
   xOfT: (t: number) => number;
   dropAt: number;
   dropEnd: number;
   yTop: number;
   bandHeight: number;
+  scrubbedEdge: "left" | "right";
 }) {
+  // The tick + label affordance sits above the band, attached to whichever
+  // edge the reader's scrubber controls. Position by `transform` on the
+  // outer <motion.g>, never by `top`/`left` (DESIGN.md §9 motion bans).
+  const tickX = scrubbedEdge === "left" ? dropAt : dropEnd;
+  const labelText = scrubbedEdge === "left" ? "cliff" : "gap end";
   return (
     <>
       <motion.g
@@ -445,6 +400,36 @@ function DropoutBand({
       >
         network dropout
       </motion.text>
+
+      {/* Scrubbed-edge affordance — 1px terracotta tick mark + small mono
+          label rising 8 px above the WS row. The reader's eye lands here
+          because it's the only terracotta thing on the canvas before they
+          touch a scrubber. Differentiates DropTiming from GapDuration at
+          first glance. (B5.) */}
+      <motion.g
+        initial={false}
+        animate={{ x: xOfT(tickX) }}
+        transition={SPRING.snappy}
+      >
+        <line
+          x1={0}
+          x2={0}
+          y1={yTop}
+          y2={yTop + bandHeight}
+          stroke="var(--color-accent)"
+          strokeWidth={1}
+        />
+        <text
+          x={scrubbedEdge === "left" ? 4 : -4}
+          y={yTop - 8}
+          textAnchor={scrubbedEdge === "left" ? "start" : "end"}
+          fontFamily="var(--font-mono)"
+          fontSize={10}
+          fill="var(--color-accent)"
+        >
+          {labelText}
+        </text>
+      </motion.g>
     </>
   );
 }
@@ -464,10 +449,6 @@ function ReconnectLabel({
 }) {
   const visible = dropEnd < DURATION_MS;
   const xPos = xOfT(dropEnd);
-  // Narrow places labels right of the reconnect line, below the SSE row.
-  // Wide places them below-left of the row.
-  // Cap labelX so the GET / Last-Event-ID strings stay visible when the
-  // reconnect line lives near the right edge of the 340-wide narrow canvas.
   const labelX = variant === "narrow" ? Math.min(xPos + 6, 200) : 6;
   return (
     <motion.g
@@ -523,11 +504,6 @@ function EventMark({
   const wsDelivered = event.ws.kind === "delivered";
   return (
     <g>
-      {/* WS row — the ring transitions smoothly when the dropout swallows or
-          releases this event. motion.circle interpolates radius and fill-
-          opacity, so the "delivered → lost" swap plays as a micro-moment of
-          loss instead of a silent attribute swap. The dashed stroke + X
-          mark cross-fade via AnimatePresence siblings. */}
       <motion.circle
         cx={x}
         cy={wsY}
@@ -535,7 +511,7 @@ function EventMark({
         animate={{
           r: wsDelivered ? 5 : 4,
           fillOpacity: wsDelivered ? 1 : 0,
-          strokeDashoffset: wsDelivered ? 0 : 0.001, // nudge to retrigger dash
+          strokeDashoffset: wsDelivered ? 0 : 0.001,
         }}
         transition={SPRING.snappy}
         fill="var(--color-accent)"
@@ -572,7 +548,6 @@ function EventMark({
         {label}
       </text>
 
-      {/* SSE row */}
       {event.sse.kind === "replayed" && xReplay !== undefined ? (
         <g key={`replay-${event.id}-${xReplay.toFixed(0)}`}>
           <circle
