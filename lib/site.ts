@@ -4,7 +4,7 @@
  * changes, change it in exactly one place.
  */
 
-export const SITE_URL = "https://bytesize.vercel.app";
+export const SITE_URL = "https://www.byte-size.xyz";
 
 export const SITE_NAME = "bytesize";
 
