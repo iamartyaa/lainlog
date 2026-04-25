@@ -1,11 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { motion } from "motion/react";
-import { PRESS, SPRING } from "@/lib/motion";
+import { motion, useReducedMotion } from "motion/react";
+import { PRESS, SPRING, TIMING } from "@/lib/motion";
 import { Scrubber } from "@/components/viz/Scrubber";
+import { TextHighlighter } from "@/components/fancy";
 import { useTapPulse } from "@/lib/hooks/use-tap-pulse";
 import { WidgetShell } from "./WidgetShell";
+
+const HL_COLOR =
+  "color-mix(in oklab, var(--color-accent) 28%, transparent)";
+const HL_TX = { type: "spring" as const, duration: 0.9, bounce: 0 };
 
 const DURATION_MS = 10_000;
 
@@ -198,6 +203,7 @@ export function PipeCompare() {
   const startedAtRef = useRef<number | null>(null);
   const baseMsRef = useRef(0);
   const rafRef = useRef<number | null>(null);
+  const reducedMotion = useReducedMotion();
 
   const stepTo = useCallback((ms: number) => {
     const clamped = Math.max(0, Math.min(DURATION_MS, ms));
@@ -219,6 +225,15 @@ export function PipeCompare() {
       }
       return;
     }
+    // Reduced motion: jump to end-state instantly. The widget's information
+    // is conveyed at t=DURATION_MS — readers who can't see the animation see
+    // the finished comparison. (DESIGN.md §11 + interactive-components.md §3.)
+    if (reducedMotion) {
+      setNowMs(DURATION_MS);
+      baseMsRef.current = DURATION_MS;
+      setPlaying(false);
+      return;
+    }
     let cancelled = false;
     const tick = (tNow: number) => {
       if (cancelled) return;
@@ -238,7 +253,7 @@ export function PipeCompare() {
       cancelled = true;
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     };
-  }, [playing]);
+  }, [playing, reducedMotion]);
 
   const polling = simPolling(nowMs);
   const longpoll = simLongPoll(nowMs);
@@ -261,9 +276,17 @@ export function PipeCompare() {
       measurements={`t = ${(nowMs / 1000).toFixed(1)}s of ${DURATION_MS / 1000}s`}
       caption={
         <>
-          Three server events fire during this window (the terracotta stars on each row).
-          Polling wastes most of its roundtrips. Long polling keeps one request open
-          until news arrives. WebSocket only pays the cost once, at the handshake.
+          <TextHighlighter
+            triggerType="auto"
+            transition={HL_TX}
+            highlightColor={HL_COLOR}
+            className="rounded-[0.2em] px-[1px]"
+          >
+            Press play
+          </TextHighlighter>{" "}
+          and watch how three server events get to the browser. Polling wastes
+          most roundtrips. Long polling keeps one request open. WebSocket pays
+          once, at the handshake.
         </>
       }
       controls={
@@ -478,7 +501,10 @@ function ProtocolCardNarrow({
   nowMs: number;
   enterIndex: number;
 }) {
-  const WIDTH = 380;
+  // Authored at 340px so the widget reads clean at iPhone SE (375 device px →
+  // ~343 usable). Outer SVG scales fluidly via viewBox, so wider containers
+  // still get a crisp fit. (interaction-rules R5 + user directive 5.)
+  const WIDTH = 340;
   const HEIGHT = 132;
   const LEFT = 10;
   const RIGHT = 10;
@@ -587,7 +613,7 @@ function ProtocolCardNarrow({
               strokeWidth={0.8}
               initial={{ r: 3, opacity: 0.9 }}
               animate={{ r: 11, opacity: 0 }}
-              transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+              transition={TIMING.slow}
             />
             <circle
               r={6}
@@ -712,7 +738,7 @@ function NarrowStats({
     protocol === "polling"
       ? `${stats.reqs} polls`
       : protocol === "longpoll"
-        ? `${stats.reqs} cycles`
+        ? `${stats.reqs} requests`
         : `${stats.eventsDelivered} frames`;
   return (
     <span
@@ -852,7 +878,7 @@ function ProtocolRow({
             strokeWidth={0.8}
             initial={{ r: 3, opacity: 0.9 }}
             animate={{ r: 12, opacity: 0 }}
-            transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+            transition={TIMING.slow}
           />
           <circle
             r={6}
@@ -1105,7 +1131,7 @@ function StatsBlock({
     protocol === "polling"
       ? `polls: ${stats.reqs}`
       : protocol === "longpoll"
-        ? `cycles: ${stats.reqs}`
+        ? `requests: ${stats.reqs}`
         : `frames: ${stats.eventsDelivered}`;
   return (
     <g transform={`translate(${x}, ${y})`}>

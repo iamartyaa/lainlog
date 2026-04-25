@@ -2,7 +2,6 @@ import {
   Prose,
   H1,
   H2,
-  H3,
   P,
   Code,
   Callout,
@@ -14,10 +13,37 @@ import {
   Term,
 } from "@/components/prose";
 import { CodeBlock } from "@/components/code";
-import { PipeCompare, UpgradeHandshake, ReconnectGap } from "./widgets";
+import { TextHighlighter } from "@/components/fancy";
+import { PipeCompare, UpgradeHandshake, ReconnectGap, CostMatrix } from "./widgets";
 import { metadata } from "./metadata";
 
 export { metadata };
+
+const HL_TRANSITION = { type: "spring" as const, duration: 0.9, bounce: 0 };
+const HL_COLOR =
+  "color-mix(in oklab, var(--color-accent) 28%, transparent)";
+const HL_OPTS = { once: true, initial: false, amount: 0.55 } as const;
+
+/** Highlight a load-bearing phrase. Default ltr swipe, spring, inView once. */
+function HL({
+  children,
+  direction = "ltr",
+}: {
+  children: React.ReactNode;
+  direction?: "ltr" | "rtl" | "ttb" | "btt";
+}) {
+  return (
+    <TextHighlighter
+      transition={HL_TRANSITION}
+      highlightColor={HL_COLOR}
+      useInViewOptions={HL_OPTS}
+      direction={direction}
+      className="rounded-[0.2em] px-[1px]"
+    >
+      {children}
+    </TextHighlighter>
+  );
+}
 
 export default function TheBrowserStoppedAsking() {
   return (
@@ -49,8 +75,8 @@ export default function TheBrowserStoppedAsking() {
         </P>
         <P>
           The moment is so mundane we forget that the web wasn&apos;t born able to do
-          this. Rewind: <Em>what had to change about the web for Jordan&apos;s cursor
-          to appear on your screen?</Em>
+          this. Rewind: <HL>what had to change about the web for Jordan&apos;s cursor
+          to appear on your screen?</HL>
         </P>
       </div>
 
@@ -81,7 +107,6 @@ export default function TheBrowserStoppedAsking() {
         <CodeBlock
           lang="http"
           filename="the shape everything else lives inside"
-          tone="terminal"
           code={`GET /doc/42 HTTP/1.1
 Host: docs.example
 Accept: text/html
@@ -96,7 +121,7 @@ Content-Length: 1432
 
       <div>
         <P>
-          The web&apos;s cell wall is that the client always speaks first. Everything
+          The web&apos;s cell wall is that <HL>the client always speaks first</HL>. Everything
           that follows — every mechanism that makes Jordan&apos;s cursor appear on
           your screen — is a way to <Em>live inside that wall</Em>. None of them let
           the server initiate. They all turn the browser into something else: a
@@ -107,7 +132,7 @@ Content-Length: 1432
       {/* §2 — polling */}
       <div>
         <Dots />
-        <H2>First workaround: just keep asking</H2>
+        <H2>Just keep asking.</H2>
         <P>
           The most obvious answer is also the crudest. Fire a request every second
           and see if anything&apos;s new.
@@ -162,34 +187,31 @@ Content-Length: 1432
         <Dots />
         <H2>What if you asked once, and the server waited?</H2>
         <P>
-          Here&apos;s the clever move. The client still asks. But the server
+          Here&apos;s the clever move. The client still asks — but the server
           doesn&apos;t reply until it has news. The request goes out, the TCP socket
-          stays open, and the response just… sits there, a promise dangling on both
-          sides of the wire. When something happens — Jordan types a letter — the
-          server finally writes the response and closes. The client reads it and
-          immediately opens another request, and the cycle repeats.
+          stays open, and the response sits there, a promise dangling on both
+          sides of the wire. When something happens, the server writes the response
+          and closes. The client reads it and immediately opens another.
         </P>
         <P>
           Ably calls this shape <A href="https://ably.com/topic/long-polling">&ldquo;bending HTTP slightly out of shape&rdquo;</A>.
-          The request-response format is preserved — it&apos;s still one ask, one
-          answer. What changed is the client&apos;s tolerance for waiting. A polling
-          client fires and forgets; a <Term>long-polling</Term>{" "}client fires and
-          listens, sometimes for tens of seconds, before the single reply arrives.
+          The format is preserved — still one ask, one answer — but a{" "}
+          <Term>long-polling</Term>{" "}client fires and listens, sometimes for tens
+          of seconds, before its single reply arrives.
         </P>
         <P>
-          Alex Russell coined <Em>Comet</Em>{" "}for this family{" "}
+          Alex Russell coined <Term>Comet</Term> — long polling as a family name —{" "}
           <A href="https://infrequently.org/2006/03/comet-low-latency-data-for-the-browser/">
             in March 2006
-          </A>, and it was the secret sauce behind the first generation of
-          &ldquo;live&rdquo; web apps. <strong>Google Docs shipped on long polling
-          for years.</strong> Look inside Google&apos;s Closure Library and
-          you&apos;ll still find <Code>goog.net.BrowserChannel</Code> — long polling
-          over XHR, with forever-iframe streaming as a fallback. Attribution comes
-          from ex-Googlers and{" "}
+          </A>. <Em>Google Docs shipped on long polling for years</Em>: look inside
+          Google&apos;s Closure Library and you&apos;ll still find{" "}
+          <Code>goog.net.BrowserChannel</Code>, long polling over XHR with
+          forever-iframe streaming as a fallback. Google never published it as an
+          API, which is its own kind of tell — attribution comes from ex-Googlers
+          and{" "}
           <A href="https://github.com/josephg/node-browserchannel">
             Joseph Gentle&apos;s node re-implementation
-          </A>; Google itself doesn&apos;t publish it as an API, which is its own
-          kind of tell.
+          </A>.
         </P>
       </div>
 
@@ -197,23 +219,11 @@ Content-Length: 1432
 
       <div>
         <P>
-          Press play and watch the first two rows together. Polling racks up
-          roundtrips — most empty. Long polling only sends a byte when it matters.
-          The third row is a different kind of thing. The rest of this post is about
-          how it gets there.
-        </P>
-        <P>
-          What&apos;s happening in the long-polling row is the move the whole
-          genre is built on. The client <Em>still asked.</Em> It just{" "}
-          <Em>stopped hanging up</Em>{" "}when the server had nothing to say. That one
-          change — the browser refusing to finish the question — is what every
-          later protocol inherits.
-        </P>
-        <P>
-          Long polling is the first trick that actually felt live. It&apos;s also a
-          hack: every reply still pays one full HTTP round-trip of overhead —
-          headers, TLS re-validation, a TCP handshake if the connection didn&apos;t
-          stay warm. Someone was going to want to skip that.
+          Watch the long-polling row. The browser still asked — it just stopped
+          hanging up when the server had nothing to say. That one change —{" "}
+          <HL>refusing to finish the question</HL> — is what every later protocol
+          inherits. Long polling is also a hack: every reply still pays a full HTTP
+          round-trip of overhead. Someone was going to want to skip that.
         </P>
       </div>
 
@@ -367,7 +377,7 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=`}
         <P>
           Then why not use WebSocket for everything? Because SSE ships the one
           feature WebSocket doesn&apos;t:{" "}
-          <strong>automatic reconnect, with state recovery.</strong> The browser
+          <Em>automatic reconnect, with state recovery.</Em> The browser
           remembers the last event&apos;s <Code>id:</Code>{" "}field, and when the
           stream drops, it reopens the connection with a{" "}
           <Code>Last-Event-ID</Code>{" "}header so the server can resume from that
@@ -399,67 +409,44 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=`}
         <Dots />
         <H2>The cost moved. It didn&apos;t vanish.</H2>
         <P>
-          Three places the cost reappears — one for each mechanism. None of them
-          are in the tutorials.
-        </P>
-
-        <H3>&ldquo;Just use WebSockets&rdquo; still opens with long polling</H3>
-        <P>
-          Open the docs for the most widely deployed real-time library in the JS
-          world and read carefully.{" "}
-          <A href="https://socket.io/docs/v4/how-it-works/">Socket.IO v4</A>{" "}
-          <Em>still starts every connection with HTTP long polling</Em>, and only
-          upgrades to WebSocket once the handshake clears. Corporate proxies,
-          older transparent caches, and some antivirus software silently mis-handle
-          the <Code>Upgrade</Code>{" "}header. The fallback isn&apos;t legacy — it&apos;s
-          2026 insurance.
+          Three failure modes show up the moment you ship any of these to
+          production. None are in the tutorials. The matrix below is one row per
+          failure mode, one column per protocol — tap a row to read what each
+          cell means. The pattern that falls out is the point of this section.
         </P>
       </div>
 
-      <FullBleed>
-        <CodeBlock
-          lang="javascript"
-          filename="socket.io-client · the default nobody reads"
-          code={`import { io } from "socket.io-client";
-
-const socket = io("https://…", {
-  transports: ["polling", "websocket"],  // ← polling first. on purpose.
-});`}
-        />
-      </FullBleed>
+      <CostMatrix />
 
       <div>
-        <H3>A gateway restarts, and every client knocks at once</H3>
         <P>
-          Discord learned this at five million concurrent sessions. One gateway
-          blipped and the stampede of reconnects hit a ring-lookup process that{" "}
+          Each row tells a different story. Proxies and corporate networks{" "}
+          <A href="https://socket.io/docs/v4/how-it-works/">
+            silently break the WebSocket Upgrade
+          </A>
+          , which is why Socket.IO still opens every connection on long polling
+          first — the fallback isn&apos;t legacy; it&apos;s 2026 insurance. When
+          a gateway blips, every long-poll and WebSocket client races back at
+          the same instant: Discord&apos;s reconnect stampede{" "}
           <A href="https://discord.com/blog/how-discord-scaled-elixir-to-5-000-000-concurrent-users">
-            took 17.5 seconds just to answer the queries
+            took 17.5 seconds on a ring-lookup
           </A>{" "}
-          until they cached the results. Slack&apos;s{" "}
+          until they cached, and Slack built{" "}
           <A href="https://slack.engineering/flannel-an-application-level-edge-cache-to-make-slack-scale/">
             Flannel
-          </A>{" "}was motivated by the same shape: one office loses network, and the
-          retry wave costs more than the outage that caused it. The tutorial writes{" "}
-          <Code>ws.onclose = () =&gt; reconnect()</Code>{" "}and moves on; production
-          writes randomized backoff, per-tenant semaphores, and lazy payloads so the
-          next herd can&apos;t trample the server that just recovered.
-        </P>
-
-        <H3>Fanout is the real ceiling</H3>
-        <P>
-          Phoenix held two million idle WebSocket connections on one box. So that
-          part isn&apos;t the problem. The problem is writing to all of them at the
-          same moment — Discord&apos;s publish to a single 30,000-member guild took{" "}
-          <strong>900 ms – 2.1 s</strong>{" "}before they parallelized fanout with
-          Manifold. The reader&apos;s mental model flips: the hard part of
-          real-time isn&apos;t holding the connection. It&apos;s the{" "}
-          <Code>O(N)</Code>{" "}write on every event.
+          </A>{" "}
+          for the same shape. SSE alone has automatic resume on the protocol;
+          the others need it written by hand. And on the third row, the hard
+          part of real-time isn&apos;t holding the connection — it&apos;s the{" "}
+          <Code>O(N)</Code>{" "}write on every event. Phoenix held two million
+          idle sockets on one box; Discord&apos;s publish to a single
+          30,000-member guild still took <strong>900 ms – 2.1 s</strong>{" "}
+          before they parallelized fanout with Manifold.
         </P>
 
         <P>
-          None of this kills the idea. It just means <Em>real-time is a system,
-          not a primitive.</Em> The socket is the easy part.
+          None of this kills the idea. It just means <HL>real-time is a system,
+          not a primitive</HL>. The socket is the easy part.
         </P>
       </div>
 
@@ -478,7 +465,7 @@ const socket = io("https://…", {
         </P>
         <P>
           What they share is the move at the center of every one of them. The
-          server never learned to speak first. The browser just stopped hanging up.
+          server never learned to speak first. <HL>The browser just stopped hanging up.</HL>
           A request goes out; it doesn&apos;t come back until it has something to
           say; it opens another the moment it does; or the socket simply never
           closes.
@@ -506,6 +493,19 @@ const socket = io("https://…", {
         >
           The title lied slightly: the browser didn&apos;t stop asking. It stopped
           ending the question.
+        </p>
+        <p
+          aria-hidden
+          className="font-mono text-center select-none"
+          style={{
+            marginBlock: "var(--spacing-xl)",
+            color: "var(--color-accent)",
+            opacity: 0.8,
+            fontSize: "var(--text-body)",
+            letterSpacing: "0.2em",
+          }}
+        >
+          ·
         </p>
       </div>
     </Prose>

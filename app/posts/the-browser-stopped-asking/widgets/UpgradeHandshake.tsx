@@ -2,9 +2,27 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { PRESS, SPRING } from "@/lib/motion";
+import { PRESS, SPRING, TIMING } from "@/lib/motion";
 import { Stepper } from "@/components/viz/Stepper";
+import { TextHighlighter } from "@/components/fancy";
 import { WidgetShell } from "./WidgetShell";
+
+const HL_COLOR =
+  "color-mix(in oklab, var(--color-accent) 28%, transparent)";
+const HL_TX = { type: "spring" as const, duration: 0.9, bounce: 0 };
+
+function CaptionCue({ children }: { children: React.ReactNode }) {
+  return (
+    <TextHighlighter
+      triggerType="auto"
+      transition={HL_TX}
+      highlightColor={HL_COLOR}
+      className="rounded-[0.2em] px-[1px]"
+    >
+      {children}
+    </TextHighlighter>
+  );
+}
 
 const GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
@@ -103,10 +121,28 @@ export function UpgradeHandshake() {
   );
 }
 
-const CAPTIONS: string[] = [
-  "Step 1 — the browser sends a regular HTTP/1.1 request. Three headers ask the server to stop being HTTP: Upgrade, Connection, and a random 16-byte key.",
-  "Step 2 — the server glues the key onto a hardcoded GUID, SHA-1s it, base64s the digest, and sends that hash back. 101 Switching Protocols rides along.",
-  "Step 3 — HTTP is over. The same TCP socket now carries WebSocket frames (2–14 bytes of overhead). Either side can send, anytime.",
+const CAPTIONS: React.ReactNode[] = [
+  (
+    <>
+      <CaptionCue>Step through</CaptionCue> the upgrade. First, the browser
+      sends a regular HTTP/1.1 request — three headers ask the server to stop
+      being HTTP: Upgrade, Connection, and a random 16-byte key.
+    </>
+  ),
+  (
+    <>
+      <CaptionCue>Step 2.</CaptionCue> The server glues the key onto a
+      hardcoded GUID, SHA-1s it, base64s the digest, and sends that hash back.
+      101 Switching Protocols rides along.
+    </>
+  ),
+  (
+    <>
+      <CaptionCue>Step 3.</CaptionCue> HTTP is over. The same TCP socket now
+      carries WebSocket frames (2–14 bytes of overhead). Either side can send,
+      anytime.
+    </>
+  ),
 ];
 
 /* -------------------------------------------------------------------------- */
@@ -354,12 +390,14 @@ function HandshakeCanvasNarrow({
   step: number;
   computed: Computed;
 }) {
-  const WIDTH = 380;
+  // Authored at 340 / 288 to read clean at iPhone SE (375 viewport, ~343
+  // usable px). interaction-rules R5 + user directive 5.
+  const WIDTH = 340;
   const HEIGHT = 320;
   const PIPE_X = WIDTH / 2;
   const BROWSER_Y = 40;
   const SERVER_Y = 224;
-  const BOX_W = 300;
+  const BOX_W = 288;
   const BOX_H = 84;
   const BOX_X = (WIDTH - BOX_W) / 2;
   const PIPE_Y1 = BROWSER_Y + BOX_H + 6;
@@ -638,18 +676,11 @@ function NarrowFrameTraffic({
   const span = y2 - y1;
   return (
     <g>
-      {/* Frame traveling ↓ */}
+      {/* Frame traveling ↓ — one-shot spring */}
       <motion.g
         initial={{ y: 0, opacity: 0 }}
-        animate={{
-          y: [0, span, 0, span],
-          opacity: [0, 1, 0, 1, 0],
-        }}
-        transition={{
-          times: [0, 0.25, 0.5, 0.75, 1],
-          duration: 2.4,
-          ease: [0.22, 1, 0.36, 1],
-        }}
+        animate={{ y: span, opacity: 1 }}
+        transition={{ ...SPRING.smooth, delay: 0.1 }}
       >
         <rect
           x={pipeX - 18}
@@ -670,19 +701,11 @@ function NarrowFrameTraffic({
           0x1
         </text>
       </motion.g>
-      {/* Frame traveling ↑ */}
+      {/* Frame traveling ↑ — one-shot spring, staggered */}
       <motion.g
         initial={{ y: 0, opacity: 0 }}
-        animate={{
-          y: [0, -span, 0, -span],
-          opacity: [0, 1, 0, 1, 0],
-        }}
-        transition={{
-          times: [0, 0.25, 0.5, 0.75, 1],
-          duration: 2.4,
-          ease: [0.22, 1, 0.36, 1],
-          delay: 0.9,
-        }}
+        animate={{ y: -span, opacity: 1 }}
+        transition={{ ...SPRING.smooth, delay: 0.45 }}
       >
         <rect
           x={pipeX + 4}
@@ -703,30 +726,9 @@ function NarrowFrameTraffic({
           0x2
         </text>
       </motion.g>
-      {/* Ambient endpoint pulses */}
-      <motion.circle
-        cx={pipeX}
-        cy={y1}
-        r={3}
-        fill="var(--color-accent)"
-        initial={{ opacity: 0.5 }}
-        animate={{ opacity: [0.5, 0.9, 0.5] }}
-        transition={{ duration: 2.2, repeat: Infinity, ease: [0.22, 1, 0.36, 1] }}
-      />
-      <motion.circle
-        cx={pipeX}
-        cy={y2}
-        r={3}
-        fill="var(--color-accent)"
-        initial={{ opacity: 0.5 }}
-        animate={{ opacity: [0.5, 0.9, 0.5] }}
-        transition={{
-          duration: 2.2,
-          repeat: Infinity,
-          ease: [0.22, 1, 0.36, 1],
-          delay: 1.1,
-        }}
-      />
+      {/* Static endpoint dots — colour alone signals endpoint. No motion. */}
+      <circle cx={pipeX} cy={y1} r={3} fill="var(--color-accent)" />
+      <circle cx={pipeX} cy={y2} r={3} fill="var(--color-accent)" />
     </g>
   );
 }
@@ -757,11 +759,7 @@ function NarrowAcceptSettle({
           key={`${accept}-${i}`}
           initial={{ fill: "var(--color-text-muted)" }}
           animate={{ fill: "var(--color-accent)" }}
-          transition={{
-            duration: 0.24,
-            ease: [0.22, 1, 0.36, 1],
-            delay: 0.08 + i * 0.028,
-          }}
+          transition={{ ...TIMING.base, delay: 0.08 + i * 0.035 }}
         >
           {ch}
         </motion.tspan>
@@ -991,11 +989,7 @@ function AcceptSettle({ accept, y }: { accept: string; y: number }) {
           key={`${accept}-${i}`}
           initial={{ fill: "var(--color-text-muted)" }}
           animate={{ fill: "var(--color-accent)" }}
-          transition={{
-            duration: 0.24,
-            ease: [0.22, 1, 0.36, 1],
-            delay: 0.08 + i * 0.028,
-          }}
+          transition={{ ...TIMING.base, delay: 0.08 + i * 0.035 }}
         >
           {ch}
         </motion.tspan>
@@ -1007,27 +1001,19 @@ function AcceptSettle({ accept, y }: { accept: string; y: number }) {
 /**
  * FrameTraffic — step-3 bidirectional frame demo.
  *
- * Pre-fix: two `repeat: Infinity` loops with `ease: "linear"`. DESIGN.md §9
- * bans linear easing for UI motion, and ambient decoration after the first
- * pass teaches nothing. Now: each direction animates exactly twice on entry,
- * then settles into a pair of muted "socket is open, either side may speak"
- * endpoint pulses using `SPRING.gentle` on opacity only.
+ * One-shot teaching pass: a downstream frame and an upstream frame each
+ * traverse the pipe exactly once, settled by a spring, then come to rest at
+ * the far endpoint. Static terracotta dots mark the two endpoints — "socket
+ * open, either side may speak" — without infinite loops (DESIGN.md §9).
  */
 function FrameTraffic({ x1, x2, y }: { x1: number; x2: number; y: number }) {
   return (
     <g>
-      {/* Frame traveling →, plays twice then ends at rest */}
+      {/* Frame traveling → — single one-shot pass, springs to rest */}
       <motion.g
         initial={{ x: x1 + 20, opacity: 0 }}
-        animate={{
-          x: [x1 + 20, x2 - 30, x1 + 20, x2 - 30],
-          opacity: [0, 1, 0, 1, 0],
-        }}
-        transition={{
-          times: [0, 0.25, 0.5, 0.75, 1],
-          duration: 2.4,
-          ease: [0.22, 1, 0.36, 1],
-        }}
+        animate={{ x: x2 - 30, opacity: 1 }}
+        transition={{ ...SPRING.smooth, delay: 0.1 }}
       >
         <rect x={0} y={y - 8} width={22} height={14} rx={2} fill="var(--color-accent)" />
         <text
@@ -1041,19 +1027,11 @@ function FrameTraffic({ x1, x2, y }: { x1: number; x2: number; y: number }) {
           0x1
         </text>
       </motion.g>
-      {/* Frame traveling ←, staggered, plays twice then ends at rest */}
+      {/* Frame traveling ← — staggered, single one-shot pass, springs to rest */}
       <motion.g
         initial={{ x: x2 - 40, opacity: 0 }}
-        animate={{
-          x: [x2 - 40, x1 - 10, x2 - 40, x1 - 10],
-          opacity: [0, 1, 0, 1, 0],
-        }}
-        transition={{
-          times: [0, 0.25, 0.5, 0.75, 1],
-          duration: 2.4,
-          ease: [0.22, 1, 0.36, 1],
-          delay: 0.9,
-        }}
+        animate={{ x: x1 - 10, opacity: 1 }}
+        transition={{ ...SPRING.smooth, delay: 0.45 }}
       >
         <rect x={0} y={y + 12} width={22} height={14} rx={2} fill="var(--color-accent)" />
         <text
@@ -1067,11 +1045,9 @@ function FrameTraffic({ x1, x2, y }: { x1: number; x2: number; y: number }) {
           0x2
         </text>
       </motion.g>
-      {/* After the two passes settle, a subtle ambient pulse on each endpoint
-          signals "socket is open, both ends may speak" — state-conveying, not
-          decoration. Uses opacity only and a gentle spring keyframe. */}
-      <EndpointPulse cx={x1 + 2} cy={y} />
-      <EndpointPulse cx={x2 - 2} cy={y} />
+      {/* Static endpoint dots — colour alone signals "endpoint." No motion. */}
+      <circle cx={x1 + 2} cy={y} r={3} fill="var(--color-accent)" />
+      <circle cx={x2 - 2} cy={y} r={3} fill="var(--color-accent)" />
       <text
         x={(x1 + x2) / 2}
         y={y + 44}
@@ -1083,20 +1059,6 @@ function FrameTraffic({ x1, x2, y }: { x1: number; x2: number; y: number }) {
         opcodes: 0x1 text · 0x2 binary · 0x8 close · 0x9 ping · 0xA pong
       </text>
     </g>
-  );
-}
-
-function EndpointPulse({ cx, cy }: { cx: number; cy: number }) {
-  return (
-    <motion.circle
-      cx={cx}
-      cy={cy}
-      r={3}
-      fill="var(--color-accent)"
-      initial={{ opacity: 0.5 }}
-      animate={{ opacity: [0.5, 0.9, 0.5] }}
-      transition={{ duration: 2.2, repeat: Infinity, ease: [0.22, 1, 0.36, 1] }}
-    />
   );
 }
 
