@@ -6,6 +6,8 @@ import { WhyFetchFailsCover } from "./WhyFetchFailsCover";
 import { BrowserStoppedAskingCover } from "./BrowserStoppedAskingCover";
 import { FunctionRememberedCover } from "./FunctionRememberedCover";
 import { WebpageReadsAgentCover } from "./WebpageReadsAgentCover";
+import { LineThatWaitsItsTurnCover } from "./LineThatWaitsItsTurnCover";
+import { HowJavascriptReadsItsOwnFutureCover } from "./HowJavascriptReadsItsOwnFutureCover";
 
 /**
  * Slug → cover-component registry.
@@ -20,6 +22,8 @@ const REGISTRY: Record<string, () => React.ReactNode> = {
   "the-browser-stopped-asking": BrowserStoppedAskingCover,
   "the-function-that-remembered": FunctionRememberedCover,
   "the-webpage-that-reads-the-agent": WebpageReadsAgentCover,
+  "the-line-that-waits-its-turn": LineThatWaitsItsTurnCover,
+  "how-javascript-reads-its-own-future": HowJavascriptReadsItsOwnFutureCover,
 };
 
 type Size = "thumb" | "hero";
