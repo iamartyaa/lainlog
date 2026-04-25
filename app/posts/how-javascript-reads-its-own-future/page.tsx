@@ -261,30 +261,14 @@ export default function HowJavaScriptReadsItsOwnFuture() {
 
       <div className="pt-[var(--spacing-md)]">
         <P>
-          The first reason is the most visible. The language guarantees that a{" "}
-          <Code>function</Code> declaration is callable from anywhere in its
-          scope, including before its textual position. If the engine tried to
-          run line 1 without scanning ahead, a function call on line 1 to a{" "}
-          <Code>function</Code> declared on line 200 would fail. The
-          guarantee forces the scan.
-        </P>
-        <P>
-          The second is the spec being strict. Two <Code>let</Code>{" "}
-          declarations of the same name in the same scope must throw a{" "}
-          <Code>SyntaxError</Code> — and crucially, that error has to fire
-          before any of the surrounding code runs. The only way to enforce
-          that is to walk the scope first and refuse to start. V8&apos;s
-          preparser was{" "}
-          <A href="https://v8.dev/blog/preparser">extended specifically</A> to
-          catch these conflicts on the first pass.
-        </P>
-        <P>
-          The third is the subtlest. A <Code>const</Code> binding has to be
-          immutable from the moment it has a value. If the pre-walk gave it{" "}
-          <Code>undefined</Code> first and the initialiser later flipped it to
-          something else, the binding would have changed value once — by
-          definition not <Code>const</Code>. The TDZ resolves this:{" "}
-          <HL>required, not an optimisation.</HL>
+          Three constraints, three categories. <Em>Semantic</Em>: function
+          declarations must be callable from anywhere in scope.{" "}
+          <Em>Syntactic</Em>: duplicate <Code>let</Code>s must throw a{" "}
+          <Code>SyntaxError</Code> before any line runs — V8&apos;s preparser
+          was <A href="https://v8.dev/blog/preparser">extended specifically</A>{" "}
+          to catch them. <Em>Immutability</Em>: a <Code>const</Code> can&apos;t
+          read as <Code>undefined</Code> first and bind later. The TDZ resolves
+          all three: <HL>required, not an optimisation.</HL>
         </P>
         <Aside>
           The spec describes two passes; V8&apos;s pipeline (parser → AST →
@@ -301,10 +285,9 @@ export default function HowJavaScriptReadsItsOwnFuture() {
       <div>
         <Dots />
         <P>
-          The opening scene wasn&apos;t a quirk. Hoisting, TDZ errors,
-          functions callable from above their declaration — every weird
-          ordering rule you&apos;ve hit is the same mechanism, surfacing in
-          three places.
+          Hoisting, the TDZ, functions callable from above — three names for
+          one mechanism. The opening scene wasn&apos;t a quirk. It was the
+          mechanism showing through.
         </P>
         <p
           className="[margin-block-start:1.25em]"
@@ -314,11 +297,6 @@ export default function HowJavaScriptReadsItsOwnFuture() {
             The engine reads your future to run your present.
           </VerticalCutReveal>
         </p>
-        <P>
-          What happens when the stack empties — when the engine starts
-          listening for events instead of running lines — is a different
-          post.
-        </P>
         <p
           aria-hidden
           className="font-mono text-center select-none"

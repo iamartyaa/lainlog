@@ -4,7 +4,7 @@ import { SITE_URL as SITE } from "@/lib/site";
 const SLUG = "how-javascript-reads-its-own-future";
 const VISIBLE_HEADING = "How JavaScript reads its own future";
 const LYRICAL_TAGLINE =
-  "Hoisting, the TDZ, and the call stack — one mechanism, not three quirks";
+  "One mechanism — hoisting, the TDZ, and the call stack.";
 const HOOK =
   "Before line 1 runs, the JavaScript engine has already walked your file. Hoisting, the TDZ, and the call stack are one mechanism — explored with playable widgets.";
 
