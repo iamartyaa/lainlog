@@ -17,7 +17,7 @@ const STEPS: Step[] = [
     id: "idle",
     label: "idle",
     caption: () =>
-      "Nothing has happened yet. JS is about to call fetch on a cross-origin URL.",
+      "Press ▸ to walk a cross-origin fetch from the browser to the server and back. Toggle the allow-origin header to compare verdicts.",
   },
   {
     id: "issue",
@@ -53,23 +53,30 @@ const STEPS: Step[] = [
   },
 ];
 
-const LANE_LABELS = ["JS", "browser", "network", "server"] as const;
-
-type Actor = 0 | 1 | 2 | 3;
-
-type Message = {
-  /** Earliest step at which this message is visible. */
-  from: number;
-  /** Lifelines: 0 = JS, 1 = browser, 2 = network, 3 = server */
-  fromCol: Actor;
-  toCol: Actor;
-  /** Row offset (in wide layout). In narrow layout the message's x is
-   *  derived from its `from` step. */
-  y: number;
-  label: string;
-  shortLabel?: string;
+/* Beats 1..5 each correspond to STEPS[1..5]. Each beat is one horizontal
+ * connector between the two lanes (browser-lane on the left, server-lane on
+ * the right) — direction is encoded in `dir`, which determines arrow head
+ * placement. Beat 3 is a self-loop on the server lane (handler runs locally).
+ */
+type Beat = {
+  /** Arrow direction: which lane the connector points TO. */
+  dir: "right" | "left" | "self-server" | "self-browser";
+  /** Compact token displayed on the connector. */
+  token: string;
+  /** Tone for color treatment. */
   tone?: "default" | "accent" | "muted";
 };
+
+const BEATS: Beat[] = [
+  { dir: "right", token: "fetch(url)" }, // step 1: JS in browser → server-bound
+  { dir: "right", token: "GET /me · Origin" }, // step 2: request on the wire
+  { dir: "self-server", token: "handler runs", tone: "muted" }, // step 3
+  { dir: "left", token: "200 OK · body" }, // step 4: response back
+  // step 5: the verdict is browser-internal — no wire transmission.
+  // Self-loop on the BROWSER lane mirrors beat 3's self-loop on the server,
+  // and reinforces the post's thesis: the browser is the enforcer.
+  { dir: "self-browser", token: "ACAO match?", tone: "accent" },
+];
 
 type Props = {
   initialStep?: number;
@@ -77,7 +84,7 @@ type Props = {
 };
 
 export function RequestJourney({
-  initialStep = 5,
+  initialStep = 0,
   initialAllowOrigin = false,
 }: Props) {
   const [step, setStep] = useState(initialStep);
@@ -85,55 +92,11 @@ export function RequestJourney({
 
   const current = STEPS[Math.min(step, STEPS.length - 1)];
 
-  const buildMessages = (TOP: number): Message[] => [
-    {
-      from: 1,
-      fromCol: 0,
-      toCol: 1,
-      y: TOP + 22,
-      label: "fetch(url)",
-      shortLabel: "fetch",
-    },
-    {
-      from: 2,
-      fromCol: 1,
-      toCol: 3,
-      y: TOP + 62,
-      label: "GET /me · Origin: app.example.com",
-      shortLabel: "GET /me",
-    },
-    {
-      from: 3,
-      fromCol: 3,
-      toCol: 3,
-      y: TOP + 102,
-      label: "handler runs",
-      shortLabel: "handler",
-      tone: "muted",
-    },
-    {
-      from: 4,
-      fromCol: 3,
-      toCol: 1,
-      y: TOP + 142,
-      label: "200 OK · body",
-      shortLabel: "200 OK",
-    },
-    {
-      from: 5,
-      fromCol: 1,
-      toCol: 0,
-      y: TOP + 200,
-      label: allow ? "resolve(Response)" : "TypeError",
-      shortLabel: allow ? "resolve" : "TypeError",
-      tone: "accent",
-    },
-  ];
-
   return (
     <WidgetShell
-      title="request journey · same wire, different verdict"
+      title="request journey · the browser is the gatekeeper"
       measurements={`step ${step + 1}/${STEPS.length} · allow-origin ${allow ? "sent" : "missing"}`}
+      captionTone="prominent"
       caption={current.caption(allow)}
       controls={
         <div className="flex items-center gap-[var(--spacing-md)] flex-wrap">
@@ -142,7 +105,7 @@ export function RequestJourney({
             type="button"
             onClick={() => setAllow((v) => !v)}
             aria-pressed={allow}
-            aria-label={`Toggle Access-Control-Allow-Origin header — currently ${allow ? "sent" : "missing"}`}
+            aria-label="Toggle the Access-Control-Allow-Origin header"
             className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] min-h-[44px] inline-flex items-center font-mono transition-colors"
             style={{
               fontSize: "var(--text-small)",
@@ -157,337 +120,42 @@ export function RequestJourney({
         </div>
       }
     >
-      {/* Two orientations rendered; CSS container query picks which shows.
-          Pure-CSS flip so there's no hydration mismatch and no JS work
-          beyond the existing state changes. */}
-      <div className="bs-rj-wide">
-        <WideJourney
-          step={step}
-          allow={allow}
-          current={current}
-          messages={buildMessages(40)}
-        />
-      </div>
-      <div className="bs-rj-narrow">
-        <NarrowJourney
-          step={step}
-          allow={allow}
-          current={current}
-          messages={buildMessages(40)}
-        />
-      </div>
+      <Journey step={step} allow={allow} current={current} />
     </WidgetShell>
   );
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                 Wide layout                                */
+/*  Mobile-first numbered lane-pair. Two short vertical lanes (browser left,  */
+/*  server right). Each beat is a horizontal connector between them — arrow   */
+/*  direction is unambiguous because connectors are strictly horizontal.      */
+/*  Time flows top-to-bottom. Authored at 320 viewport units; SVG scales up.  */
 /* -------------------------------------------------------------------------- */
 
-function WideJourney({
+function Journey({
   step,
   allow,
   current,
-  messages,
 }: {
   step: number;
   allow: boolean;
   current: Step;
-  messages: Message[];
 }) {
-  const WIDTH = 820;
-  const HEIGHT = 380;
-  const LEFT_PAD = 64;
-  const RIGHT_PAD = 32;
-  const TOP = 40;
-  const BOT = 260;
-  const COLS = 4;
-  const colX = (i: number) =>
-    LEFT_PAD + (i * (WIDTH - LEFT_PAD - RIGHT_PAD)) / (COLS - 1);
+  const WIDTH = 320;
+  const TOP_PAD = 28;
+  const BEAT_H = 46;
+  const BEATS_COUNT = BEATS.length;
+  const LANES_BOT = TOP_PAD + BEATS_COUNT * BEAT_H + 8;
+  const DEVTOOLS_GAP = 16;
+  const DEVTOOLS_H = 64;
+  const HEIGHT = LANES_BOT + DEVTOOLS_GAP + DEVTOOLS_H + 12;
 
-  return (
-    <svg
-      viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-      width="100%"
-      style={{ maxWidth: WIDTH, height: "auto", display: "block" }}
-      role="img"
-      aria-label={`Request journey step ${step + 1}: ${current.label}`}
-    >
-      <defs>
-        <marker
-          id="arrow-default"
-          viewBox="0 0 10 10"
-          refX="9"
-          refY="5"
-          markerWidth="6"
-          markerHeight="6"
-          orient="auto-start-reverse"
-        >
-          <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-text-muted)" />
-        </marker>
-        <marker
-          id="arrow-accent"
-          viewBox="0 0 10 10"
-          refX="9"
-          refY="5"
-          markerWidth="6"
-          markerHeight="6"
-          orient="auto-start-reverse"
-        >
-          <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-accent)" />
-        </marker>
-      </defs>
+  const LANE_LEFT_X = 56; // browser lane center
+  const LANE_RIGHT_X = WIDTH - 56; // server lane center
+  const CONNECTOR_INSET = 12; // gap between lane glyph and connector tip
 
-      {/* Lifelines */}
-      {LANE_LABELS.map((lane, i) => (
-        <g key={lane}>
-          <text
-            x={colX(i)}
-            y={TOP - 12}
-            textAnchor="middle"
-            fontFamily="var(--font-sans)"
-            fontSize={13}
-            fill="var(--color-text-muted)"
-            fontWeight={500}
-          >
-            {lane}
-          </text>
-          <line
-            x1={colX(i)}
-            x2={colX(i)}
-            y1={TOP}
-            y2={BOT}
-            stroke="var(--color-rule)"
-            strokeWidth={1}
-            strokeDasharray="3 4"
-          />
-        </g>
-      ))}
-
-      {/* Gate */}
-      <motion.rect
-        x={colX(0) - 12}
-        y={TOP + 180}
-        width={colX(1) - colX(0) + 24}
-        height={36}
-        rx={3}
-        fill={
-          step >= 5
-            ? allow
-              ? "color-mix(in oklab, var(--color-accent) 14%, transparent)"
-              : "color-mix(in oklab, var(--color-accent) 10%, transparent)"
-            : "transparent"
-        }
-        stroke={step >= 5 ? "var(--color-accent)" : "var(--color-rule)"}
-        strokeWidth={step >= 5 ? 1.5 : 1}
-        strokeDasharray={step >= 5 ? undefined : "4 3"}
-        initial={false}
-        animate={{ opacity: step >= 4 ? 1 : 0.35 }}
-        transition={SPRING.smooth}
-      />
-      <text
-        x={(colX(0) + colX(1)) / 2}
-        y={TOP + 176}
-        textAnchor="middle"
-        fontFamily="var(--font-mono)"
-        fontSize={11}
-        fill="var(--color-text-muted)"
-      >
-        browser ↔ JS boundary
-      </text>
-
-      {/* Messages */}
-      {messages.map((m, idx) => {
-        const visible = step >= m.from;
-        const isCurrent = step === m.from;
-        const past = step > m.from;
-        const x1 = colX(m.fromCol);
-        const x2 = colX(m.toCol);
-        const isSelf = m.fromCol === m.toCol;
-
-        const tone =
-          m.tone === "accent"
-            ? "var(--color-accent)"
-            : m.tone === "muted"
-              ? "var(--color-text-muted)"
-              : isCurrent
-                ? "var(--color-accent)"
-                : "var(--color-text-muted)";
-        const stroke = tone;
-        const textFill =
-          m.tone === "accent"
-            ? "var(--color-accent)"
-            : isCurrent
-              ? "var(--color-text)"
-              : "var(--color-text-muted)";
-
-        const arrowMarker =
-          m.tone === "accent" ? "url(#arrow-accent)" : "url(#arrow-default)";
-
-        return (
-          <motion.g
-            key={`m-${idx}`}
-            initial={false}
-            animate={{ opacity: visible ? (isCurrent ? 1 : past ? 0.55 : 0) : 0 }}
-            transition={SPRING.smooth}
-          >
-            {isSelf ? (
-              <>
-                <path
-                  d={`M ${x1 + 4} ${m.y} q 28 0 28 16 q 0 16 -28 16`}
-                  fill="none"
-                  stroke={stroke}
-                  strokeWidth={isCurrent ? 1.6 : 1}
-                  markerEnd={arrowMarker}
-                />
-                <text
-                  x={x1 + 40}
-                  y={m.y + 20}
-                  fontFamily="var(--font-mono)"
-                  fontSize={12}
-                  fill={textFill}
-                >
-                  {m.label}
-                </text>
-              </>
-            ) : (
-              <>
-                <line
-                  x1={x1}
-                  x2={x2}
-                  y1={m.y}
-                  y2={m.y}
-                  stroke={stroke}
-                  strokeWidth={isCurrent ? 1.8 : 1}
-                  markerEnd={arrowMarker}
-                />
-                <text
-                  x={(x1 + x2) / 2}
-                  y={m.y - 6}
-                  textAnchor="middle"
-                  fontFamily="var(--font-mono)"
-                  fontSize={12}
-                  fill={textFill}
-                >
-                  {m.label}
-                </text>
-              </>
-            )}
-          </motion.g>
-        );
-      })}
-
-      {/* DevTools panel */}
-      <g>
-        <rect
-          x={LEFT_PAD}
-          y={BOT + 20}
-          width={WIDTH - LEFT_PAD - RIGHT_PAD}
-          height={76}
-          rx={3}
-          fill="color-mix(in oklab, var(--color-surface) 60%, transparent)"
-          stroke="var(--color-rule)"
-          strokeWidth={1}
-        />
-        <text
-          x={LEFT_PAD + 12}
-          y={BOT + 36}
-          fontFamily="var(--font-mono)"
-          fontSize={11}
-          fill="var(--color-text-muted)"
-        >
-          DevTools
-        </text>
-        <text
-          x={LEFT_PAD + 12}
-          y={BOT + 58}
-          fontFamily="var(--font-mono)"
-          fontSize={12}
-          fill="var(--color-text)"
-        >
-          Network
-        </text>
-        <motion.text
-          x={LEFT_PAD + 100}
-          y={BOT + 58}
-          fontFamily="var(--font-mono)"
-          fontSize={12}
-          fill="var(--color-text)"
-          initial={false}
-          animate={{ opacity: step >= 4 ? 1 : 0.25 }}
-          transition={SPRING.smooth}
-        >
-          GET /me · 200 OK · 142 B
-        </motion.text>
-
-        <text
-          x={LEFT_PAD + 12}
-          y={BOT + 82}
-          fontFamily="var(--font-mono)"
-          fontSize={12}
-          fill="var(--color-text)"
-        >
-          Console
-        </text>
-        <motion.text
-          x={LEFT_PAD + 100}
-          y={BOT + 82}
-          fontFamily="var(--font-mono)"
-          fontSize={12}
-          fill={allow ? "var(--color-text-muted)" : "var(--color-accent)"}
-          initial={false}
-          animate={{ opacity: step >= 5 ? 1 : 0.25 }}
-          transition={SPRING.smooth}
-        >
-          {allow ? "▸ Response { ok: true, … }" : "✗ TypeError: Failed to fetch"}
-        </motion.text>
-      </g>
-    </svg>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*                               Narrow layout                                */
-/* -------------------------------------------------------------------------- */
-
-/**
- * Horizontal-lifelines layout for narrow containers. Actors become rows
- * stacked vertically, time flows left-to-right, and each message is a
- * vertical connector at its own time-step column. Long message labels —
- * which would collide at narrow widths — are replaced by short tokens on
- * past / future messages; the full label only shows on the current step,
- * rendered below the timeline where it has room to breathe.
- */
-function NarrowJourney({
-  step,
-  allow,
-  current,
-  messages,
-}: {
-  step: number;
-  allow: boolean;
-  current: Step;
-  messages: Message[];
-}) {
-  // ViewBox widened from 380→420 and font-sizes bumped (10→12, 9→11) so that
-  // at the narrowest mobile widget canvas (~300 px), SVG text still renders
-  // above the --text-small floor. Per `interactive-components.md §3`.
-  const WIDTH = 420;
-  const LEFT_PAD = 76;
-  const RIGHT_PAD = 18;
-  const TOP_PAD = 24;
-  const ROW_H = 44;
-  const ROWS = 4;
-  const LIFELINE_BOT = TOP_PAD + ROWS * ROW_H;
-  const LABEL_BAND = 56;
-  const DEVTOOLS_H = 68;
-  const HEIGHT = LIFELINE_BOT + LABEL_BAND + DEVTOOLS_H + 16;
-  const rowY = (i: number) => TOP_PAD + i * ROW_H + ROW_H / 2;
-
-  const timelineW = WIDTH - LEFT_PAD - RIGHT_PAD;
-  // One x-step per message.
-  const msgX = (i: number) =>
-    LEFT_PAD + 24 + (i * (timelineW - 40)) / Math.max(messages.length - 1, 1);
+  const beatY = (i: number) => TOP_PAD + i * BEAT_H + BEAT_H / 2;
+  const showDiscard = step >= 5 && !allow;
 
   return (
     <svg
@@ -499,186 +167,264 @@ function NarrowJourney({
     >
       <defs>
         <marker
-          id="arrow-default-n"
+          id="arrow-default-rj"
           viewBox="0 0 10 10"
           refX="9"
           refY="5"
-          markerWidth="6"
-          markerHeight="6"
-          orient="auto-start-reverse"
+          markerWidth="7"
+          markerHeight="7"
+          orient="auto"
         >
           <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-text-muted)" />
         </marker>
         <marker
-          id="arrow-accent-n"
+          id="arrow-accent-rj"
           viewBox="0 0 10 10"
           refX="9"
           refY="5"
-          markerWidth="6"
-          markerHeight="6"
-          orient="auto-start-reverse"
+          markerWidth="7"
+          markerHeight="7"
+          orient="auto"
         >
           <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-accent)" />
         </marker>
+        <marker
+          id="arrow-muted-rj"
+          viewBox="0 0 10 10"
+          refX="9"
+          refY="5"
+          markerWidth="7"
+          markerHeight="7"
+          orient="auto"
+        >
+          <path d="M0,0 L10,5 L0,10 Z" fill="var(--color-text-muted)" />
+        </marker>
       </defs>
 
-      {/* Actor rows: label on left + horizontal dashed lifeline */}
-      {LANE_LABELS.map((lane, i) => (
-        <g key={lane}>
-          <text
-            x={LEFT_PAD - 10}
-            y={rowY(i)}
-            textAnchor="end"
-            dominantBaseline="central"
-            fontFamily="var(--font-sans)"
-            fontSize={12}
-            fontWeight={500}
-            fill="var(--color-text-muted)"
-          >
-            {lane}
-          </text>
-          <line
-            x1={LEFT_PAD}
-            x2={WIDTH - RIGHT_PAD}
-            y1={rowY(i)}
-            y2={rowY(i)}
-            stroke="var(--color-rule)"
-            strokeWidth={1}
-            strokeDasharray="3 4"
-          />
-        </g>
-      ))}
-
-      {/* Time axis label */}
+      {/* Lane headers */}
       <text
-        x={LEFT_PAD}
-        y={TOP_PAD - 8}
+        x={LANE_LEFT_X}
+        y={TOP_PAD - 12}
+        textAnchor="middle"
         fontFamily="var(--font-sans)"
-        fontSize={12}
-        fill="var(--color-text-muted)"
+        fontSize={11}
+        fontWeight={600}
+        fill="var(--color-text)"
       >
-        time →
+        browser
+      </text>
+      <text
+        x={LANE_RIGHT_X}
+        y={TOP_PAD - 12}
+        textAnchor="middle"
+        fontFamily="var(--font-sans)"
+        fontSize={11}
+        fontWeight={600}
+        fill="var(--color-text)"
+      >
+        server
       </text>
 
-      {/* Browser ↔ JS boundary: highlighted band between rows 0 and 1 at the
-          last message's x position when the request reaches the decide step. */}
+      {/* Vertical lanes — dashed rules indicate "time" in each actor's frame */}
+      <line
+        x1={LANE_LEFT_X}
+        x2={LANE_LEFT_X}
+        y1={TOP_PAD - 4}
+        y2={LANES_BOT}
+        stroke="var(--color-rule)"
+        strokeWidth={1}
+        strokeDasharray="3 4"
+      />
+      <line
+        x1={LANE_RIGHT_X}
+        x2={LANE_RIGHT_X}
+        y1={TOP_PAD - 4}
+        y2={LANES_BOT}
+        stroke="var(--color-rule)"
+        strokeWidth={1}
+        strokeDasharray="3 4"
+      />
+
+      {/* Gatekeeper highlight — wraps the LEFT (browser) lane at the verdict
+          row. Reinforces the pedagogy: the gate lives on the browser side. */}
       {(() => {
-        const lastX = msgX(messages.length - 1);
         const gateActive = step >= 5;
-        const y0 = rowY(0);
-        const y1 = rowY(1);
+        const verdictY = beatY(BEATS_COUNT - 1);
         return (
           <motion.g
             initial={false}
-            animate={{ opacity: step >= 4 ? 1 : 0.3 }}
+            animate={{ opacity: step >= 4 ? 1 : 0 }}
             transition={SPRING.smooth}
           >
             <rect
-              x={lastX - 22}
-              y={y0 - 8}
-              width={44}
-              height={y1 - y0 + 16}
-              rx={3}
+              x={LANE_LEFT_X - 14}
+              y={verdictY - 16}
+              width={28}
+              height={32}
+              rx={4}
               fill={
                 gateActive
                   ? allow
                     ? "color-mix(in oklab, var(--color-accent) 14%, transparent)"
-                    : "color-mix(in oklab, var(--color-accent) 10%, transparent)"
+                    : "color-mix(in oklab, var(--color-accent) 12%, transparent)"
                   : "transparent"
               }
-              stroke={gateActive ? "var(--color-accent)" : "var(--color-rule)"}
+              stroke="var(--color-accent)"
               strokeWidth={gateActive ? 1.4 : 1}
-              strokeDasharray={gateActive ? undefined : "3 3"}
+              strokeDasharray={gateActive ? undefined : "2 3"}
             />
           </motion.g>
         );
       })()}
 
-      {/* Messages as vertical arrows at their time-step column */}
-      {messages.map((m, idx) => {
-        const x = msgX(idx);
-        const visible = step >= m.from;
-        const isCurrent = step === m.from;
-        const past = step > m.from;
+      {/* Beats — one horizontal connector per row */}
+      {BEATS.map((beat, idx) => {
+        const beatStep = idx + 1; // BEATS[0] corresponds to STEPS[1]
+        const visible = step >= beatStep;
+        const isCurrent = step === beatStep;
+        const past = step > beatStep;
+        const y = beatY(idx);
 
         const tone =
-          m.tone === "accent"
+          beat.tone === "accent"
             ? "var(--color-accent)"
-            : m.tone === "muted"
+            : beat.tone === "muted"
               ? "var(--color-text-muted)"
               : isCurrent
                 ? "var(--color-accent)"
                 : "var(--color-text-muted)";
         const arrowMarker =
-          m.tone === "accent" ? "url(#arrow-accent-n)" : "url(#arrow-default-n)";
-        const token = m.shortLabel ?? m.label;
-        const isSelf = m.fromCol === m.toCol;
+          beat.tone === "accent"
+            ? "url(#arrow-accent-rj)"
+            : beat.tone === "muted"
+              ? "url(#arrow-muted-rj)"
+              : "url(#arrow-default-rj)";
+
+        // Numbered badge sits on the browser side of the row, just outside the lane.
+        const badgeX = 18;
+
+        let connector: React.ReactNode;
+        if (beat.dir === "right") {
+          const x1 = LANE_LEFT_X + CONNECTOR_INSET;
+          const x2 = LANE_RIGHT_X - CONNECTOR_INSET;
+          connector = (
+            <line
+              x1={x1}
+              x2={x2}
+              y1={y}
+              y2={y}
+              stroke={tone}
+              strokeWidth={isCurrent ? 1.8 : 1.2}
+              markerEnd={arrowMarker}
+            />
+          );
+        } else if (beat.dir === "left") {
+          const x1 = LANE_RIGHT_X - CONNECTOR_INSET;
+          const x2 = LANE_LEFT_X + CONNECTOR_INSET;
+          connector = (
+            <line
+              x1={x1}
+              x2={x2}
+              y1={y}
+              y2={y}
+              stroke={tone}
+              strokeWidth={isCurrent ? 1.8 : 1.2}
+              markerEnd={arrowMarker}
+            />
+          );
+        } else if (beat.dir === "self-server") {
+          // self-loop on the server lane: small horizontal arc to the right of
+          // LANE_RIGHT_X and back, terminating on the lane.
+          const xs = LANE_RIGHT_X - CONNECTOR_INSET;
+          connector = (
+            <path
+              d={`M ${xs} ${y - 8}
+                  q 22 0 22 8
+                  q 0 8 -22 8`}
+              fill="none"
+              stroke={tone}
+              strokeWidth={isCurrent ? 1.8 : 1.2}
+              markerEnd={arrowMarker}
+            />
+          );
+        } else {
+          // self-loop on the browser lane: mirror of self-server, on the left.
+          // Used for the verdict beat — encodes "browser decides internally,
+          // no wire transmission" — supports the post's thesis.
+          const xs = LANE_LEFT_X + CONNECTOR_INSET;
+          connector = (
+            <path
+              d={`M ${xs} ${y - 8}
+                  q -22 0 -22 8
+                  q 0 8 22 8`}
+              fill="none"
+              stroke={tone}
+              strokeWidth={isCurrent ? 1.8 : 1.2}
+              markerEnd={arrowMarker}
+            />
+          );
+        }
 
         return (
           <motion.g
-            key={`nm-${idx}`}
+            key={`beat-${idx}`}
             initial={false}
-            animate={{ opacity: visible ? (isCurrent ? 1 : past ? 0.6 : 0) : 0 }}
+            animate={{
+              opacity: visible ? (isCurrent ? 1 : past ? 0.55 : 0) : 0.12,
+            }}
             transition={SPRING.smooth}
           >
-            {isSelf ? (
-              <path
-                d={`M ${x - 2} ${rowY(m.fromCol) - 10}
-                    q -14 0 -14 10
-                    q 0 10 14 10`}
-                fill="none"
-                stroke={tone}
-                strokeWidth={isCurrent ? 1.6 : 1}
-                markerEnd={arrowMarker}
-              />
-            ) : (
-              <line
-                x1={x}
-                x2={x}
-                y1={rowY(m.fromCol)}
-                y2={rowY(m.toCol)}
-                stroke={tone}
-                strokeWidth={isCurrent ? 1.8 : 1}
-                markerEnd={arrowMarker}
-              />
-            )}
-            {/* Short token above the topmost point of the arrow */}
+            {/* Step badge — circled number outside the browser lane */}
+            <circle
+              cx={badgeX}
+              cy={y}
+              r={9}
+              fill={isCurrent ? "var(--color-accent)" : "transparent"}
+              stroke={
+                isCurrent
+                  ? "var(--color-accent)"
+                  : past
+                    ? "var(--color-text-muted)"
+                    : "var(--color-rule)"
+              }
+              strokeWidth={1}
+            />
             <text
-              x={x}
-              y={Math.min(rowY(m.fromCol), rowY(m.toCol)) - 6}
+              x={badgeX}
+              y={y}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontFamily="var(--font-mono)"
+              fontSize={10}
+              fontWeight={600}
+              fill={isCurrent ? "var(--color-bg)" : "var(--color-text-muted)"}
+            >
+              {beatStep}
+            </text>
+
+            {connector}
+
+            {/* Connector token — sits above the line, centered between the lanes */}
+            <text
+              x={(LANE_LEFT_X + LANE_RIGHT_X) / 2}
+              y={y - 6}
               textAnchor="middle"
               fontFamily="var(--font-mono)"
-              fontSize={11}
+              fontSize={10}
               fill={isCurrent ? "var(--color-text)" : "var(--color-text-muted)"}
             >
-              {token}
+              {beat.token}
             </text>
           </motion.g>
         );
       })}
 
-      {/* Full current-message label — below the lifelines where it has room */}
-      <motion.text
-        key={`narrow-label-${step}-${allow ? "a" : "b"}`}
-        x={WIDTH / 2}
-        y={LIFELINE_BOT + 22}
-        textAnchor="middle"
-        fontFamily="var(--font-mono)"
-        fontSize={12}
-        fill="var(--color-text)"
-        initial={{ opacity: 0, y: LIFELINE_BOT + 28 }}
-        animate={{ opacity: 1, y: LIFELINE_BOT + 22 }}
-        transition={SPRING.smooth}
-      >
-        {messages[Math.min(step, messages.length - 1)]?.label ?? ""}
-      </motion.text>
-
-      {/* Compact DevTools panel */}
+      {/* Compact DevTools panel — preserves the discard-beat pedagogy */}
       <g>
         <rect
-          x={LEFT_PAD}
-          y={HEIGHT - DEVTOOLS_H - 4}
-          width={WIDTH - LEFT_PAD - RIGHT_PAD}
+          x={16}
+          y={LANES_BOT + DEVTOOLS_GAP}
+          width={WIDTH - 32}
           height={DEVTOOLS_H}
           rx={3}
           fill="color-mix(in oklab, var(--color-surface) 60%, transparent)"
@@ -686,37 +432,60 @@ function NarrowJourney({
           strokeWidth={1}
         />
         <text
-          x={LEFT_PAD + 8}
-          y={HEIGHT - DEVTOOLS_H + 14}
+          x={24}
+          y={LANES_BOT + DEVTOOLS_GAP + 16}
           fontFamily="var(--font-mono)"
-          fontSize={12}
+          fontSize={10}
           fill="var(--color-text-muted)"
         >
           DevTools
         </text>
-        <motion.text
-          x={LEFT_PAD + 8}
-          y={HEIGHT - DEVTOOLS_H + 30}
-          fontFamily="var(--font-mono)"
-          fontSize={11}
-          fill="var(--color-text)"
+
+        {/* Network row — `body` is what gets discarded on allow=false */}
+        <motion.g
           initial={false}
           animate={{ opacity: step >= 4 ? 1 : 0.25 }}
           transition={SPRING.smooth}
         >
-          Net · 200 OK · 142 B
-        </motion.text>
+          <text
+            x={24}
+            y={LANES_BOT + DEVTOOLS_GAP + 32}
+            fontFamily="var(--font-mono)"
+            fontSize={10}
+            fill="var(--color-text)"
+          >
+            Net · 200 OK · body
+          </text>
+          <motion.rect
+            x={24}
+            y={LANES_BOT + DEVTOOLS_GAP + 28}
+            width={120}
+            height={1.5}
+            fill="var(--color-accent)"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: showDiscard ? 1 : 0 }}
+            transition={SPRING.smooth}
+            style={{
+              transformOrigin: `24px ${LANES_BOT + DEVTOOLS_GAP + 28}px`,
+            }}
+          />
+        </motion.g>
+
         <motion.text
-          x={LEFT_PAD + 8}
-          y={HEIGHT - DEVTOOLS_H + 48}
+          x={24}
+          y={LANES_BOT + DEVTOOLS_GAP + 50}
           fontFamily="var(--font-mono)"
-          fontSize={11}
+          fontSize={10}
           fill={allow ? "var(--color-text-muted)" : "var(--color-accent)"}
           initial={false}
           animate={{ opacity: step >= 5 ? 1 : 0.25 }}
           transition={SPRING.smooth}
         >
-          {allow ? "▸ Response {…}" : "✗ TypeError"}
+          {step >= 5
+            ? allow
+              ? "▸ Response {…}"
+              : "✗ TypeError: Failed to fetch"
+            : "▸ awaiting verdict"}
         </motion.text>
       </g>
     </svg>

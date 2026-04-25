@@ -443,21 +443,23 @@ html[data-theme-transitioning] {
   }
 }
 
-/* RequestJourney — orientation flip. Wide (≥ --flip-wide) keeps the
-   conventional sequence-diagram layout with actors as columns. Below the
-   flip point we swap to horizontal lifelines (actors as rows, time flowing
-   left-to-right) so long message labels like "GET /me · Origin: …" have
-   room to breathe instead of being scaled into illegibility. Both SVGs
-   render in SSR; the container query picks which one to show. */
-.bs-rj-narrow {
+/* OriginMatrix (why-fetch-fails-only-in-browser §2) — mobile-first. Default
+   shape is a stacked-list of cards (each row stands alone, URL + diff line +
+   verdict pill). At --flip-wide the table layout returns for denser desktop
+   reading. Authoring source is the stacked list — the table is rendered
+   from the same data. */
+.bs-om-table {
   display: none;
 }
-@container widget (max-width: 640px) {
-  .bs-rj-wide {
+@container widget (min-width: 640px) {
+  .bs-om-base {
     display: none;
   }
-  .bs-rj-narrow {
-    display: block;
+  .bs-om-stack {
+    display: none;
+  }
+  .bs-om-table {
+    display: table;
   }
 }
 

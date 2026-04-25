@@ -100,13 +100,9 @@ export default function WhyFetchFailsOnlyInBrowser() {
         <Dots />
         <H2>Same origin is three things, not one.</H2>
         <P>
-          Before the mechanism makes sense, the vocabulary has to. An <Term>origin</Term>{" "}
-          is the triple <Code>(scheme, host, port)</Code>. Two URLs are the same origin
-          only if all three match.{" "}
-          <HL>Path doesn&apos;t count. Subdomains don&apos;t match.</HL>{" "}
-          And yes, <Code>http</Code> vs <Code>https</Code> on the exact same hostname
-          is cross-origin — TLS changes the trust boundary. Tap (or tab to) any row
-          below to see which part differs.
+          An <Term>origin</Term>{" "}is the triple{" "}
+          <Code>(scheme, host, port)</Code>. Two URLs are the same origin only if
+          all three match.
         </P>
       </div>
 
@@ -114,20 +110,15 @@ export default function WhyFetchFailsOnlyInBrowser() {
 
       <div>
         <P>
-          The <Em>same-origin policy</Em>{" "}is{" "}
-          <HL>the browser&apos;s default</HL>. JS running in one origin can&apos;t
-          read a response from another. Loading assets across origins — an{" "}
-          <Code>&lt;img&gt;</Code>, a <Code>&lt;script&gt;</Code>, a stylesheet —
-          has always been allowed, which is why the restriction feels arbitrary
-          until you notice what <Em>is</Em>{" "}forbidden:{" "}
-          <HL>reading a response from JS</HL>. CORS is the opt-in mechanism for
-          punching holes in that wall.
+          That triple is what the browser checks before it lets one page read
+          another&apos;s response. CORS is the opt-in mechanism for relaxing
+          that rule, narrowly.
         </P>
-        <Callout tone="note">
+        <Aside>
           Your dev setup on <Code>localhost:3000</Code> and your API on{" "}
           <Code>localhost:4000</Code> are cross-origin. CORS is a localhost
           problem before it&apos;s a production one.
-        </Callout>
+        </Aside>
       </div>
 
       {/* §3 — THE reveal */}
@@ -144,16 +135,6 @@ export default function WhyFetchFailsOnlyInBrowser() {
       <RequestJourney />
 
       <div>
-        <P>
-          Walk that back slowly. The fetch left the browser. The request reached
-          the server. The server ran its handler — the same code it runs for any
-          other client. It returned <Code>200 OK</Code> with a real body. The
-          response arrived in the browser. Only then,{" "}
-          <HL>after the whole round trip</HL>, did the browser look at the
-          response headers, fail to find an invitation for your page&apos;s origin,
-          and throw the body away.
-        </P>
-
         <Dots />
 
         <p
@@ -205,18 +186,9 @@ export default function WhyFetchFailsOnlyInBrowser() {
         <Dots />
         <H2>Some requests never leave the browser.</H2>
         <P>
-          The &ldquo;server runs, browser redacts&rdquo; rule holds for <Em>simple</Em>{" "}
-          requests — roughly, what an HTML form could have sent without JS: a{" "}
-          <Code>GET</Code>, or a plain <Code>POST</Code> with one of three
-          old content types (<Code>text/plain</Code>,{" "}
-          <Code>application/x-www-form-urlencoded</Code>, or{" "}
-          <Code>multipart/form-data</Code>) and no custom headers. For anything
-          else, the browser sends a second, silent request first — an{" "}
-          <Code>OPTIONS</Code>, asking permission. If permission is denied, the
-          real request is never sent.
-        </P>
-        <P>
-          Flip the controls below and watch the verdict change.
+          Some requests get this treatment. Others trigger a second request
+          first — an <Code>OPTIONS</Code>, asking permission, before the real
+          one is allowed to leave. The widget classifies which is which.
         </P>
       </div>
 
@@ -224,62 +196,14 @@ export default function WhyFetchFailsOnlyInBrowser() {
 
       <div>
         <P>
-          The <Em>preflight</Em>{" "}carries <Code>Origin</Code>, the method the real
-          request will use, and any non-safelisted headers it plans to send. The
-          server answers with a matching <Code>Access-Control-Allow-Methods</Code>{" "}
-          and <Code>Access-Control-Allow-Headers</Code>, and <Em>only then</Em>{" "}does
-          the browser let the real request go. If any of those don&apos;t line up,{" "}
-          <HL>the real <Code>POST</Code>, <Code>DELETE</Code>, or <Code>PATCH</Code> never reaches your backend</HL>
-          . This is{" "}
-          <HL>the one case where CORS genuinely blocks the wire, not just the read</HL>
-          .
-        </P>
-        <P>
-          Switching a request from <Code>text/plain</Code> to{" "}
-          <Code>application/json</Code>, or adding an{" "}
-          <Code>Authorization</Code> header, doesn&apos;t just change whether JS
-          can read the reply — it changes whether the <Code>POST</Code> arrives
-          at all. Every modern JSON API preflights every call. Browsers cache the{" "}
-          <Code>OPTIONS</Code> result briefly via{" "}
+          The <Em>preflight</Em>{" "}asks the server, in advance, whether the real
+          request is allowed: its method, its custom headers. If the answer
+          doesn&apos;t match, the real <Code>POST</Code> or <Code>DELETE</Code>{" "}
+          never leaves the browser.{" "}
+          <HL>This is the one case where CORS blocks the wire, not just the read.</HL>{" "}
+          Browsers cache the <Code>OPTIONS</Code> result briefly via{" "}
           <Code>Access-Control-Max-Age</Code> so the handshake doesn&apos;t
-          repeat every time.
-        </P>
-
-        {/* §4.5 — credentials (folded in) */}
-        <H3Like>…and when credentials are in play, both sides opt in.</H3Like>
-        <P>
-          <Code>fetch</Code> to a cross-origin URL does <Em>not</Em>{" "}send cookies
-          or HTTP auth unless you ask. You opt in; the server opts in separately.
-          Both sides have to agree.
-        </P>
-      </div>
-
-      <FullBleed>
-        <CodeBlock
-          lang="javascript"
-          filename="client"
-          code={`// client opt-in
-await fetch('https://api.other.com/me', {
-  credentials: 'include',
-});
-
-// server must respond with, exactly:
-//   Access-Control-Allow-Origin: https://app.example.com
-//   Access-Control-Allow-Credentials: true
-//
-// not '*' — wildcard + credentials is an error.`}
-        />
-      </FullBleed>
-
-      <div>
-        <P>
-          Notice what&apos;s missing: the wildcard.{" "}
-          <Code>{"Access-Control-Allow-Origin: *"}</Code>{" "}
-          is illegal once credentials are in play, and the browser will reject
-          the response even if the server sends it. The origin has to be{" "}
-          <Em>named</Em>{" "}— because a wildcard would mean &ldquo;any site can
-          read this response using this user&apos;s cookies,&rdquo; which is the
-          thing CORS exists to prevent.
+          repeat on every call.
         </P>
         <Callout tone="warn">
           If your server reflects the request&apos;s <Code>Origin</Code> header
@@ -301,13 +225,12 @@ await fetch('https://api.other.com/me', {
           that origin <Em>exactly</Em>? And if there&apos;s an{" "}
           <Code>OPTIONS</Code> row before your real request, does{" "}
           <Em>that</Em>{" "}response approve the method and headers you&apos;re
-          about to send?{" "}
-          <HL>Almost every CORS failure is one of those three, in that order.</HL>
+          about to send? Almost every CORS failure is one of those three, in that
+          order.
         </Callout>
         <P>
           The browser isn&apos;t being rude. It&apos;s doing the thing that keeps
-          every other site you&apos;re logged into — your bank, your email, your
-          account settings — from being read by whatever tab you just opened.{" "}
+          every other tab from reading what you&apos;re logged into.{" "}
           <HL>The <Code>TypeError</Code> is that protection, showing up for you too.</HL>
         </P>
         <p
@@ -325,24 +248,5 @@ await fetch('https://api.other.com/me', {
         </p>
       </div>
     </Prose>
-  );
-}
-
-/** Inline sub-head used for the folded credentials beat inside §4. */
-function H3Like({ children }: { children: React.ReactNode }) {
-  return (
-    <h3
-      className="font-sans"
-      style={{
-        marginBlockStart: "2em",
-        marginBlockEnd: "0.5em",
-        fontSize: "var(--text-h3)",
-        fontWeight: 600,
-        letterSpacing: "-0.005em",
-        color: "var(--color-text)",
-      }}
-    >
-      {children}
-    </h3>
   );
 }
