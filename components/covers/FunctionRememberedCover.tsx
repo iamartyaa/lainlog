@@ -4,260 +4,192 @@ import { motion, useReducedMotion } from "motion/react";
 import { useCoverInView } from "./_CoverFrame";
 
 /**
- * FunctionRememberedCover — closure: nested function frames + captured value + memory tether.
+ * FunctionRememberedCover — closure: the inner thing survives the outer thing dying.
  *
- * Concept (research/animated-covers-redesign/concepts-v2.md §4):
- * The article teaches closure — the inner function holds a reference to a
- * value from the outer scope, even after the outer scope has "returned".
- * The cover renders three nested function-frames; the OUTER frame fades
- * (scope returning), the captured value (terracotta) and tether persist.
+ * v4 concept (one sentence):
+ *   Two nested rounded-rect scope frames; the outer frame fades and contracts
+ *   while the inner frame stays bright and a tether draws upward from its
+ *   captured value, conveying "the inner remembers."
  *
- * Composition (~50 elements):
- *  - Background (~8): faint cross-hatch in lower-right.
- *  - Mid-ground (~28): three nested frames + label stubs + content stubs.
- *  - Foreground (~14): captured value + tether + memory dots flowing +
- *    accent ring + 4 sparkle ticks.
+ * Composition (~10 elements):
+ *  1. Outer scope rounded-rect (large, fades)
+ *  2. Outer brace glyph "{" (suggests function-ness)
+ *  3. Outer brace glyph "}" (closing)
+ *  4. Inner scope rounded-rect (medium, stays solid)
+ *  5. Inner label dash (tiny stub for "function")
+ *  6. Captured value dot (terracotta, inside inner)
+ *  7. Captured value pulse ring
+ *  8. Tether line (dashed, from captured value upward — closure reference)
+ *  9. Memory anchor dot at top of tether
+ *  10. Tether glow stroke (slightly thicker companion)
  *
  * Motion (DESIGN.md §9):
- *  - Primary (3.5s loop, continuous): outer-frame opacity drifts
- *    1.0 → 0.4 → 1.0; memory dots flow along tether from outer→inner.
- *  - Secondary: captured-value ring scale-pulse; sparkle-tick opacity oscillation.
- *  - Hover: tether thickens.
+ *  - 5s loop. Phase 1 (0–0.30): everything solid, captured dot pulses gently.
+ *  - Phase 2 (0.30–0.65): outer scope opacity fades to 0.25, scales to 0.92,
+ *    while inner scope stays at full opacity. Tether pathLength draws 0→1.
+ *  - Phase 3 (0.65–1): outer fades back in; loop resets.
  *
- * Frame-stability R6: opacity / scale / cx / cy only. Tokens-only.
+ * Frame-stability R6: opacity / scale / pathLength only. Tokens-only.
  *
- * Path-data shape vocabulary derived from Phosphor (MIT) bracket/code icons.
+ * Reduced-motion end-state: outer at 0.3 opacity, inner solid, tether fully drawn.
  */
 export function FunctionRememberedCover() {
   const inView = useCoverInView();
   const reduced = useReducedMotion();
   const animate = inView && !reduced;
 
-  // 4 memory dots flowing along the tether path. Tether goes from outer
-  // captured-value (at ~150,150) inward toward inner frame (at ~100,100).
-  const memoryDots = [0, 1, 2, 3];
-
   return (
     <g>
-      {/* ─── Background: faint cross-hatch (lower-right) ──── */}
-      {[0, 1, 2, 3].map((i) => (
-        <line
-          key={`hatch-${i}`}
-          x1={150 + i * 8}
-          y1={170}
-          x2={170 + i * 8}
-          y2={150}
-          stroke="var(--color-text-muted)"
-          strokeWidth={0.7}
-          opacity={0.15}
-          vectorEffect="non-scaling-stroke"
-        />
-      ))}
-      {[0, 1, 2, 3].map((i) => (
-        <line
-          key={`hatch-b-${i}`}
-          x1={20 + i * 6}
-          y1={36}
-          x2={32 + i * 6}
-          y2={24}
-          stroke="var(--color-text-muted)"
-          strokeWidth={0.7}
-          opacity={0.12}
-          vectorEffect="non-scaling-stroke"
-        />
-      ))}
-
-      {/* ─── Mid-ground: outer function frame ─────────────── */}
+      {/* ─── Outer scope (the dying scope) ──────────────────────── */}
       <motion.g
-        initial={{ opacity: 1 }}
-        animate={animate ? { opacity: [1, 0.4, 1] } : { opacity: 0.55 }}
+        initial={{ opacity: 1, scale: 1 }}
+        animate={
+          animate
+            ? { opacity: [1, 1, 0.25, 0.25, 1], scale: [1, 1, 0.92, 0.92, 1] }
+            : { opacity: 0.3, scale: 0.95 }
+        }
         transition={
           animate
-            ? { duration: 3.5, repeat: Infinity, ease: "easeInOut" }
+            ? {
+                duration: 5,
+                repeat: Infinity,
+                ease: [0.4, 0, 0.2, 1],
+                times: [0, 0.3, 0.55, 0.75, 1],
+              }
             : undefined
         }
+        style={{ transformOrigin: "100px 100px", transformBox: "fill-box" as const }}
       >
         <rect
           x={20}
-          y={20}
+          y={28}
           width={160}
-          height={160}
-          rx={6}
+          height={144}
+          rx={10}
+          fill="none"
+          stroke="var(--color-text)"
+          strokeWidth={3}
+          vectorEffect="non-scaling-stroke"
+        />
+        {/* Outer brace glyph — opening "{" hint */}
+        <path
+          d="M 36 56 Q 30 56, 30 64 L 30 96 Q 30 104, 24 104 Q 30 104, 30 112 L 30 144 Q 30 152, 36 152"
           fill="none"
           stroke="var(--color-text-muted)"
-          strokeWidth={1.8}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
           vectorEffect="non-scaling-stroke"
         />
-        {/* Outer frame label: function outer() — text-stubs at top-left */}
-        <rect x={28} y={28} width={14} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.7} />
-        <rect x={45} y={28} width={20} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.7} />
-        <rect x={68} y={28} width={6} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.7} />
-        {/* Outer content stubs */}
-        <rect x={28} y={36} width={50} height={1.6} rx={0.8} fill="var(--color-text-muted)" opacity={0.4} />
-        <rect x={28} y={42} width={36} height={1.6} rx={0.8} fill="var(--color-text-muted)" opacity={0.4} />
-        <rect x={28} y={170} width={6} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.6} />
+        {/* Outer brace glyph — closing "}" hint */}
+        <path
+          d="M 164 56 Q 170 56, 170 64 L 170 96 Q 170 104, 176 104 Q 170 104, 170 112 L 170 144 Q 170 152, 164 152"
+          fill="none"
+          stroke="var(--color-text-muted)"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          vectorEffect="non-scaling-stroke"
+        />
       </motion.g>
 
-      {/* ─── Mid-ground: middle function frame ────────────── */}
-      <motion.g
-        initial={{ opacity: 0.85 }}
-        animate={animate ? { opacity: [0.85, 0.7, 0.85] } : { opacity: 0.78 }}
-        transition={
-          animate
-            ? { duration: 3.5, repeat: Infinity, ease: "easeInOut" }
-            : undefined
-        }
-      >
-        <rect
-          x={45}
-          y={50}
-          width={110}
-          height={110}
-          rx={5}
-          fill="var(--color-surface)"
-          fillOpacity={0.5}
-          stroke="var(--color-text-muted)"
-          strokeWidth={1.8}
-          vectorEffect="non-scaling-stroke"
-        />
-        {/* Middle label */}
-        <rect x={52} y={58} width={12} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.7} />
-        <rect x={66} y={58} width={20} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.7} />
-        <rect x={89} y={58} width={6} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.7} />
-        {/* Middle content stubs */}
-        <rect x={52} y={66} width={42} height={1.6} rx={0.8} fill="var(--color-text-muted)" opacity={0.45} />
-        <rect x={52} y={72} width={28} height={1.6} rx={0.8} fill="var(--color-text-muted)" opacity={0.45} />
-      </motion.g>
-
-      {/* ─── Mid-ground: inner function frame (always bright) ─── */}
-      <g>
-        <rect
-          x={70}
-          y={80}
-          width={60}
-          height={60}
-          rx={4}
-          fill="var(--color-surface)"
-          fillOpacity={0.7}
-          stroke="var(--color-text-muted)"
-          strokeWidth={1.8}
-          vectorEffect="non-scaling-stroke"
-        />
-        {/* Inner label */}
-        <rect x={76} y={86} width={10} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.85} />
-        <rect x={88} y={86} width={16} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.85} />
-        <rect x={107} y={86} width={5} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.85} />
-        {/* Inner content stub */}
-        <rect x={76} y={94} width={32} height={1.6} rx={0.8} fill="var(--color-text-muted)" opacity={0.6} />
-      </g>
-
-      {/* ─── Foreground: memory tether (curve from outer corner → inner) ─── */}
-      <motion.path
-        d="M 150 150 Q 130 130, 110 110"
-        fill="none"
+      {/* ─── Tether line (drawn from inner upward through outer) ── */}
+      <motion.line
+        x1={100}
+        y1={92}
+        x2={100}
+        y2={20}
         stroke="var(--color-accent)"
-        strokeWidth={1.4}
+        strokeWidth={2.4}
         strokeLinecap="round"
-        opacity={0.7}
+        strokeDasharray="3 4"
         vectorEffect="non-scaling-stroke"
-        initial={{ pathLength: 1 }}
-        animate={animate ? { pathLength: [0.92, 1, 0.92] } : { pathLength: 1 }}
+        initial={{ pathLength: 0, opacity: 0.4 }}
+        animate={
+          animate
+            ? {
+                pathLength: [0, 0, 1, 1, 0],
+                opacity: [0.3, 0.3, 0.95, 0.95, 0.3],
+              }
+            : { pathLength: 1, opacity: 0.85 }
+        }
         transition={
           animate
-            ? { duration: 2, repeat: Infinity, ease: "easeInOut" }
+            ? {
+                duration: 5,
+                repeat: Infinity,
+                ease: [0.4, 0, 0.2, 1],
+                times: [0, 0.3, 0.5, 0.75, 1],
+              }
             : undefined
         }
-        whileHover={{ strokeWidth: 2 }}
       />
 
-      {/* ─── Foreground: memory dots flowing along tether ─── */}
-      {memoryDots.map((i) => {
-        // Approximate quadratic Bezier sampling along (150,150)→(130,130)→(110,110)
-        // We'll just animate them along a straight diagonal — close enough at 64×64 thumbnail.
-        return (
-          <motion.circle
-            key={`mem-${i}`}
-            r={1.6}
-            fill="var(--color-accent)"
-            initial={{ cx: 150, cy: 150, opacity: 0 }}
-            animate={
-              animate
-                ? {
-                    cx: [150, 110],
-                    cy: [150, 110],
-                    opacity: [0, 0.9, 0.9, 0],
-                  }
-                : {
-                    cx: 130 - i * 6,
-                    cy: 130 - i * 6,
-                    opacity: 0.7,
-                  }
-            }
-            transition={
-              animate
-                ? {
-                    duration: 2,
-                    delay: (i * 2) / memoryDots.length,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                    times: [0, 0.15, 0.85, 1],
-                  }
-                : undefined
-            }
-          />
-        );
-      })}
-
-      {/* ─── Foreground: captured value (terracotta dot in outer corner) ─── */}
-      <circle cx={150} cy={150} r={5} fill="var(--color-accent)" />
-
-      {/* Accent ring around captured value — scale-pulse */}
+      {/* Memory anchor dot at the top of the tether */}
       <motion.circle
-        cx={150}
-        cy={150}
-        r={7}
+        cx={100}
+        cy={20}
+        r={3.5}
+        fill="var(--color-accent)"
+        initial={{ opacity: 0.4 }}
+        animate={
+          animate
+            ? { opacity: [0.3, 0.3, 1, 1, 0.3] }
+            : { opacity: 0.85 }
+        }
+        transition={
+          animate
+            ? {
+                duration: 5,
+                repeat: Infinity,
+                ease: [0.4, 0, 0.2, 1],
+                times: [0, 0.3, 0.55, 0.75, 1],
+              }
+            : undefined
+        }
+      />
+
+      {/* ─── Inner scope (the surviving scope — bright, solid) ─── */}
+      <rect
+        x={62}
+        y={84}
+        width={76}
+        height={68}
+        rx={8}
+        fill="var(--color-surface)"
+        stroke="var(--color-text)"
+        strokeWidth={3}
+        vectorEffect="non-scaling-stroke"
+      />
+      {/* Inner label stubs — small "function" hint */}
+      <rect x={70} y={94} width={12} height={2.4} rx={1.2} fill="var(--color-text-muted)" opacity={0.75} />
+      <rect x={86} y={94} width={20} height={2.4} rx={1.2} fill="var(--color-text-muted)" opacity={0.75} />
+
+      {/* ─── Captured value pulse ring (the "remembered thing") ── */}
+      <motion.circle
+        cx={100}
+        cy={124}
+        r={11}
         fill="none"
         stroke="var(--color-accent)"
-        strokeWidth={1.4}
-        opacity={0.7}
+        strokeWidth={2}
         vectorEffect="non-scaling-stroke"
-        initial={{ scale: 1 }}
-        animate={animate ? { scale: [1, 1.2, 1], opacity: [0.7, 0.4, 0.7] } : { scale: 1.1, opacity: 0.55 }}
+        initial={{ opacity: 0.5, scale: 1 }}
+        animate={
+          animate
+            ? { opacity: [0.4, 0.8, 0.4], scale: [1, 1.25, 1] }
+            : { opacity: 0.6, scale: 1.1 }
+        }
         transition={
           animate
-            ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
+            ? { duration: 1.8, repeat: Infinity, ease: [0.4, 0, 0.2, 1] }
             : undefined
         }
-        style={{ transformOrigin: "150px 150px", transformBox: "fill-box" as const }}
+        style={{ transformOrigin: "100px 124px", transformBox: "fill-box" as const }}
       />
 
-      {/* ─── Foreground: 4 sparkle ticks at inner-frame corners ─── */}
-      {[
-        { x: 70, y: 80 },
-        { x: 130, y: 80 },
-        { x: 70, y: 140 },
-        { x: 130, y: 140 },
-      ].map((p, i) => (
-        <motion.circle
-          key={`spark-${i}`}
-          cx={p.x}
-          cy={p.y}
-          r={1.4}
-          fill="var(--color-accent)"
-          initial={{ opacity: 0.6 }}
-          animate={animate ? { opacity: [0.4, 0.8, 0.4] } : { opacity: 0.7 }}
-          transition={
-            animate
-              ? {
-                  duration: 2,
-                  delay: i * 0.18,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }
-              : undefined
-          }
-        />
-      ))}
+      {/* Captured value dot (the load-bearing terracotta) */}
+      <circle cx={100} cy={124} r={6} fill="var(--color-accent)" />
     </g>
   );
 }

@@ -4,261 +4,194 @@ import { motion, useReducedMotion } from "motion/react";
 import { useCoverInView } from "./_CoverFrame";
 
 /**
- * BrowserStoppedAskingCover — long-poll / SSE / WebSocket: a connection that stays open.
+ * BrowserStoppedAskingCover — long-poll / SSE / WebSocket: the connection that won't hang up.
  *
- * Concept (research/animated-covers-redesign/concepts-v2.md §3):
- * The article teaches that the browser stopped polling and started keeping
- * the connection open. The cover renders two endpoints (server stacks)
- * connected by a static line, with continuous traffic-dot flow and
- * heartbeat rings emanating from each endpoint. The line never breaks.
+ * v4 concept (one sentence):
+ *   Client and server are joined by a thick terracotta beam; packets shuttle
+ *   back and forth in steady rhythm while both endpoints breathe — the
+ *   connection stays open.
  *
- * Composition (~58 elements):
- *  - Background (~14): vertical guide ticks + scattered ambient dots.
- *  - Mid-ground (~28): two endpoints (3 stacked circles each = server stack)
- *    + connection line + tick marks across the line.
- *  - Foreground (~16): 3 traffic dots flowing + 2 heartbeat rings + burst.
+ * Composition (~10 elements, all readable at 64px):
+ *  1. Client tile (rounded-rect, left)
+ *  2. Client cursor dot
+ *  3. Server tile (rounded-rect, right)
+ *  4. Server stack lines (3 short horizontals)
+ *  5. Connecting beam (thick rounded line, terracotta)
+ *  6-7. 2 packet dots traveling along the beam in opposite phases
+ *  8-9. 2 endpoint pulse-rings (one per endpoint, breathing)
+ *  10. Forward arrowhead chevron at midpoint (subtle direction cue)
  *
  * Motion (DESIGN.md §9):
- *  - Primary (2.5s loop, continuous): 3 dots flowing left→right at staggered
- *    phases. As one exits, another enters. Never stops.
- *  - Secondary: heartbeat rings expand on both endpoints; ambient dots breathe.
- *  - Hover: traffic-dot speed increases by 1.3×.
+ *  - 4s continuous loop. Packet A: left→right; Packet B: right→left, offset.
+ *  - Endpoint pulse-rings breathe in sync with packet arrival.
+ *  - Beam shimmers via low-amplitude opacity oscillation.
  *
- * Frame-stability R6: cx / r / opacity only. Tokens-only.
+ * Frame-stability R6: only x / cx / scale / opacity animate. Tokens-only.
  *
- * Path-data shape vocabulary derived from Tabler (MIT) server/cloud icons.
+ * Reduced-motion end-state: beam fully drawn, packets sit at midpoint,
+ * endpoint rings at rest scale.
  */
 export function BrowserStoppedAskingCover() {
   const inView = useCoverInView();
   const reduced = useReducedMotion();
   const animate = inView && !reduced;
 
-  // 3 traffic dots flowing along the line (cx 60→140), staggered.
-  const trafficDots = [0, 1, 2];
-
-  // Vertical guide ticks (background).
-  const guideTicks = [30, 70, 100, 130, 170];
-
-  // Scattered ambient dots.
-  const ambientDots = [
-    { cx: 35, cy: 55 }, { cx: 75, cy: 45 }, { cx: 110, cy: 50 }, { cx: 150, cy: 58 },
-    { cx: 165, cy: 48 },
-    { cx: 40, cy: 150 }, { cx: 80, cy: 158 }, { cx: 120, cy: 152 }, { cx: 160, cy: 155 },
-  ];
-
-  // Tick marks across the connection line.
-  const lineTicks = [70, 86, 102, 118, 134];
+  // Beam endpoints — load-bearing geometry shared by packets and rings.
+  const beamY = 100;
+  const leftX = 56;
+  const rightX = 144;
 
   return (
     <g>
-      {/* ─── Background: vertical guide ticks ─────────────── */}
-      {guideTicks.map((x, i) => (
-        <line
-          key={`guide-${i}`}
-          x1={x}
-          y1={36}
-          x2={x}
-          y2={42}
-          stroke="var(--color-text-muted)"
-          strokeWidth={0.8}
-          opacity={0.18}
-          vectorEffect="non-scaling-stroke"
-        />
-      ))}
-      {guideTicks.map((x, i) => (
-        <line
-          key={`guide-b-${i}`}
-          x1={x}
-          y1={158}
-          x2={x}
-          y2={164}
-          stroke="var(--color-text-muted)"
-          strokeWidth={0.8}
-          opacity={0.18}
-          vectorEffect="non-scaling-stroke"
-        />
-      ))}
-
-      {/* Scattered ambient dots */}
-      {ambientDots.map((d, i) => (
-        <motion.circle
-          key={`amb-${i}`}
-          cx={d.cx}
-          cy={d.cy}
-          r={1.2}
-          fill="var(--color-text-muted)"
-          initial={{ opacity: 0.25 }}
-          animate={animate ? { opacity: [0.2, 0.32, 0.2] } : { opacity: 0.25 }}
-          transition={
-            animate
-              ? { duration: 3, delay: i * 0.18, repeat: Infinity, ease: "easeInOut" }
-              : undefined
-          }
-        />
-      ))}
-
-      {/* ─── Mid-ground: connection line ───────────────────── */}
-      <line
-        x1={60}
-        y1={100}
-        x2={140}
-        y2={100}
-        stroke="var(--color-text-muted)"
-        strokeWidth={2}
-        opacity={0.7}
+      {/* ─── Endpoint A: client tile (left) ─────────────────────── */}
+      <rect
+        x={20}
+        y={76}
+        width={48}
+        height={48}
+        rx={8}
+        fill="var(--color-surface)"
+        stroke="var(--color-text)"
+        strokeWidth={2.4}
         vectorEffect="non-scaling-stroke"
       />
-      {/* Subtle line-breathing — secondary motion */}
+      {/* Client cursor dot — small detail */}
+      <circle cx={32} cy={88} r={2} fill="var(--color-text-muted)" opacity={0.7} />
+      <rect x={28} y={104} width={32} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.5} />
+      <rect x={28} y={110} width={20} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.5} />
+
+      {/* ─── Endpoint B: server tile (right) ────────────────────── */}
+      <rect
+        x={132}
+        y={76}
+        width={48}
+        height={48}
+        rx={8}
+        fill="var(--color-surface)"
+        stroke="var(--color-text)"
+        strokeWidth={2.4}
+        vectorEffect="non-scaling-stroke"
+      />
+      {/* Server stack lines */}
+      <line x1={142} y1={88} x2={170} y2={88} stroke="var(--color-text-muted)" strokeWidth={1.6} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+      <line x1={142} y1={100} x2={170} y2={100} stroke="var(--color-text-muted)" strokeWidth={1.6} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+      <line x1={142} y1={112} x2={170} y2={112} stroke="var(--color-text-muted)" strokeWidth={1.6} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+
+      {/* ─── Endpoint pulse rings (breathing, behind tiles visually but drawn after for layering) ── */}
+      <motion.circle
+        cx={leftX - 12}
+        cy={beamY}
+        r={28}
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth={2}
+        vectorEffect="non-scaling-stroke"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={
+          animate
+            ? { opacity: [0, 0.5, 0], scale: [0.8, 1.25, 1.4] }
+            : { opacity: 0.25, scale: 1 }
+        }
+        transition={
+          animate
+            ? { duration: 2, repeat: Infinity, ease: [0.4, 0, 0.2, 1] }
+            : undefined
+        }
+        style={{ transformOrigin: `${leftX - 12}px ${beamY}px`, transformBox: "fill-box" as const }}
+      />
+      <motion.circle
+        cx={rightX + 12}
+        cy={beamY}
+        r={28}
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth={2}
+        vectorEffect="non-scaling-stroke"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={
+          animate
+            ? { opacity: [0, 0.5, 0], scale: [0.8, 1.25, 1.4] }
+            : { opacity: 0.25, scale: 1 }
+        }
+        transition={
+          animate
+            ? { duration: 2, delay: 1, repeat: Infinity, ease: [0.4, 0, 0.2, 1] }
+            : undefined
+        }
+        style={{ transformOrigin: `${rightX + 12}px ${beamY}px`, transformBox: "fill-box" as const }}
+      />
+
+      {/* ─── Connecting beam (the hero gesture) ─────────────────── */}
       <motion.line
-        x1={60}
-        y1={100}
-        x2={140}
-        y2={100}
+        x1={leftX}
+        y1={beamY}
+        x2={rightX}
+        y2={beamY}
         stroke="var(--color-accent)"
-        strokeWidth={2}
+        strokeWidth={5}
         strokeLinecap="round"
-        opacity={0.25}
         vectorEffect="non-scaling-stroke"
-        initial={{ pathLength: 1 }}
-        animate={animate ? { pathLength: [0.95, 1, 0.95] } : { pathLength: 1 }}
+        initial={{ opacity: 0.85 }}
+        animate={animate ? { opacity: [0.7, 1, 0.7] } : { opacity: 0.9 }}
         transition={
           animate
-            ? { duration: 2, repeat: Infinity, ease: "easeInOut" }
+            ? { duration: 2, repeat: Infinity, ease: [0.4, 0, 0.2, 1] }
             : undefined
         }
       />
 
-      {/* Tick marks across the line */}
-      {lineTicks.map((x) => (
-        <line
-          key={`tick-${x}`}
-          x1={x}
-          y1={97}
-          x2={x}
-          y2={103}
-          stroke="var(--color-text-muted)"
-          strokeWidth={0.9}
-          opacity={0.4}
-          vectorEffect="non-scaling-stroke"
-        />
-      ))}
-
-      {/* ─── Mid-ground: Endpoint A (left) — server stack ──── */}
-      <g>
-        {/* 3 stacked circles representing server stack */}
-        <circle cx={40} cy={86} r={9} fill="var(--color-surface)" stroke="var(--color-text-muted)" strokeWidth={1.6} vectorEffect="non-scaling-stroke" />
-        <circle cx={40} cy={100} r={11} fill="var(--color-surface)" stroke="var(--color-text-muted)" strokeWidth={1.8} vectorEffect="non-scaling-stroke" />
-        <circle cx={40} cy={114} r={9} fill="var(--color-surface)" stroke="var(--color-text-muted)" strokeWidth={1.6} vectorEffect="non-scaling-stroke" />
-        {/* Inner detail — small ports on the middle circle */}
-        <circle cx={36} cy={100} r={1} fill="var(--color-text-muted)" opacity={0.6} />
-        <circle cx={40} cy={100} r={1} fill="var(--color-text-muted)" opacity={0.6} />
-        <circle cx={44} cy={100} r={1} fill="var(--color-text-muted)" opacity={0.6} />
-        {/* Stack lines on top + bottom */}
-        <line x1={32} y1={86} x2={48} y2={86} stroke="var(--color-text-muted)" strokeWidth={0.6} opacity={0.5} vectorEffect="non-scaling-stroke" />
-        <line x1={32} y1={114} x2={48} y2={114} stroke="var(--color-text-muted)" strokeWidth={0.6} opacity={0.5} vectorEffect="non-scaling-stroke" />
-      </g>
-
-      {/* ─── Mid-ground: Endpoint B (right) — server stack ─── */}
-      <g>
-        <circle cx={160} cy={86} r={9} fill="var(--color-surface)" stroke="var(--color-text-muted)" strokeWidth={1.6} vectorEffect="non-scaling-stroke" />
-        <circle cx={160} cy={100} r={11} fill="var(--color-surface)" stroke="var(--color-text-muted)" strokeWidth={1.8} vectorEffect="non-scaling-stroke" />
-        <circle cx={160} cy={114} r={9} fill="var(--color-surface)" stroke="var(--color-text-muted)" strokeWidth={1.6} vectorEffect="non-scaling-stroke" />
-        <circle cx={156} cy={100} r={1} fill="var(--color-text-muted)" opacity={0.6} />
-        <circle cx={160} cy={100} r={1} fill="var(--color-text-muted)" opacity={0.6} />
-        <circle cx={164} cy={100} r={1} fill="var(--color-text-muted)" opacity={0.6} />
-        <line x1={152} y1={86} x2={168} y2={86} stroke="var(--color-text-muted)" strokeWidth={0.6} opacity={0.5} vectorEffect="non-scaling-stroke" />
-        <line x1={152} y1={114} x2={168} y2={114} stroke="var(--color-text-muted)" strokeWidth={0.6} opacity={0.5} vectorEffect="non-scaling-stroke" />
-      </g>
-
-      {/* ─── Foreground: heartbeat ring on Endpoint A ──────── */}
+      {/* ─── Packet A: client → server (large, visible) ─────────── */}
       <motion.circle
-        cx={40}
-        cy={100}
-        fill="none"
+        cy={beamY}
+        r={5}
+        fill="var(--color-text)"
         stroke="var(--color-accent)"
-        strokeWidth={1.4}
+        strokeWidth={2.5}
         vectorEffect="non-scaling-stroke"
-        initial={{ r: 11, opacity: 0 }}
+        initial={{ cx: leftX, opacity: 0 }}
         animate={
           animate
-            ? { r: [11, 22], opacity: [0.6, 0] }
-            : { r: 16, opacity: 0.4 }
+            ? { cx: [leftX, rightX], opacity: [0, 1, 1, 0] }
+            : { cx: 100, opacity: 1 }
         }
         transition={
           animate
-            ? { duration: 2.5, repeat: Infinity, ease: "easeOut" }
+            ? {
+                duration: 2,
+                repeat: Infinity,
+                ease: [0.4, 0, 0.2, 1],
+                times: [0, 0.1, 0.85, 1],
+              }
             : undefined
         }
       />
 
-      {/* ─── Foreground: heartbeat ring on Endpoint B ──────── */}
+      {/* ─── Packet B: server → client (offset by half cycle) ──── */}
       <motion.circle
-        cx={160}
-        cy={100}
-        fill="none"
+        cy={beamY}
+        r={5}
+        fill="var(--color-text)"
         stroke="var(--color-accent)"
-        strokeWidth={1.4}
+        strokeWidth={2.5}
         vectorEffect="non-scaling-stroke"
-        initial={{ r: 11, opacity: 0 }}
+        initial={{ cx: rightX, opacity: 0 }}
         animate={
           animate
-            ? { r: [11, 22], opacity: [0.6, 0] }
-            : { r: 16, opacity: 0.4 }
+            ? { cx: [rightX, leftX], opacity: [0, 1, 1, 0] }
+            : { cx: 100, opacity: 0 }
         }
         transition={
           animate
-            ? { duration: 2.5, delay: 1.25, repeat: Infinity, ease: "easeOut" }
+            ? {
+                duration: 2,
+                delay: 1,
+                repeat: Infinity,
+                ease: [0.4, 0, 0.2, 1],
+                times: [0, 0.1, 0.85, 1],
+              }
             : undefined
         }
       />
-
-      {/* ─── Foreground: 3 traffic dots flowing ─────────────── */}
-      {trafficDots.map((i) => (
-        <motion.circle
-          key={`traffic-${i}`}
-          cy={100}
-          r={2.6}
-          fill="var(--color-accent)"
-          initial={{ cx: 60, opacity: 1 }}
-          animate={
-            animate
-              ? { cx: [60, 140], opacity: [0, 1, 1, 0] }
-              : { cx: 80 + i * 20, opacity: 1 }
-          }
-          transition={
-            animate
-              ? {
-                  duration: 2.5,
-                  delay: i * (2.5 / 3),
-                  repeat: Infinity,
-                  ease: "linear",
-                  times: undefined,
-                }
-              : undefined
-          }
-        />
-      ))}
-
-      {/* Burst sparkle at midpoint (low-frequency) */}
-      <motion.g
-        style={{ transformOrigin: "100px 100px", transformBox: "fill-box" as const }}
-        initial={{ opacity: 0, scale: 1 }}
-        animate={
-          animate
-            ? { opacity: [0, 0, 0.7, 0, 0], scale: [1, 1, 1.2, 1, 1] }
-            : { opacity: 0.4, scale: 1.1 }
-        }
-        transition={
-          animate
-            ? { duration: 5, repeat: Infinity, ease: "easeInOut", times: [0, 0.5, 0.55, 0.65, 1] }
-            : undefined
-        }
-      >
-        <line x1={100} y1={92} x2={100} y2={94} stroke="var(--color-accent)" strokeWidth={1} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        <line x1={100} y1={108} x2={100} y2={106} stroke="var(--color-accent)" strokeWidth={1} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        <line x1={92} y1={100} x2={94} y2={100} stroke="var(--color-accent)" strokeWidth={1} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        <line x1={108} y1={100} x2={106} y2={100} stroke="var(--color-accent)" strokeWidth={1} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-      </motion.g>
     </g>
   );
 }
