@@ -1,30 +1,35 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { DragElements } from "@/components/fancy";
 import { WidgetShell } from "@/components/viz/WidgetShell";
 import { PRESS, SPRING } from "@/lib/motion";
 
 /**
  * CallStackECs — W3, the SPINE of "how JavaScript reads its own future".
  *
- * The reader presses Run to step through a tiny program. Execution-context
- * cards push and pop on a draggable stage on each step. The live "console"
- * pane below mirrors what the runtime actually emitted — so the abstract
- * idea (thread of execution moves between contexts) becomes literal: the
- * "current" indicator hops from card to card, and the console writes the
- * output of whichever line just ran.
+ * A static, annotated call-stack visualization. The reader presses Step
+ * (or Run) to walk through a tiny program. On each step:
+ *   - the active source line lights up in the code pane,
+ *   - execution-context cards push/pop on the stack pane via spring,
+ *   - on desktop, an SVG arrow connects the active line to the active EC
+ *     ("the thread of execution is here"),
+ *   - on mobile (≤ 640px container) the arrow collapses to a small
+ *     down-glyph between the two stacked panes,
+ *   - the console pane mirrors `console.log` output as it fires.
  *
- * The cards themselves are children of `DragElements` (vendored at
- * components/fancy/drag-elements.tsx). The reader can drag them around the
- * stage to spatially organise the stack — which makes the stack-as-stack
- * metaphor concrete instead of just theoretical.
+ * Replaces the round-2 DragElements implementation. The cards are not
+ * draggable; the thread of execution is *annotated*, not manipulated.
  *
- * Mobile-first: panes stack vertically on narrow widths (code → stage →
- * console). At container ≥ 640px, code+console live on the left and the
- * EC stage takes the right half. Frame-stability R6: every pane has a
- * fixed min-height; the outer shell never reflows during interaction.
+ * Frame stability (R6): every pane reserves a fixed min-height that fits
+ * the deepest stack the snippet produces (3 frames) and the longest
+ * console output, so step changes never reflow the outer shell.
  */
 
 type ECName = "global" | "compute" | "multiply";
@@ -35,8 +40,7 @@ type Binding = {
 };
 
 type EC = {
-  /** Stable identifier — survives across steps so DragElements can keep
-   *  position state when a card stays mounted. */
+  /** Stable identifier — keeps cards mounted across steps where possible. */
   id: ECName;
   /** Header label inside the card. */
   label: string;
@@ -45,7 +49,7 @@ type EC = {
 };
 
 type ConsoleLine = {
-  /** Monotonically incremented per step. */
+  /** Monotonically incremented per emit. */
   id: number;
   text: string;
 };
@@ -152,7 +156,7 @@ const STEPS: Step[] = [
         ],
       },
     ],
-    activeLine: 8,
+    activeLine: 7,
     emit: null,
     beat:
       "multiply returned 14. Its EC popped. compute resumes — doubled is now 14.",
@@ -189,30 +193,14 @@ const STEPS: Step[] = [
 ];
 
 const TOTAL = STEPS.length;
-
-/**
- * Static initial positions for cards on the stage. The stage is sized
- * fluidly via CSS, so positions are expressed in percentages — DragElements
- * accepts string values (px / %) for top/left.
- *
- * Order matches `cardOrder` keys below: [global, compute, multiply].
- */
-const INITIAL_POSITIONS: Record<
-  ECName,
-  { top: string; left: string }
-> = {
-  global: { top: "8%", left: "8%" },
-  compute: { top: "30%", left: "26%" },
-  multiply: { top: "52%", left: "44%" },
-};
-
-const CARD_ORDER: ECName[] = ["global", "compute", "multiply"];
+const RUN_INTERVAL_MS = 900;
 
 type Props = { initialStep?: number };
 
 export function CallStackECs({ initialStep = 0 }: Props) {
   const [step, setStep] = useState(initialStep);
   const [consoleLog, setConsoleLog] = useState<ConsoleLine[]>([]);
+  const [running, setRunning] = useState(false);
   const lastEmittedStep = useRef<number>(-1);
   const reducedMotion = useReducedMotion();
 
@@ -220,7 +208,7 @@ export function CallStackECs({ initialStep = 0 }: Props) {
   const current = STEPS[clamped];
   const topFrame = current.stack[current.stack.length - 1];
 
-  // Record console emissions when a step's emit is fresh (not on rewind).
+  // Console-log emissions: append once per fresh step.
   useEffect(() => {
     if (lastEmittedStep.current === clamped) return;
     lastEmittedStep.current = clamped;
@@ -232,31 +220,45 @@ export function CallStackECs({ initialStep = 0 }: Props) {
     }
   }, [clamped, current.emit]);
 
-  const onRun = () => {
+  // Auto-run loop.
+  useEffect(() => {
+    if (!running) return;
+    if (clamped >= TOTAL - 1) {
+      setRunning(false);
+      return;
+    }
+    const id = window.setTimeout(() => {
+      setStep((s) => Math.min(s + 1, TOTAL - 1));
+    }, RUN_INTERVAL_MS);
+    return () => window.clearTimeout(id);
+  }, [running, clamped]);
+
+  const onStep = useCallback(() => {
     if (clamped < TOTAL - 1) setStep(clamped + 1);
-  };
-  const onBack = () => {
+  }, [clamped]);
+  const onBack = useCallback(() => {
+    if (running) setRunning(false);
     if (clamped > 0) setStep(clamped - 1);
-  };
-  const onReset = () => {
+  }, [clamped, running]);
+  const onReset = useCallback(() => {
+    setRunning(false);
     setStep(0);
     setConsoleLog([]);
-    lastEmittedStep.current = 0;
-  };
-
-  // Which cards are on the stack right now?
-  const liveIds = useMemo(
-    () => new Set(current.stack.map((f) => f.id)),
-    [current.stack],
-  );
-
-  // Resolve VE for any card that's currently live (so popped cards keep
-  // their last VE while their exit animation plays).
-  const veById = useMemo(() => {
-    const m = new Map<ECName, Binding[]>();
-    for (const f of current.stack) m.set(f.id, f.ve);
-    return m;
-  }, [current.stack]);
+    lastEmittedStep.current = -1;
+  }, []);
+  const onRunToggle = useCallback(() => {
+    if (running) {
+      setRunning(false);
+      return;
+    }
+    if (clamped >= TOTAL - 1) {
+      // restart from beginning
+      setStep(0);
+      setConsoleLog([]);
+      lastEmittedStep.current = -1;
+    }
+    setRunning(true);
+  }, [running, clamped]);
 
   const caption = (
     <>
@@ -266,6 +268,14 @@ export function CallStackECs({ initialStep = 0 }: Props) {
       is on top. {current.beat}
     </>
   );
+
+  const runLabel = running
+    ? "Pause"
+    : clamped >= TOTAL - 1
+    ? "Run again"
+    : clamped === 0
+    ? "Run"
+    : "Resume";
 
   return (
     <WidgetShell
@@ -287,17 +297,26 @@ export function CallStackECs({ initialStep = 0 }: Props) {
             style={btnStyle(false, clamped === 0)}
             {...PRESS}
           >
-            ←
+            ← Back
           </motion.button>
           <motion.button
             type="button"
-            onClick={onRun}
-            disabled={clamped === TOTAL - 1}
-            aria-label="Step forward"
-            style={btnStyle(true, clamped === TOTAL - 1)}
+            onClick={onRunToggle}
+            aria-label={running ? "Pause auto-run" : "Run auto-step"}
+            style={btnStyle(true, false)}
             {...PRESS}
           >
-            {clamped === 0 ? "Run" : "Step →"}
+            {runLabel}
+          </motion.button>
+          <motion.button
+            type="button"
+            onClick={onStep}
+            disabled={clamped === TOTAL - 1 || running}
+            aria-label="Step forward"
+            style={btnStyle(false, clamped === TOTAL - 1 || running)}
+            {...PRESS}
+          >
+            Step →
           </motion.button>
           <motion.button
             type="button"
@@ -321,331 +340,568 @@ export function CallStackECs({ initialStep = 0 }: Props) {
         </div>
       }
     >
-      <div
-        className="bs-csec-grid"
-        style={{
-          display: "grid",
-          gap: "var(--spacing-sm)",
-          gridTemplateColumns: "minmax(0, 1fr)",
-        }}
-      >
-        {/* Code + console column */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--spacing-sm)",
-            minWidth: 0,
-          }}
-        >
-          {/* Code pane */}
-          <div
-            style={{
-              background:
-                "color-mix(in oklab, var(--color-surface) 35%, transparent)",
-              border: "1px solid var(--color-rule)",
-              borderRadius: 3,
-              padding: "10px 12px",
-              minWidth: 0,
-            }}
-          >
-            <div
-              className="font-sans"
-              style={{
-                fontSize: 9,
-                letterSpacing: "0.08em",
-                color: "var(--color-text-muted)",
-                marginBottom: 8,
-              }}
-            >
-              SNIPPET
-            </div>
-            <ol
-              className="font-mono"
-              style={{
-                listStyle: "none",
-                margin: 0,
-                padding: 0,
-                display: "flex",
-                flexDirection: "column",
-                gap: 1,
-                fontSize: 11.5,
-                lineHeight: 1.5,
-              }}
-            >
-              {SNIPPET.map((line, i) => {
-                const lineNum = i + 1;
-                const isActive = current.activeLine === lineNum;
-                return (
-                  <motion.li
-                    key={lineNum}
-                    initial={false}
-                    animate={{ opacity: isActive ? 1 : 0.62 }}
-                    transition={SPRING.smooth}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "2em minmax(0, 1fr)",
-                      alignItems: "center",
-                      columnGap: 8,
-                      padding: "1px 6px",
-                      borderRadius: 2,
-                      background: isActive
-                        ? "color-mix(in oklab, var(--color-accent) 14%, transparent)"
-                        : "transparent",
-                      color: isActive
-                        ? "var(--color-accent)"
-                        : "var(--color-text)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        color: "var(--color-text-muted)",
-                        fontSize: 10,
-                        textAlign: "right",
-                      }}
-                    >
-                      {lineNum}
-                    </span>
-                    <span
-                      style={{
-                        minWidth: 0,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {line || " "}
-                    </span>
-                  </motion.li>
-                );
-              })}
-            </ol>
-          </div>
-
-          {/* Console pane */}
-          <div
-            aria-label="console output"
-            style={{
-              background: "var(--color-surface)",
-              border: "1px solid var(--color-rule)",
-              borderRadius: 3,
-              padding: "10px 12px",
-              minHeight: 92,
-              minWidth: 0,
-              fontFamily: "var(--font-mono)",
-              fontSize: 11.5,
-              color: "var(--color-text)",
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-            }}
-          >
-            <div
-              className="font-sans"
-              style={{
-                fontSize: 9,
-                letterSpacing: "0.08em",
-                color: "var(--color-text-muted)",
-                marginBottom: 6,
-              }}
-            >
-              CONSOLE
-            </div>
-            <AnimatePresence initial={false}>
-              {consoleLog.map((l) => (
-                <motion.div
-                  key={l.id}
-                  initial={
-                    reducedMotion ? { opacity: 1 } : { opacity: 0, y: 4 }
-                  }
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={SPRING.smooth}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1.2em minmax(0, 1fr)",
-                    columnGap: 6,
-                    minWidth: 0,
-                  }}
-                >
-                  <span style={{ color: "var(--color-text-muted)" }}>›</span>
-                  <span
-                    style={{
-                      minWidth: 0,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {l.text}
-                  </span>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-            {consoleLog.length === 0 ? (
-              <div
-                style={{
-                  color: "var(--color-text-muted)",
-                  fontSize: 11,
-                  fontStyle: "italic",
-                }}
-              >
-                (no output yet — press Run)
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        {/* Stage column — DragElements with EC cards */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--spacing-2xs)",
-            minWidth: 0,
-          }}
-        >
-          <div
-            className="font-sans"
-            style={{
-              fontSize: 9,
-              letterSpacing: "0.08em",
-              color: "var(--color-text-muted)",
-              marginLeft: 2,
-            }}
-          >
-            CALL STACK · DRAG ME
-          </div>
-          <div
-            style={{
-              position: "relative",
-              width: "100%",
-              height: 280,
-              border: "1px dashed var(--color-rule)",
-              borderRadius: 3,
-              background:
-                "color-mix(in oklab, var(--color-surface) 25%, transparent)",
-              overflow: "hidden",
-            }}
-          >
-            <DragElements
-              dragMomentum={false}
-              selectedOnTop
-              initialPositions={CARD_ORDER.map((id) => INITIAL_POSITIONS[id])}
-            >
-              {CARD_ORDER.map((id) => {
-                const isLive = liveIds.has(id);
-                const isTop = topFrame.id === id;
-                const ve =
-                  veById.get(id) ??
-                  (id === "global" ? GLOBAL_VE_INITIAL : []);
-                const label = labelFor(id, ve);
-                return (
-                  <ECCard
-                    key={id}
-                    label={label}
-                    ve={ve}
-                    isLive={isLive}
-                    isTop={isTop}
-                    reducedMotion={Boolean(reducedMotion)}
-                  />
-                );
-              })}
-            </DragElements>
-          </div>
-        </div>
-
-        <style jsx>{`
-          @container widget (min-width: 640px) {
-            .bs-csec-grid {
-              grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
-            }
-          }
-        `}</style>
-      </div>
+      <CallStackBoard
+        snippet={SNIPPET}
+        activeLine={current.activeLine}
+        stack={current.stack}
+        topId={topFrame.id}
+        consoleLog={consoleLog}
+        reducedMotion={Boolean(reducedMotion)}
+      />
     </WidgetShell>
   );
 }
 
-function labelFor(id: ECName, ve: Binding[]): string {
-  if (id === "global") return "Global EC";
-  if (id === "compute") {
-    const x = ve.find((b) => b.name === "x");
-    return `compute(${x?.value ?? "_"})`;
-  }
-  // multiply
-  const a = ve.find((b) => b.name === "a");
-  const b = ve.find((b) => b.name === "b");
-  return `multiply(${a?.value ?? "_"}, ${b?.value ?? "_"})`;
-}
+/* ------------------------------------------------------------------ */
+/*  Board: code pane + stack pane + arrow overlay + console pane.     */
+/* ------------------------------------------------------------------ */
 
-function btnStyle(primary: boolean, disabled: boolean): React.CSSProperties {
-  return {
-    minHeight: 36,
-    padding: "0 12px",
-    borderRadius: "var(--radius-sm)",
-    border: `1px solid ${primary ? "var(--color-accent)" : "var(--color-rule)"}`,
-    background: primary
-      ? "color-mix(in oklab, var(--color-accent) 14%, transparent)"
-      : "transparent",
-    color: primary ? "var(--color-accent)" : "var(--color-text)",
-    fontFamily: "var(--font-mono)",
-    fontSize: 12,
-    cursor: disabled ? "not-allowed" : "pointer",
-    opacity: disabled ? 0.5 : 1,
-  };
-}
-
-function ECCard({
-  label,
-  ve,
-  isLive,
-  isTop,
+function CallStackBoard({
+  snippet,
+  activeLine,
+  stack,
+  topId,
+  consoleLog,
   reducedMotion,
 }: {
+  snippet: string[];
+  activeLine: number | null;
+  stack: EC[];
+  topId: ECName;
+  consoleLog: ConsoleLine[];
+  reducedMotion: boolean;
+}) {
+  // Geometry refs for the SVG arrow (desktop only).
+  const boardRef = useRef<HTMLDivElement | null>(null);
+  const codePaneRef = useRef<HTMLDivElement | null>(null);
+  const stackPaneRef = useRef<HTMLDivElement | null>(null);
+  const lineRefs = useRef<Map<number, HTMLLIElement>>(new Map());
+  const cardRefs = useRef<Map<ECName, HTMLDivElement>>(new Map());
+
+  const [arrow, setArrow] = useState<{
+    from: { x: number; y: number };
+    to: { x: number; y: number };
+    visible: boolean;
+  } | null>(null);
+
+  const [isWide, setIsWide] = useState(false);
+
+  // Track container width via ResizeObserver — drives the desktop/mobile split.
+  useLayoutEffect(() => {
+    const el = boardRef.current;
+    if (!el) return;
+    const update = () => setIsWide(el.clientWidth >= 640);
+    update();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Recompute arrow geometry whenever the active line / top card / width changes.
+  useLayoutEffect(() => {
+    if (!isWide) {
+      setArrow(null);
+      return;
+    }
+    const board = boardRef.current;
+    const lineEl = activeLine != null ? lineRefs.current.get(activeLine) : null;
+    const cardEl = cardRefs.current.get(topId);
+    if (!board || !lineEl || !cardEl) {
+      setArrow(null);
+      return;
+    }
+    const boardRect = board.getBoundingClientRect();
+    const lineRect = lineEl.getBoundingClientRect();
+    const cardRect = cardEl.getBoundingClientRect();
+    const from = {
+      x: lineRect.right - boardRect.left + 4,
+      y: lineRect.top - boardRect.top + lineRect.height / 2,
+    };
+    const to = {
+      x: cardRect.left - boardRect.left - 8,
+      y: cardRect.top - boardRect.top + Math.min(20, cardRect.height / 2),
+    };
+    setArrow({ from, to, visible: true });
+  }, [activeLine, topId, isWide, stack.length]);
+
+  // Re-measure on window resize too (covers font swaps, etc.).
+  useEffect(() => {
+    const onResize = () => {
+      // Trigger a re-render via state nudge.
+      setIsWide((w) => w);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  return (
+    <div
+      ref={boardRef}
+      className="bs-csec-board"
+      style={{
+        position: "relative",
+        display: "grid",
+        gap: "var(--spacing-sm)",
+        gridTemplateColumns: "minmax(0, 1fr)",
+      }}
+    >
+      {/* Code pane */}
+      <div
+        ref={codePaneRef}
+        style={{
+          background:
+            "color-mix(in oklab, var(--color-surface) 35%, transparent)",
+          border: "1px solid var(--color-rule)",
+          borderRadius: 3,
+          padding: "10px 12px",
+          minWidth: 0,
+          minHeight: 220,
+        }}
+      >
+        <div
+          className="font-sans"
+          style={{
+            fontSize: 9,
+            letterSpacing: "0.08em",
+            color: "var(--color-text-muted)",
+            marginBottom: 8,
+          }}
+        >
+          CODE
+        </div>
+        <ol
+          className="font-mono"
+          style={{
+            listStyle: "none",
+            margin: 0,
+            padding: 0,
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+            fontSize: 11.5,
+            lineHeight: 1.5,
+          }}
+        >
+          {snippet.map((line, i) => {
+            const lineNum = i + 1;
+            const isActive = activeLine === lineNum;
+            return (
+              <motion.li
+                key={lineNum}
+                ref={(el) => {
+                  if (el) lineRefs.current.set(lineNum, el);
+                  else lineRefs.current.delete(lineNum);
+                }}
+                initial={false}
+                animate={{ opacity: isActive ? 1 : 0.6 }}
+                transition={
+                  reducedMotion ? { duration: 0 } : { duration: 0.2 }
+                }
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1.2em 2em minmax(0, 1fr)",
+                  alignItems: "center",
+                  columnGap: 6,
+                  padding: "1px 6px",
+                  borderRadius: 2,
+                  background: isActive
+                    ? "color-mix(in oklab, var(--color-accent) 14%, transparent)"
+                    : "transparent",
+                  color: isActive
+                    ? "var(--color-accent)"
+                    : "var(--color-text)",
+                  fontWeight: isActive ? 600 : 400,
+                }}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    color: "var(--color-accent)",
+                    fontSize: 10,
+                    visibility: isActive ? "visible" : "hidden",
+                  }}
+                >
+                  ▶
+                </span>
+                <span
+                  style={{
+                    color: "var(--color-text-muted)",
+                    fontSize: 10,
+                    textAlign: "right",
+                  }}
+                >
+                  {lineNum}
+                </span>
+                <span
+                  style={{
+                    minWidth: 0,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {line || " "}
+                </span>
+              </motion.li>
+            );
+          })}
+        </ol>
+      </div>
+
+      {/* Mobile-only down-glyph hint between code and stack.
+          Always rendered so :nth-child indexes stay stable; CSS hides on
+          desktop. */}
+      <div
+        aria-hidden
+        className="bs-csec-glyph"
+        style={{
+          display: isWide ? "none" : "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          margin: "-4px 0 -4px 0",
+        }}
+      >
+        <motion.span
+          key={`${activeLine}-${topId}`}
+          initial={
+            reducedMotion
+              ? { opacity: 1, y: 0 }
+              : { opacity: 0, y: -4 }
+          }
+          animate={{ opacity: 1, y: 0 }}
+          transition={reducedMotion ? { duration: 0 } : SPRING.smooth}
+          style={{
+            color: "var(--color-accent)",
+            fontFamily: "var(--font-mono)",
+            fontSize: 14,
+            lineHeight: 1,
+          }}
+        >
+          ↓
+        </motion.span>
+      </div>
+
+      {/* Stack pane */}
+      <div
+        ref={stackPaneRef}
+        style={{
+          position: "relative",
+          background:
+            "color-mix(in oklab, var(--color-surface) 25%, transparent)",
+          border: "1px solid var(--color-rule)",
+          borderRadius: 3,
+          padding: "10px 12px",
+          minHeight: 240,
+          minWidth: 0,
+        }}
+      >
+        <div
+          className="font-sans"
+          style={{
+            fontSize: 9,
+            letterSpacing: "0.08em",
+            color: "var(--color-text-muted)",
+            marginBottom: 8,
+          }}
+        >
+          CALL STACK
+        </div>
+        {/* Cards laid out top-of-stack at the top, bottom-of-stack below. */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column-reverse",
+            gap: "var(--spacing-2xs)",
+            justifyContent: "flex-start",
+          }}
+        >
+          <AnimatePresence initial={false}>
+            {stack.map((frame) => (
+              <ECCard
+                key={frame.id}
+                frameId={frame.id}
+                label={frame.label}
+                ve={frame.ve}
+                isTop={frame.id === topId}
+                reducedMotion={reducedMotion}
+                cardRefs={cardRefs}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Console pane */}
+      <div
+        aria-label="console output"
+        style={{
+          background: "var(--color-surface)",
+          border: "1px solid var(--color-rule)",
+          borderRadius: 3,
+          padding: "10px 12px",
+          minHeight: 92,
+          minWidth: 0,
+          fontFamily: "var(--font-mono)",
+          fontSize: 11.5,
+          color: "var(--color-text)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+        }}
+      >
+        <div
+          className="font-sans"
+          style={{
+            fontSize: 9,
+            letterSpacing: "0.08em",
+            color: "var(--color-text-muted)",
+            marginBottom: 6,
+          }}
+        >
+          CONSOLE
+        </div>
+        <AnimatePresence initial={false}>
+          {consoleLog.map((l) => (
+            <motion.div
+              key={l.id}
+              initial={
+                reducedMotion ? { opacity: 1 } : { opacity: 0, y: 4 }
+              }
+              animate={{ opacity: 1, y: 0 }}
+              transition={
+                reducedMotion ? { duration: 0 } : { duration: 0.2 }
+              }
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1.2em minmax(0, 1fr)",
+                columnGap: 6,
+                minWidth: 0,
+              }}
+            >
+              <span style={{ color: "var(--color-text-muted)" }}>›</span>
+              <span
+                style={{
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {l.text}
+              </span>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        {consoleLog.length === 0 ? (
+          <div
+            style={{
+              color: "var(--color-text-muted)",
+              fontSize: 11,
+              fontStyle: "italic",
+            }}
+          >
+            (no output yet — press Run)
+          </div>
+        ) : null}
+      </div>
+
+      {/* Desktop SVG arrow overlay. */}
+      {isWide && arrow ? (
+        <ArrowOverlay arrow={arrow} reducedMotion={reducedMotion} />
+      ) : null}
+
+      <style jsx>{`
+        @container widget (min-width: 640px) {
+          .bs-csec-board {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+            grid-template-rows: auto auto;
+          }
+          /* code pane: top-left */
+          .bs-csec-board > :global(:nth-child(1)) {
+            grid-column: 1 / 2;
+            grid-row: 1 / 2;
+          }
+          /* mobile glyph: hidden on desktop */
+          .bs-csec-board > :global(.bs-csec-glyph) {
+            display: none !important;
+          }
+          /* stack pane: top-right */
+          .bs-csec-board > :global(:nth-child(3)) {
+            grid-column: 2 / 3;
+            grid-row: 1 / 2;
+          }
+          /* console pane: spans both columns, row 2 */
+          .bs-csec-board > :global(:nth-child(4)) {
+            grid-column: 1 / 3;
+            grid-row: 2 / 3;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Arrow overlay — desktop only.                                     */
+/* ------------------------------------------------------------------ */
+
+function ArrowOverlay({
+  arrow,
+  reducedMotion,
+}: {
+  arrow: { from: { x: number; y: number }; to: { x: number; y: number } };
+  reducedMotion: boolean;
+}) {
+  const { from, to } = arrow;
+  // Cubic curve with horizontal handles for a gentle s-shape.
+  const dx = Math.max(40, (to.x - from.x) * 0.5);
+  const c1 = { x: from.x + dx, y: from.y };
+  const c2 = { x: to.x - dx, y: to.y };
+  const path = `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
+  // Arrowhead at the end of the curve.
+  const angle = Math.atan2(to.y - c2.y, to.x - c2.x);
+  const headLen = 8;
+  const headW = 5;
+  const hx = to.x;
+  const hy = to.y;
+  const ax = hx - headLen * Math.cos(angle);
+  const ay = hy - headLen * Math.sin(angle);
+  const lx = ax - headW * Math.cos(angle - Math.PI / 2);
+  const ly = ay - headW * Math.sin(angle - Math.PI / 2);
+  const rx = ax - headW * Math.cos(angle + Math.PI / 2);
+  const ry = ay - headW * Math.sin(angle + Math.PI / 2);
+  const arrowKey = `${from.x.toFixed(0)}-${from.y.toFixed(0)}-${to.x.toFixed(
+    0,
+  )}-${to.y.toFixed(0)}`;
+  return (
+    <svg
+      aria-hidden
+      style={{
+        position: "absolute",
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        pointerEvents: "none",
+        overflow: "visible",
+      }}
+    >
+      <AnimatePresence mode="wait">
+        <motion.g
+          key={arrowKey}
+          initial={reducedMotion ? { opacity: 1 } : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={
+            reducedMotion ? { duration: 0 } : { duration: 0.15 }
+          }
+        >
+          <motion.path
+            d={path}
+            fill="none"
+            stroke="var(--color-accent)"
+            strokeWidth={2}
+            strokeLinecap="round"
+            initial={
+              reducedMotion ? { pathLength: 1 } : { pathLength: 0 }
+            }
+            animate={{ pathLength: 1 }}
+            transition={
+              reducedMotion
+                ? { duration: 0 }
+                : { type: "spring", stiffness: 240, damping: 28 }
+            }
+          />
+          <motion.polygon
+            points={`${hx},${hy} ${lx},${ly} ${rx},${ry}`}
+            fill="var(--color-accent)"
+            initial={reducedMotion ? { opacity: 1 } : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={
+              reducedMotion ? { duration: 0 } : { duration: 0.2, delay: 0.2 }
+            }
+          />
+        </motion.g>
+      </AnimatePresence>
+    </svg>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  EC card — push from above, pop upward, no drag.                   */
+/* ------------------------------------------------------------------ */
+
+function ECCard({
+  frameId,
+  label,
+  ve,
+  isTop,
+  reducedMotion,
+  cardRefs,
+}: {
+  frameId: ECName;
   label: string;
   ve: Binding[];
-  isLive: boolean;
   isTop: boolean;
   reducedMotion: boolean;
+  cardRefs: React.MutableRefObject<Map<ECName, HTMLDivElement>>;
 }) {
   return (
     <motion.div
-      initial={false}
-      animate={{
-        opacity: isLive ? 1 : 0.18,
-        scale: isLive ? 1 : 0.96,
+      ref={(el) => {
+        if (el) cardRefs.current.set(frameId, el);
+        else cardRefs.current.delete(frameId);
       }}
+      layout={!reducedMotion}
+      initial={
+        reducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: -16 }
+      }
+      animate={{ opacity: 1, y: 0 }}
+      exit={
+        reducedMotion ? { opacity: 0, y: 0 } : { opacity: 0, y: -16 }
+      }
       transition={reducedMotion ? { duration: 0 } : SPRING.smooth}
       style={{
-        width: 168,
-        minHeight: 96,
         padding: "8px 10px",
         borderRadius: 4,
         background: isTop
-          ? "color-mix(in oklab, var(--color-accent) 16%, var(--color-surface))"
-          : "var(--color-surface)",
-        border: `1.4px solid ${
+          ? "color-mix(in oklab, var(--color-accent) 6%, transparent)"
+          : "transparent",
+        border: `1px solid ${
           isTop ? "var(--color-accent)" : "var(--color-rule)"
         }`,
-        userSelect: "none",
-        // No drop-shadow — DESIGN.md §12
+        minWidth: 0,
       }}
     >
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
           gap: 6,
           marginBottom: 6,
+          minWidth: 0,
         }}
       >
+        <span
+          aria-hidden
+          style={{
+            color: isTop ? "var(--color-accent)" : "transparent",
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            width: "0.9em",
+            display: "inline-block",
+          }}
+        >
+          ▶
+        </span>
         <span
           className="font-mono"
           style={{
             fontSize: 12,
             fontWeight: 600,
-            color: isTop ? "var(--color-accent)" : "var(--color-text)",
+            color: isTop
+              ? "var(--color-accent)"
+              : "var(--color-text-muted)",
             minWidth: 0,
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -656,20 +912,6 @@ function ECCard({
         >
           {label}
         </span>
-        {isTop ? (
-          <span
-            className="font-sans"
-            aria-label="thread of execution"
-            style={{
-              fontSize: 8,
-              letterSpacing: "0.08em",
-              color: "var(--color-accent)",
-              flexShrink: 0,
-            }}
-          >
-            ▶ RUN
-          </span>
-        ) : null}
       </div>
       <ul
         className="font-mono"
@@ -711,6 +953,7 @@ function ECCard({
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap",
+                  fontVariantNumeric: "tabular-nums",
                 }}
                 title={b.value}
               >
@@ -722,4 +965,21 @@ function ECCard({
       </ul>
     </motion.div>
   );
+}
+
+function btnStyle(primary: boolean, disabled: boolean): React.CSSProperties {
+  return {
+    minHeight: 44,
+    padding: "0 12px",
+    borderRadius: "var(--radius-sm)",
+    border: `1px solid ${primary ? "var(--color-accent)" : "var(--color-rule)"}`,
+    background: primary
+      ? "color-mix(in oklab, var(--color-accent) 14%, transparent)"
+      : "transparent",
+    color: primary ? "var(--color-accent)" : "var(--color-text)",
+    fontFamily: "var(--font-mono)",
+    fontSize: 12,
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.5 : 1,
+  };
 }

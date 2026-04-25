@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import { SITE_URL as SITE } from "@/lib/site";
 
 const SLUG = "how-javascript-reads-its-own-future";
-const VISIBLE_HEADING = "How JavaScript reads its own future";
-const LYRICAL_TAGLINE =
-  "One mechanism — hoisting, the TDZ, and the call stack.";
+const VISIBLE_HEADING =
+  "JavaScript Hoisting, the TDZ, and the Call Stack Explained";
+const LYRICAL_TAGLINE = "How JavaScript reads its own future";
 const HOOK =
-  "Before line 1 runs, the JavaScript engine has already walked your file. Hoisting, the TDZ, and the call stack are one mechanism — explored with playable widgets.";
+  "How JavaScript hoisting works, why let and const enter a temporal dead zone, and how execution contexts stack — with playable widgets that show each step.";
 
 /** Visible subtitle on the post page (poetic tagline under the descriptive H1). */
 export const subtitle = LYRICAL_TAGLINE;
@@ -14,6 +14,19 @@ export const subtitle = LYRICAL_TAGLINE;
 export const metadata: Metadata = {
   title: `${VISIBLE_HEADING} — bytesize`,
   description: HOOK,
+  keywords: [
+    "javascript hoisting",
+    "temporal dead zone",
+    "tdz",
+    "call stack",
+    "execution context",
+    "variable environment",
+    "let const var",
+    "javascript engine",
+  ],
+  alternates: {
+    canonical: `${SITE}/posts/${SLUG}`,
+  },
   openGraph: {
     title: `${VISIBLE_HEADING} — bytesize`,
     description: HOOK,

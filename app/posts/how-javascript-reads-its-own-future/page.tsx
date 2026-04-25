@@ -72,7 +72,7 @@ export default function HowJavaScriptReadsItsOwnFuture() {
           <HeroTile slug="how-javascript-reads-its-own-future" />
         </div>
         <H1 style={{ fontSize: "clamp(2.5rem, 2rem + 3.5vw, 4rem)" }}>
-          How JavaScript reads its own future
+          JavaScript Hoisting, the TDZ, and the Call Stack Explained
         </H1>
         <p
           className="mt-[var(--spacing-sm)] font-mono tabular-nums"
@@ -225,13 +225,11 @@ export default function HowJavaScriptReadsItsOwnFuture() {
           it had paused.
         </P>
         <P>
-          Press <Em>Run</Em> in the widget below to step through a tiny
-          program: <Code>compute(7)</Code> calls <Code>multiply(7, 2)</Code>,
-          which returns <Code>14</Code>. Each call pushes a new EC card onto
-          the stage; each return pops one. The console pane mirrors the
-          actual <Code>console.log</Code> output as the runtime emits it. The
-          card glowing terracotta is the running EC — drag the cards around
-          if you like; the metaphor is literal.{" "}
+          Step through the widget below to watch a tiny program run:{" "}
+          <Code>compute(7)</Code> calls <Code>multiply(7, 2)</Code>, which
+          returns <Code>14</Code>. The arrow shows where the thread is —
+          pointing from the line being run to the context running it. Each
+          call pushes a new EC onto the stack; each return pops one.{" "}
           <HL>
             Whichever frame is on top is the engine&apos;s thread of
             execution.
