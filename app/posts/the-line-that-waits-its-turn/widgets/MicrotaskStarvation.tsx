@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { useCallback, useRef, useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { TextHighlighter } from "@/components/fancy";
 import { SPRING, PRESS } from "@/lib/motion";
 import { WidgetShell } from "@/components/viz/WidgetShell";
@@ -23,321 +23,280 @@ function CaptionCue({ children }: { children: React.ReactNode }) {
 }
 
 /* ---------------------------------------------------------------------------
- * MicrotaskStarvation — two-lane visualization that lets the reader feel
- * the freeze.
+ * MicrotaskStarvation — "Queue Race".
  *
- * IDLE  : a requestAnimationFrame ticks the "frame counter" lane visibly. A
- *         "click me" button increments a "clicks" counter normally. Both
- *         lanes drop a dot per tick to show the rhythm.
- * RUNAWAY: a recursive Promise chain — Promise.resolve().then(loop) —
- *         schedules itself forever (capped at MAX_ROUNDS to protect the
- *         page). The microtask lane fills with dots at high speed; the
- *         frame-counter stops; the click-me button stops responding.
- * STOP   : flips the loop off; rAF resumes; reader sees recovery.
+ * State-machine simulation of the event-loop priority rule:
+ *   On each tick:  drain ALL microtasks  →  run ONE macrotask  →  repeat.
  *
- * Hard caps:
- *   MAX_ROUNDS — 500 microtask hops before auto-bail
- *   MAX_MS     — 1000 ms wall-clock guard
+ * The reader builds the queues by tapping `+ microtask` and `+ macrotask`,
+ * then taps `Run` to drain one tick. The console pane records the firing
+ * order. A fourth button — `+ self-scheduling micro` — adds a microtask
+ * that, when fired, enqueues another microtask (capped at SELF_HOPS to
+ * keep the demo finite). With self-scheduling micros pending, the
+ * macrotask never gets a turn — that is microtask starvation, made
+ * visible without simulating a real freeze.
  *
- * Reduced-motion path: a static "before / after" diptych using the same
- * lane shapes — no live loop, no rAF, no Promise self-scheduling.
+ * No real Promise / setTimeout recursion. No rAF. Pure state machine.
  * --------------------------------------------------------------------------*/
 
-const MAX_ROUNDS = 500;
-const MAX_MS = 1000;
-const LANE_DOT_CAP = 80;
+const SELF_HOPS = 6;
+const STARVED_BADGE_AT = 4;
+const FIRE_DELAY_MS = 280; // visible per-step pacing for the Run animation
+const MAX_CONSOLE_LINES = 12;
 
-type Mode = "idle" | "runaway";
-
-function useFrameTicker(active: boolean, onFrame: () => void) {
-  const rafRef = useRef<number | null>(null);
-  const lastRef = useRef<number>(0);
-  const cbRef = useRef(onFrame);
-  cbRef.current = onFrame;
-
-  useEffect(() => {
-    if (!active) return;
-    let cancelled = false;
-    const loop = (t: number) => {
-      if (cancelled) return;
-      // Throttle to ~30 fps so dots are visible on slow screens.
-      if (t - lastRef.current >= 33) {
-        lastRef.current = t;
-        cbRef.current();
-      }
-      rafRef.current = requestAnimationFrame(loop);
-    };
-    rafRef.current = requestAnimationFrame(loop);
-    return () => {
-      cancelled = true;
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-    };
-  }, [active]);
-}
-
-function Lane({
-  label,
-  count,
-  dots,
-  filled,
-  frozen,
-}: {
+type Chip = {
+  id: string;
   label: string;
-  count: number;
-  dots: number;
-  filled: boolean;
-  frozen: boolean;
-}) {
-  return (
-    <div className="flex flex-col gap-[var(--spacing-2xs)]">
-      <div
-        className="flex items-baseline justify-between font-sans"
-        style={{ fontSize: 11, color: "var(--color-text-muted)" }}
-      >
-        <span style={{ letterSpacing: "0.02em" }}>{label}</span>
-        <span
-          className="font-mono tabular-nums"
-          style={{
-            color: frozen ? "var(--color-text-muted)" : "var(--color-text)",
-            fontSize: 12,
-          }}
-        >
-          {count.toLocaleString()}
-        </span>
-      </div>
-      <div
-        style={{
-          border: "1px dashed var(--color-rule)",
-          borderRadius: "var(--radius-sm)",
-          padding: 8,
-          minHeight: 40,
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          gap: 4,
-          background: "color-mix(in oklab, var(--color-surface) 30%, transparent)",
-        }}
-      >
-        {Array.from({ length: Math.min(dots, LANE_DOT_CAP) }).map((_, i) => (
-          <span
-            key={i}
-            aria-hidden
-            style={{
-              display: "inline-block",
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: filled
-                ? "var(--color-accent)"
-                : "color-mix(in oklab, var(--color-text-muted) 80%, transparent)",
-              opacity: filled ? 0.85 : 0.55,
-            }}
-          />
-        ))}
-        {dots > LANE_DOT_CAP ? (
-          <span
-            className="font-mono"
-            style={{
-              fontSize: 10,
-              color: "var(--color-text-muted)",
-              marginLeft: 4,
-            }}
-          >
-            +{dots - LANE_DOT_CAP}
-          </span>
-        ) : null}
-        {dots === 0 ? (
-          <span
-            className="font-sans"
-            style={{
-              fontSize: 11,
-              color: "var(--color-text-muted)",
-              opacity: 0.5,
-              fontStyle: "italic",
-            }}
-          >
-            empty
-          </span>
-        ) : null}
-      </div>
-    </div>
-  );
-}
+  /** kind === "self" → a micro that schedules another micro when fired. */
+  kind: "micro" | "macro" | "self";
+  /** Hops remaining before a self-scheduling chip stops re-spawning. */
+  hopsLeft?: number;
+};
 
-function ClickMeButton({
-  clicks,
-  onClick,
-  frozen,
-}: {
-  clicks: number;
-  onClick: () => void;
-  frozen: boolean;
-}) {
-  const reduce = useReducedMotion();
-  return (
-    <div className="flex flex-col gap-[var(--spacing-2xs)]">
-      <div
-        className="flex items-baseline justify-between font-sans"
-        style={{ fontSize: 11, color: "var(--color-text-muted)" }}
-      >
-        <span style={{ letterSpacing: "0.02em" }}>UI thread</span>
-        <span
-          className="font-mono tabular-nums"
-          style={{ fontSize: 12, color: "var(--color-text)" }}
-        >
-          {clicks} click{clicks === 1 ? "" : "s"}
-        </span>
-      </div>
-      <motion.button
-        type="button"
-        onClick={onClick}
-        className="font-sans rounded-[var(--radius-sm)] min-h-[44px]"
-        style={{
-          padding: "10px 14px",
-          fontSize: "var(--text-ui)",
-          background: frozen
-            ? "color-mix(in oklab, var(--color-surface) 80%, transparent)"
-            : "color-mix(in oklab, var(--color-accent) 14%, transparent)",
-          color: frozen ? "var(--color-text-muted)" : "var(--color-accent)",
-          border: `1px solid ${
-            frozen ? "var(--color-rule)" : "var(--color-accent)"
-          }`,
-          cursor: "pointer",
-          transition: reduce
-            ? "none"
-            : "background 200ms, color 200ms, border-color 200ms",
-        }}
-        whileTap={reduce ? undefined : { scale: 0.97 }}
-        transition={SPRING.snappy}
-      >
-        {frozen ? "click me (try it — nothing)" : "click me"}
-      </motion.button>
-    </div>
-  );
-}
+type ConsoleLine = {
+  id: string;
+  label: string;
+  kind: "micro" | "macro";
+};
 
-/**
- * MicrotaskStarvation (W4) — feel the freeze. Two lanes (microtask vs
- * rAF/render) plus a click-me button. Toggle Runaway to start a recursive
- * Promise chain; the rAF dots stop landing and the button stops responding
- * until you toggle Stop. Recovery is visible too — that's the point.
- *
- * One verb: toggle (start / stop the runaway loop).
- *
- * Hard cap: MAX_ROUNDS / MAX_MS. Reduced-motion path replaces the live
- * loop with a static before/after diptych.
- *
- * Frame stability (R6): all four panes have fixed min-heights; lane dots
- * cap at LANE_DOT_CAP and overflow into a "+N" indicator instead of
- * growing the container.
- */
+let __id = 0;
+const nextId = () => `c${++__id}`;
+
 export function MicrotaskStarvation() {
   const reduce = useReducedMotion();
 
-  const [mode, setMode] = useState<Mode>("idle");
-  const [microDots, setMicroDots] = useState(0);
-  const [microCount, setMicroCount] = useState(0);
-  const [frameDots, setFrameDots] = useState(0);
-  const [frameCount, setFrameCount] = useState(0);
-  const [clicks, setClicks] = useState(0);
+  const [micro, setMicro] = useState<Chip[]>([]);
+  const [macro, setMacro] = useState<Chip[]>([]);
+  const [output, setOutput] = useState<ConsoleLine[]>([]);
+  const [tick, setTick] = useState(0);
+  const [running, setRunning] = useState(false);
+  const [starved, setStarved] = useState(false);
 
-  // The runaway loop is driven imperatively by Promise.then re-scheduling.
-  // We use a stop flag the loop checks each round. No setState during loop —
-  // we keep the live count in a ref, then commit it once when the loop bails.
-  const stopRef = useRef(false);
-  const microRef = useRef(0);
+  // Counters for label generation. Persist across resets via state, not refs,
+  // so the chip labels stay readable.
+  const [microSeq, setMicroSeq] = useState(0);
+  const [macroSeq, setMacroSeq] = useState(0);
 
-  const startRunaway = useCallback(() => {
-    stopRef.current = false;
-    microRef.current = 0;
-    const start = performance.now();
+  // Active-chip indicator: which chip is currently "firing" (highlighted).
+  const [activeId, setActiveId] = useState<string | null>(null);
 
-    function step() {
-      if (
-        stopRef.current ||
-        microRef.current >= MAX_ROUNDS ||
-        performance.now() - start > MAX_MS
-      ) {
-        // Bail. Commit final counts in one paint.
-        setMicroCount((c) => c + microRef.current);
-        setMicroDots((d) => Math.min(d + microRef.current, LANE_DOT_CAP));
-        setMode("idle");
-        return;
-      }
-      microRef.current++;
-      Promise.resolve().then(step);
-    }
-    Promise.resolve().then(step);
+  const cancelRef = useRef(false);
+
+  const addMicro = useCallback(() => {
+    if (running) return;
+    setMicroSeq((n) => {
+      const next = n + 1;
+      setMicro((q) => [...q, { id: nextId(), label: `m${next}`, kind: "micro" }]);
+      return next;
+    });
+  }, [running]);
+
+  const addSelf = useCallback(() => {
+    if (running) return;
+    setMicroSeq((n) => {
+      const next = n + 1;
+      setMicro((q) => [
+        ...q,
+        {
+          id: nextId(),
+          label: `m${next}*`,
+          kind: "self",
+          hopsLeft: SELF_HOPS,
+        },
+      ]);
+      return next;
+    });
+  }, [running]);
+
+  const addMacro = useCallback(() => {
+    if (running) return;
+    setMacroSeq((n) => {
+      const next = n + 1;
+      setMacro((q) => [...q, { id: nextId(), label: `M${next}`, kind: "macro" }]);
+      return next;
+    });
+  }, [running]);
+
+  const reset = useCallback(() => {
+    cancelRef.current = true;
+    setMicro([]);
+    setMacro([]);
+    setOutput([]);
+    setTick(0);
+    setMicroSeq(0);
+    setMacroSeq(0);
+    setStarved(false);
+    setRunning(false);
+    setActiveId(null);
   }, []);
 
-  const handleToggle = () => {
-    if (mode === "runaway") {
-      // Stop button — flag tells the loop to bail at its next check.
-      stopRef.current = true;
-      return;
+  // Read latest queue state via functional setters; UI updates each step.
+  const wait = (ms: number) =>
+    new Promise<void>((res) => {
+      const t = window.setTimeout(res, ms);
+      // best-effort cancel: we still resolve, but the run loop checks
+      // cancelRef.current to bail.
+      void t;
+    });
+
+  const fireOneFromQueue = useCallback(
+    async (
+      kind: "micro" | "macro",
+      step: number,
+    ): Promise<{ fired: boolean; spawnedSelf: boolean }> => {
+      // Snapshot top-of-queue.
+      let snapshot: Chip | undefined;
+      if (kind === "micro") {
+        setMicro((q) => {
+          snapshot = q[0];
+          return q;
+        });
+      } else {
+        setMacro((q) => {
+          snapshot = q[0];
+          return q;
+        });
+      }
+      // Allow setMicro/setMacro flush.
+      await wait(0);
+      if (!snapshot) return { fired: false, spawnedSelf: false };
+
+      // Highlight the head briefly.
+      setActiveId(snapshot.id);
+      await wait(reduce ? 0 : Math.round(FIRE_DELAY_MS * 0.45));
+
+      // Pop it + write to console + maybe spawn next self-scheduling micro.
+      const fired = snapshot;
+      let spawnedSelf = false;
+      if (kind === "micro") {
+        setMicro((q) => q.slice(1));
+        setOutput((o) =>
+          [
+            ...o,
+            { id: nextId(), label: fired.label, kind: "micro" as const },
+          ].slice(-MAX_CONSOLE_LINES),
+        );
+        if (fired.kind === "self" && (fired.hopsLeft ?? 0) > 1) {
+          const remaining = (fired.hopsLeft ?? 0) - 1;
+          spawnedSelf = true;
+          setMicro((q) => [
+            ...q,
+            {
+              id: nextId(),
+              label: `${fired.label.replace(/\*$/, "")}→${SELF_HOPS - remaining + 1}*`,
+              kind: "self",
+              hopsLeft: remaining,
+            },
+          ]);
+        }
+      } else {
+        setMacro((q) => q.slice(1));
+        setOutput((o) =>
+          [
+            ...o,
+            { id: nextId(), label: fired.label, kind: "macro" as const },
+          ].slice(-MAX_CONSOLE_LINES),
+        );
+      }
+
+      // Trigger starved badge once we've drained STARVED_BADGE_AT consecutive
+      // micros within the same Run with macros pending.
+      if (kind === "micro" && step >= STARVED_BADGE_AT) {
+        setStarved((prev) => {
+          if (prev) return prev;
+          // Only mark starved if there ARE macros waiting.
+          let hasMacro = false;
+          setMacro((q) => {
+            hasMacro = q.length > 0;
+            return q;
+          });
+          return hasMacro;
+        });
+      }
+
+      await wait(reduce ? 0 : Math.round(FIRE_DELAY_MS * 0.55));
+      setActiveId(null);
+      return { fired: true, spawnedSelf };
+    },
+    [reduce],
+  );
+
+  // Probe current queue lengths via setState callback — guarantees freshest
+  // values without subscribing to render cycles.
+  const peekMicroLen = () =>
+    new Promise<number>((res) => {
+      setMicro((q) => {
+        res(q.length);
+        return q;
+      });
+    });
+  const peekMacroLen = () =>
+    new Promise<number>((res) => {
+      setMacro((q) => {
+        res(q.length);
+        return q;
+      });
+    });
+
+  const run = useCallback(async () => {
+    if (running) return;
+    cancelRef.current = false;
+    setRunning(true);
+
+    // Hard cap on micro-drain steps in a single Run (handles self-scheduling
+    // chains). Visually matches "the macrotask never got its turn".
+    const MAX_MICRO_STEPS_PER_TICK = 32;
+
+    let microSteps = 0;
+    let microLen = await peekMicroLen();
+    while (microLen > 0 && microSteps < MAX_MICRO_STEPS_PER_TICK) {
+      if (cancelRef.current) break;
+      await fireOneFromQueue("micro", microSteps);
+      microSteps++;
+      microLen = await peekMicroLen();
     }
-    if (reduce) {
-      // Reduced-motion: simulate the freeze synthetically without actually
-      // blocking. Bump the counters to the same end state in one paint.
-      setMicroCount((c) => c + MAX_ROUNDS);
-      setMicroDots((d) => Math.min(d + MAX_ROUNDS, LANE_DOT_CAP));
-      return;
+
+    // ONE macrotask, only if we drained micros (else: starved).
+    if (!cancelRef.current && microSteps < MAX_MICRO_STEPS_PER_TICK) {
+      const macLen = await peekMacroLen();
+      if (macLen > 0) {
+        await fireOneFromQueue("macro", 0);
+      }
     }
-    setMode("runaway");
-    startRunaway();
-  };
 
-  const handleReset = () => {
-    stopRef.current = true;
-    setMode("idle");
-    setMicroDots(0);
-    setMicroCount(0);
-    setFrameDots(0);
-    setFrameCount(0);
-    setClicks(0);
-  };
+    setTick((t) => t + 1);
+    setRunning(false);
+  }, [running, fireOneFromQueue]);
 
-  // Drive the rAF lane only when we're not running the runaway loop. The
-  // whole point: when the microtask drain is in progress, this hook can't
-  // get its callbacks fired anyway — but we explicitly pause it on mode
-  // change so the post-runaway state shows the freeze cleanly.
-  useFrameTicker(mode === "idle" && !reduce, () => {
-    setFrameCount((c) => c + 1);
-    setFrameDots((d) => Math.min(d + 1, LANE_DOT_CAP));
-  });
-
-  // Reset only the lanes' dots on mode change so the reader can replay.
-  // (counters stay so they can compare totals across runs.)
-
-  const isFrozen = mode === "runaway";
+  // Derived
+  const outputStr = output.map((o) => o.label).join(" · ") || "—";
 
   return (
     <WidgetShell
-      title="microtask starvation · feel the freeze"
-      measurements={
-        isFrozen ? "runaway · frames stalled" : `${frameCount} frames · ${microCount} micro`
-      }
+      title="queue race · microtasks vs macrotasks"
+      measurements={`tick ${tick} · output ${output.length}`}
       caption={
-        isFrozen ? (
+        starved ? (
           <>
-            <CaptionCue>Loop running.</CaptionCue> The microtask queue keeps
-            re-filling itself. The render thread can&apos;t reach a frame, the
-            click-me button can&apos;t process input — the page is technically
-            alive but functionally frozen.
+            <CaptionCue>Microtask starvation.</CaptionCue> Each fired microtask
+            adds another microtask, so the queue never empties — and the
+            macrotask never gets its turn. One runaway Promise chain stalls
+            everything else, even though the engine isn&apos;t doing real work.
           </>
-        ) : microCount > 0 ? (
+        ) : output.length === 0 ? (
           <>
-            <CaptionCue>Runaway resolved.</CaptionCue> While the Promise kept
-            re-scheduling itself, no rAF fired and no click registered. The
-            microtask queue stayed non-empty, so the loop never moved on. That
-            is why one runaway Promise can stall a tab.
+            <CaptionCue>Build the queues, then Run.</CaptionCue> Add a few
+            microtasks and a macrotask. Tap <em>Run</em>: the loop drains{" "}
+            <em>every</em> microtask first, then runs <em>one</em> macrotask.
+            Try <em>+ self-scheduling micro</em> to feel the priority rule
+            bite.
           </>
         ) : (
           <>
-            <CaptionCue>Tap <em>start runaway</em>.</CaptionCue> The microtask
-            lane will fill instantly while the frame lane stops. Try clicking
-            the button mid-run — it won&apos;t respond. Hit <em>stop</em> to
-            see the page recover.
+            <CaptionCue>One tick complete.</CaptionCue> The microtask queue
+            drained fully before any macrotask ran. Add more, hit Run again —
+            or try a self-scheduling microtask to see what happens when the
+            queue refuses to empty.
           </>
         )
       }
@@ -346,25 +305,88 @@ export function MicrotaskStarvation() {
         <div className="flex flex-wrap items-center justify-center gap-[var(--spacing-sm)] w-full">
           <motion.button
             type="button"
-            onClick={handleToggle}
-            className="font-sans rounded-[var(--radius-md)] min-h-[44px]"
+            onClick={addMicro}
+            disabled={running}
+            className="font-sans rounded-[var(--radius-sm)] min-h-[44px]"
             style={{
-              padding: "8px 18px",
+              padding: "8px 14px",
               fontSize: "var(--text-ui)",
-              background: isFrozen ? "transparent" : "var(--color-accent)",
-              color: isFrozen ? "var(--color-accent)" : "var(--color-bg)",
-              border: isFrozen
-                ? "1px solid var(--color-accent)"
-                : "none",
+              background: "color-mix(in oklab, var(--color-accent) 14%, transparent)",
+              color: "var(--color-accent)",
+              border: "1px solid var(--color-accent)",
+              opacity: running ? 0.5 : 1,
+              cursor: running ? "not-allowed" : "pointer",
             }}
-            {...PRESS}
+            {...(running ? {} : PRESS)}
           >
-            {isFrozen ? "stop" : microCount > 0 ? "run again ▸" : "start runaway ▸"}
+            + microtask
           </motion.button>
           <motion.button
             type="button"
-            onClick={handleReset}
+            onClick={addMacro}
+            disabled={running}
+            className="font-sans rounded-[var(--radius-sm)] min-h-[44px]"
+            style={{
+              padding: "8px 14px",
+              fontSize: "var(--text-ui)",
+              background: "transparent",
+              color: "var(--color-text)",
+              border: "1px solid var(--color-rule)",
+              opacity: running ? 0.5 : 1,
+              cursor: running ? "not-allowed" : "pointer",
+            }}
+            {...(running ? {} : PRESS)}
+          >
+            + macrotask
+          </motion.button>
+          <motion.button
+            type="button"
+            onClick={addSelf}
+            disabled={running}
+            className="font-sans rounded-[var(--radius-sm)] min-h-[44px]"
+            style={{
+              padding: "8px 14px",
+              fontSize: "var(--text-ui)",
+              background: "color-mix(in oklab, var(--color-accent) 8%, transparent)",
+              color: "var(--color-accent)",
+              border: "1px dashed var(--color-accent)",
+              opacity: running ? 0.5 : 1,
+              cursor: running ? "not-allowed" : "pointer",
+            }}
+            {...(running ? {} : PRESS)}
+            aria-label="add a self-scheduling microtask (warning: starves the macrotask queue)"
+          >
+            + self-scheduling micro
+          </motion.button>
+          <motion.button
+            type="button"
+            onClick={run}
+            disabled={running || (micro.length === 0 && macro.length === 0)}
             className="font-sans rounded-[var(--radius-md)] min-h-[44px]"
+            style={{
+              padding: "8px 22px",
+              fontSize: "var(--text-ui)",
+              background: "var(--color-accent)",
+              color: "var(--color-bg)",
+              border: "none",
+              opacity:
+                running || (micro.length === 0 && macro.length === 0) ? 0.5 : 1,
+              cursor:
+                running || (micro.length === 0 && macro.length === 0)
+                  ? "not-allowed"
+                  : "pointer",
+              fontWeight: 600,
+            }}
+            {...(running || (micro.length === 0 && macro.length === 0)
+              ? {}
+              : PRESS)}
+          >
+            {running ? "running…" : "Run ▸"}
+          </motion.button>
+          <motion.button
+            type="button"
+            onClick={reset}
+            className="font-sans rounded-[var(--radius-sm)] min-h-[44px]"
             style={{
               padding: "8px 14px",
               fontSize: "var(--text-ui)",
@@ -380,42 +402,295 @@ export function MicrotaskStarvation() {
       }
     >
       <div className="flex flex-col gap-[var(--spacing-md)]">
-        {/* Two columns on lg, stacked on mobile. Microtask lane on top so the
-            reader's eye lands there first when it suddenly fills. */}
-        <div className="bs-starvation-grid">
-          <Lane
+        <div className="bs-qrace-grid">
+          <QueueColumn
             label="microtask queue"
-            count={microCount}
-            dots={microDots}
-            filled
-            frozen={false}
+            chips={micro}
+            activeId={activeId}
+            accent
           />
-          <Lane
-            label="render frames (rAF)"
-            count={frameCount}
-            dots={frameDots}
-            filled={false}
-            frozen={isFrozen}
+          <QueueColumn
+            label="macrotask queue"
+            chips={macro}
+            activeId={activeId}
+            accent={false}
+            badge={starved ? "starved" : null}
           />
         </div>
-        <ClickMeButton
-          clicks={clicks}
-          onClick={() => setClicks((c) => c + 1)}
-          frozen={isFrozen}
-        />
+        <ConsolePane lines={output} />
+        <p
+          className="font-sans"
+          style={{
+            fontSize: 12,
+            color: "var(--color-text-muted)",
+            margin: 0,
+            textAlign: "center",
+            lineHeight: 1.5,
+          }}
+        >
+          Run = drain <em>all</em> microtasks, then <em>one</em> macrotask, then
+          repeat.
+        </p>
         <style>{`
-          .bs-starvation-grid {
+          .bs-qrace-grid {
             display: grid;
             grid-template-columns: 1fr;
             gap: var(--spacing-md);
           }
           @media (min-width: 640px) {
-            .bs-starvation-grid {
+            .bs-qrace-grid {
               grid-template-columns: 1fr 1fr;
             }
           }
         `}</style>
       </div>
     </WidgetShell>
+  );
+}
+
+function QueueColumn({
+  label,
+  chips,
+  activeId,
+  accent,
+  badge,
+}: {
+  label: string;
+  chips: Chip[];
+  activeId: string | null;
+  accent: boolean;
+  badge?: string | null;
+}) {
+  // Reserve at least 4 chip rows of vertical space (R6 frame stability).
+  const RESERVED = 4;
+  const ROW_H = 30;
+  return (
+    <div className="flex flex-col gap-[var(--spacing-2xs)]">
+      <div
+        className="flex items-center justify-between font-sans"
+        style={{ fontSize: 11, color: "var(--color-text-muted)" }}
+      >
+        <span style={{ letterSpacing: "0.02em" }}>{label}</span>
+        <AnimatePresence initial={false}>
+          {badge ? (
+            <motion.span
+              key="badge"
+              initial={{ opacity: 0, scale: 0.7 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.7 }}
+              transition={SPRING.smooth}
+              className="font-mono"
+              style={{
+                fontSize: 10,
+                padding: "2px 8px",
+                borderRadius: 999,
+                color: "var(--color-bg)",
+                background: "var(--color-accent)",
+                letterSpacing: "0.04em",
+                textTransform: "uppercase",
+              }}
+            >
+              {badge}
+            </motion.span>
+          ) : (
+            <span
+              className="font-mono tabular-nums"
+              style={{ fontSize: 11, opacity: 0.7 }}
+            >
+              {chips.length}
+            </span>
+          )}
+        </AnimatePresence>
+      </div>
+      <div
+        style={{
+          border: `1px ${accent ? "solid" : "dashed"} var(--color-rule)`,
+          borderRadius: "var(--radius-sm)",
+          padding: 8,
+          minHeight: RESERVED * (ROW_H + 6) + 16,
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+          background: accent
+            ? "color-mix(in oklab, var(--color-accent) 4%, transparent)"
+            : "color-mix(in oklab, var(--color-surface) 30%, transparent)",
+          position: "relative",
+        }}
+      >
+        <AnimatePresence initial={false}>
+          {chips.length === 0 ? (
+            <motion.span
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="font-sans"
+              style={{
+                fontSize: 11,
+                color: "var(--color-text-muted)",
+                opacity: 0.5,
+                fontStyle: "italic",
+                position: "absolute",
+                top: "50%",
+                left: 0,
+                right: 0,
+                textAlign: "center",
+                transform: "translateY(-50%)",
+                pointerEvents: "none",
+              }}
+            >
+              empty
+            </motion.span>
+          ) : (
+            chips.map((c) => {
+              const isActive = activeId === c.id;
+              return (
+                <motion.div
+                  key={c.id}
+                  layout
+                  layoutId={`chip-${c.id}`}
+                  initial={{ opacity: 0, scale: 0.8, y: 6 }}
+                  animate={{
+                    opacity: 1,
+                    scale: isActive ? 1.04 : 1,
+                    y: 0,
+                  }}
+                  exit={{ opacity: 0, scale: 0.7, x: 18 }}
+                  transition={SPRING.smooth}
+                  className="font-mono"
+                  style={{
+                    height: ROW_H,
+                    lineHeight: `${ROW_H}px`,
+                    paddingInline: 12,
+                    fontSize: 12,
+                    borderRadius: 4,
+                    background: accent
+                      ? isActive
+                        ? "var(--color-accent)"
+                        : "color-mix(in oklab, var(--color-accent) 12%, transparent)"
+                      : isActive
+                        ? "color-mix(in oklab, var(--color-text) 14%, transparent)"
+                        : "color-mix(in oklab, var(--color-surface) 80%, transparent)",
+                    color: accent
+                      ? isActive
+                        ? "var(--color-bg)"
+                        : "var(--color-accent)"
+                      : "var(--color-text)",
+                    border: `1px ${
+                      c.kind === "self" ? "dashed" : "solid"
+                    } ${
+                      accent ? "var(--color-accent)" : "var(--color-rule)"
+                    }`,
+                    textAlign: "left",
+                  }}
+                >
+                  {c.label}
+                  {c.kind === "self" ? (
+                    <span
+                      aria-hidden
+                      style={{
+                        marginLeft: 8,
+                        fontSize: 10,
+                        opacity: 0.7,
+                      }}
+                    >
+                      ↻
+                    </span>
+                  ) : null}
+                </motion.div>
+              );
+            })
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+function ConsolePane({ lines }: { lines: ConsoleLine[] }) {
+  const RESERVED_LINES = 4;
+  const LINE_H = 22;
+  return (
+    <div className="flex flex-col gap-[var(--spacing-2xs)]">
+      <div
+        className="flex items-baseline justify-between font-sans"
+        style={{ fontSize: 11, color: "var(--color-text-muted)" }}
+      >
+        <span style={{ letterSpacing: "0.02em" }}>console · firing order</span>
+        <span
+          className="font-mono tabular-nums"
+          style={{ fontSize: 11, opacity: 0.7 }}
+        >
+          {lines.length}
+        </span>
+      </div>
+      <div
+        style={{
+          background: "color-mix(in oklab, var(--color-surface) 60%, transparent)",
+          border: "1px solid var(--color-rule)",
+          borderRadius: "var(--radius-sm)",
+          padding: "8px 12px",
+          minHeight: RESERVED_LINES * LINE_H + 16,
+          fontSize: 12,
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+        }}
+      >
+        <AnimatePresence initial={false}>
+          {lines.length === 0 ? (
+            <motion.span
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="font-sans"
+              style={{
+                fontSize: 11,
+                color: "var(--color-text-muted)",
+                opacity: 0.5,
+                fontStyle: "italic",
+                lineHeight: `${LINE_H}px`,
+              }}
+            >
+              waiting for Run…
+            </motion.span>
+          ) : (
+            lines.map((l, i) => (
+              <motion.div
+                key={l.id}
+                layout
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0 }}
+                transition={SPRING.smooth}
+                className="font-mono"
+                style={{
+                  lineHeight: `${LINE_H}px`,
+                  color:
+                    l.kind === "micro"
+                      ? "var(--color-accent)"
+                      : "var(--color-text)",
+                  whiteSpace: "pre",
+                }}
+              >
+                <span
+                  style={{
+                    color: "var(--color-text-muted)",
+                    marginRight: 8,
+                    opacity: 0.7,
+                  }}
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span>
+                  {l.kind === "micro" ? "micro" : "macro"} → {l.label}
+                </span>
+              </motion.div>
+            ))
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }

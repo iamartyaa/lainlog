@@ -57,7 +57,7 @@ export default function TheLineThatWaitsItsTurn() {
         <div className="mt-[var(--spacing-md)] mb-[var(--spacing-md)] hidden md:flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
           <HeroTile slug="the-line-that-waits-its-turn" />
         </div>
-        <H1>How the JavaScript event loop, microtasks, and the call stack work</H1>
+        <H1>JavaScript Event Loop Explained: Microtasks and the Call Stack</H1>
         <p
           className="mt-[var(--spacing-sm)] font-mono tabular-nums"
           style={{
@@ -344,12 +344,13 @@ export default function TheLineThatWaitsItsTurn() {
           ).
         </P>
         <P>
-          The widget below makes the freeze tactile: a recursive{" "}
-          <Code>Promise.resolve().then(loop)</Code> chain on one side, a frame
-          counter and a click-me button on the other. Tap{" "}
-          <em>start runaway</em> and the microtask lane fills instantly while
-          the frame lane stops dead — and your click is left waiting too. Tap{" "}
-          <em>stop</em> to watch the page recover.
+          The widget below makes the priority rule playable. Build a queue:
+          tap <em>+ microtask</em> a few times, then <em>+ macrotask</em>, then{" "}
+          <em>Run</em> — the console writes the firing order so you can see
+          microtasks drain first. Then add a{" "}
+          <em>+ self-scheduling micro</em>: a microtask that schedules another
+          microtask. The macrotask never gets its turn — that&apos;s
+          starvation, made visible without freezing your tab.
         </P>
       </div>
 
@@ -357,12 +358,13 @@ export default function TheLineThatWaitsItsTurn() {
 
       <div>
         <P>
-          While the Promise kept resolving itself, no rAF fired and no click
-          registered. The microtask queue stayed non-empty, so the loop never
-          moved on to the next phase — even though the CPU wasn&apos;t actually
-          that busy. Same rule, different consequence: the priority that lets{" "}
-          <Code>await</Code> feel seamless is the same priority that lets one
-          runaway Promise hold a tab hostage.
+          Each loop tick, the engine drains every pending microtask before
+          touching macrotasks. With a self-scheduling microtask in flight, the
+          microtask queue keeps re-filling itself — the macrotask waits and
+          waits, even though the engine isn&apos;t doing real work, just
+          servicing the queue. Same rule, different consequence: the priority
+          that lets <Code>await</Code> feel seamless is the same priority that
+          lets one runaway Promise hold a tab hostage.
         </P>
         <Aside>
           Node has a different inventory but the same hazard. Its loop runs in

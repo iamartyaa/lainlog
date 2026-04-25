@@ -3,10 +3,10 @@ import { SITE_URL as SITE } from "@/lib/site";
 
 const SLUG = "the-line-that-waits-its-turn";
 const VISIBLE_HEADING =
-  "How the JavaScript event loop, microtasks, and the call stack work";
+  "JavaScript Event Loop Explained: Microtasks and the Call Stack";
 const LYRICAL_TAGLINE = "The line that waits its turn";
 const HOOK =
-  "Why setTimeout(0) is never zero, why await feels seamless, and why one runaway Promise can stall a tab — one rule about the microtask queue explains all three.";
+  "How the JavaScript event loop schedules microtasks before timers, why await feels seamless, and why one runaway Promise can freeze a tab.";
 
 /** Visible subtitle on the post page (poetic tagline under the descriptive H1). */
 export const subtitle = LYRICAL_TAGLINE;
@@ -14,11 +14,27 @@ export const subtitle = LYRICAL_TAGLINE;
 export const metadata: Metadata = {
   title: `${VISIBLE_HEADING} — bytesize`,
   description: HOOK,
+  keywords: [
+    "javascript event loop",
+    "microtasks",
+    "macrotasks",
+    "call stack",
+    "setTimeout",
+    "promise",
+    "async await",
+    "node event loop",
+    "queueMicrotask",
+    "microtask queue",
+  ],
+  alternates: {
+    canonical: `${SITE}/posts/${SLUG}`,
+  },
   openGraph: {
     title: `${VISIBLE_HEADING} — bytesize`,
     description: HOOK,
     url: `${SITE}/posts/${SLUG}`,
     type: "article",
+    publishedTime: "2026-04-25T00:00:00.000Z",
     images: [{ url: `${SITE}/og/${SLUG}`, width: 1200, height: 630 }],
   },
   twitter: {

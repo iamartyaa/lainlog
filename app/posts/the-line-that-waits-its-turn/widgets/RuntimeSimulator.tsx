@@ -1,7 +1,7 @@
 "use client";
 
-import { memo, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { memo, useId, useState } from "react";
+import { motion, AnimatePresence, LayoutGroup } from "motion/react";
 import { WidgetNav } from "@/components/viz/WidgetNav";
 import { TextHighlighter } from "@/components/fancy";
 import { SPRING } from "@/lib/motion";
@@ -224,6 +224,9 @@ const PROGRAM = [
  * --------------------------------------------------------------------------*/
 
 function ProgramPane({ activeLine }: { activeLine: number | null }) {
+  // Stable per-instance layoutId so the highlight glides between lines
+  // instead of remount-fading on every step.
+  const markerId = useId();
   return (
     <div className="flex flex-col gap-[var(--spacing-2xs)]">
       <div
@@ -251,37 +254,43 @@ function ProgramPane({ activeLine }: { activeLine: number | null }) {
           whiteSpace: "pre",
         }}
       >
-        {PROGRAM.map((line, i) => {
-          const isActive = activeLine === i + 1;
-          return (
-            <div
-              key={i}
-              style={{
-                position: "relative",
-                paddingLeft: 4,
-                color: isActive ? "var(--color-text)" : "var(--color-text-muted)",
-              }}
-            >
-              {isActive ? (
-                <motion.span
-                  aria-hidden
-                  initial={false}
-                  animate={{ opacity: 1 }}
-                  transition={SPRING.snappy}
-                  style={{
-                    position: "absolute",
-                    inset: "0 -8px 0 -8px",
-                    background:
-                      "color-mix(in oklab, var(--color-accent) 14%, transparent)",
-                    borderRadius: 2,
-                    pointerEvents: "none",
-                  }}
-                />
-              ) : null}
-              <span style={{ position: "relative" }}>{line}</span>
-            </div>
-          );
-        })}
+        <LayoutGroup id={markerId}>
+          {PROGRAM.map((line, i) => {
+            const isActive = activeLine === i + 1;
+            return (
+              <motion.div
+                key={i}
+                style={{
+                  position: "relative",
+                  paddingLeft: 4,
+                }}
+                animate={{
+                  color: isActive
+                    ? "var(--color-text)"
+                    : "var(--color-text-muted)",
+                }}
+                transition={SPRING.smooth}
+              >
+                {isActive ? (
+                  <motion.span
+                    layoutId={`pc-${markerId}`}
+                    aria-hidden
+                    transition={SPRING.smooth}
+                    style={{
+                      position: "absolute",
+                      inset: "0 -8px 0 -8px",
+                      background:
+                        "color-mix(in oklab, var(--color-accent) 14%, transparent)",
+                      borderRadius: 2,
+                      pointerEvents: "none",
+                    }}
+                  />
+                ) : null}
+                <span style={{ position: "relative" }}>{line}</span>
+              </motion.div>
+            );
+          })}
+        </LayoutGroup>
       </div>
     </div>
   );
@@ -320,10 +329,11 @@ function StackPane({ frames }: { frames: string[] }) {
           {frames.map((frame, i) => (
             <motion.div
               key={`${frame}-${i}`}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 6 }}
-              transition={SPRING.snappy}
+              layout
+              initial={{ opacity: 0, y: 8, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.96 }}
+              transition={SPRING.smooth}
               className="font-mono"
               style={{
                 height: SLOT_H,
@@ -416,10 +426,11 @@ function WebApiPane({ items }: { items: string[] }) {
             items.map((label, i) => (
               <motion.span
                 key={`${label}-${i}`}
-                initial={{ opacity: 0, x: -4 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0 }}
-                transition={SPRING.snappy}
+                layout
+                initial={{ opacity: 0, scale: 0.85, x: -6 }}
+                animate={{ opacity: 1, scale: 1, x: 0 }}
+                exit={{ opacity: 0, scale: 0.85 }}
+                transition={SPRING.smooth}
                 className="font-mono"
                 style={{
                   padding: "4px 10px",
@@ -493,10 +504,11 @@ function QueuePane({
             items.map((slot, i) => (
               <motion.span
                 key={`${slot}-${i}`}
-                initial={{ opacity: 0, x: -4 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0 }}
-                transition={SPRING.snappy}
+                layout
+                initial={{ opacity: 0, scale: 0.85, x: -6 }}
+                animate={{ opacity: 1, scale: 1, x: 0 }}
+                exit={{ opacity: 0, scale: 0.85 }}
+                transition={SPRING.smooth}
                 className="font-mono"
                 style={{
                   padding: "4px 12px",
@@ -564,10 +576,11 @@ function OutputPane({ output }: { output: string[] }) {
               const elements = [
                 <motion.span
                   key={`${letter}-${i}`}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={SPRING.snappy}
+                  layout
+                  initial={{ opacity: 0, scale: 0.6, y: -4 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.6 }}
+                  transition={SPRING.smooth}
                   className="font-mono"
                   style={{
                     fontSize: 16,
