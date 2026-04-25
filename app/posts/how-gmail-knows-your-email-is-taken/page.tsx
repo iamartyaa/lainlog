@@ -11,7 +11,7 @@ import {
   A,
   HeroTile,
 } from "@/components/prose";
-import { TextHighlighter, VerticalCutReveal } from "@/components/fancy";
+import { TextHighlighter } from "@/components/fancy";
 import {
   TypingPause,
   NormalisePipeline,
@@ -329,14 +329,7 @@ export default function HowGmailKnowsYourEmailIsTaken() {
           submit time is the verdict. Two different questions, on two different versions of
           your email — neither of which is exactly the string you typed.
         </P>
-        <P>
-          <VerticalCutReveal
-            useInViewOptions={{ once: true, amount: 0.55 }}
-            staggerDuration={0.035}
-          >
-            The fast one is for the UI. The slow one is for the truth.
-          </VerticalCutReveal>
-        </P>
+        <P>The fast one is for the UI. The slow one is for the truth.</P>
         <p
           aria-hidden
           className="font-mono text-center select-none"
