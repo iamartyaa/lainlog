@@ -193,3 +193,62 @@ export function FunctionRememberedCover() {
     </g>
   );
 }
+
+/**
+ * FunctionRememberedCoverStatic — Satori-safe pure-JSX export.
+ * Reduced-motion end-state: outer scope at 0.3 opacity (faded), inner scope
+ * solid, tether fully drawn from captured value upward.
+ */
+export function FunctionRememberedCoverStatic() {
+  const ACCENT = "#d97341";
+  const TEXT = "#f8f5f0";
+  const MUTED = "#7a7570";
+  const SURFACE = "#1a1714";
+
+  return (
+    <svg
+      viewBox="0 0 200 200"
+      xmlns="http://www.w3.org/2000/svg"
+      width="100%"
+      height="100%"
+    >
+      {/* Outer scope — faded (the dying scope) */}
+      <g opacity={0.3} transform="translate(8 8) scale(0.92)">
+        <rect x={20} y={28} width={160} height={144} rx={10} fill="none" stroke={TEXT} strokeWidth={3} />
+        <path
+          d="M 36 56 Q 30 56, 30 64 L 30 96 Q 30 104, 24 104 Q 30 104, 30 112 L 30 144 Q 30 152, 36 152"
+          fill="none"
+          stroke={MUTED}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M 164 56 Q 170 56, 170 64 L 170 96 Q 170 104, 176 104 Q 170 104, 170 112 L 170 144 Q 170 152, 164 152"
+          fill="none"
+          stroke={MUTED}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+
+      {/* Tether line — fully drawn */}
+      <line x1={100} y1={92} x2={100} y2={20} stroke={ACCENT} strokeWidth={2.4} strokeLinecap="round" strokeDasharray="3 4" opacity={0.85} />
+
+      {/* Memory anchor */}
+      <circle cx={100} cy={20} r={3.5} fill={ACCENT} opacity={0.95} />
+
+      {/* Inner scope — bright, solid */}
+      <rect x={62} y={84} width={76} height={68} rx={8} fill={SURFACE} stroke={TEXT} strokeWidth={3} />
+      <rect x={70} y={94} width={12} height={2.4} rx={1.2} fill={MUTED} opacity={0.75} />
+      <rect x={86} y={94} width={20} height={2.4} rx={1.2} fill={MUTED} opacity={0.75} />
+
+      {/* Captured value pulse ring */}
+      <circle cx={100} cy={124} r={12} fill="none" stroke={ACCENT} strokeWidth={2} opacity={0.6} />
+
+      {/* Captured value dot */}
+      <circle cx={100} cy={124} r={6} fill={ACCENT} />
+    </svg>
+  );
+}

@@ -375,3 +375,159 @@ export function WebpageReadsAgentCover() {
     </g>
   );
 }
+
+/**
+ * WebpageReadsAgentCoverStatic — Satori-safe pure-JSX export.
+ * Reduced-motion end-state: scanner ring near right edge (~150), all 3
+ * hidden ×-glyphs revealed at full opacity (the metaphor: scan complete,
+ * hidden instructions exposed).
+ */
+export function WebpageReadsAgentCoverStatic() {
+  const ACCENT = "#d97341";
+  const MUTED = "#7a7570";
+  const SURFACE = "#1a1714";
+
+  // Scanner parked near right edge.
+  const scannerX = 150;
+
+  const noiseGlyphs = [
+    { type: "tri" as const, cx: 28, cy: 40 },
+    { type: "circ" as const, cx: 175, cy: 38 },
+    { type: "x" as const, cx: 50, cy: 175 },
+    { type: "tri" as const, cx: 168, cy: 168 },
+    { type: "circ" as const, cx: 30, cy: 110 },
+    { type: "x" as const, cx: 180, cy: 100 },
+    { type: "circ" as const, cx: 22, cy: 80 },
+    { type: "tri" as const, cx: 178, cy: 130 },
+    { type: "x" as const, cx: 170, cy: 60 },
+  ];
+
+  const textStubs = [
+    { x: 36, y: 60, w: 80 },
+    { x: 36, y: 80, w: 110 },
+    { x: 36, y: 100, w: 70 },
+    { x: 36, y: 120, w: 100 },
+    { x: 36, y: 140, w: 60 },
+  ];
+
+  const headerStubs = [
+    { x: 36, y: 42, w: 18 },
+    { x: 58, y: 42, w: 22 },
+    { x: 84, y: 42, w: 14 },
+  ];
+
+  const corners = [
+    { x: 16, y: 16, dx: 6, dy: 6 },
+    { x: 184, y: 16, dx: -6, dy: 6 },
+    { x: 16, y: 184, dx: 6, dy: -6 },
+    { x: 184, y: 184, dx: -6, dy: -6 },
+  ];
+
+  const hiddenGlyphs = [
+    { gx: 70, gy: 80 },
+    { gx: 110, gy: 120 },
+    { gx: 145, gy: 100 },
+  ];
+
+  return (
+    <svg
+      viewBox="0 0 200 200"
+      xmlns="http://www.w3.org/2000/svg"
+      width="100%"
+      height="100%"
+    >
+      {/* Background noise glyphs */}
+      {noiseGlyphs.map((g, i) => {
+        if (g.type === "tri") {
+          return (
+            <path
+              key={`noise-${i}`}
+              d={`M ${g.cx} ${g.cy - 3} L ${g.cx + 3} ${g.cy + 2} L ${g.cx - 3} ${g.cy + 2} Z`}
+              fill="none"
+              stroke={MUTED}
+              strokeWidth={0.8}
+              opacity={0.13}
+            />
+          );
+        }
+        if (g.type === "circ") {
+          return (
+            <circle
+              key={`noise-${i}`}
+              cx={g.cx}
+              cy={g.cy}
+              r={2.5}
+              fill="none"
+              stroke={MUTED}
+              strokeWidth={0.8}
+              opacity={0.13}
+            />
+          );
+        }
+        return (
+          <g key={`noise-${i}`} opacity={0.13}>
+            <line x1={g.cx - 2.5} y1={g.cy - 2.5} x2={g.cx + 2.5} y2={g.cy + 2.5} stroke={MUTED} strokeWidth={0.8} />
+            <line x1={g.cx - 2.5} y1={g.cy + 2.5} x2={g.cx + 2.5} y2={g.cy - 2.5} stroke={MUTED} strokeWidth={0.8} />
+          </g>
+        );
+      })}
+
+      {/* Viewfinder corners */}
+      {corners.map((c, i) => (
+        <g key={`corner-${i}`} opacity={0.45}>
+          <line x1={c.x} y1={c.y} x2={c.x + c.dx} y2={c.y} stroke={MUTED} strokeWidth={1.2} strokeLinecap="round" />
+          <line x1={c.x} y1={c.y} x2={c.x} y2={c.y + c.dy} stroke={MUTED} strokeWidth={1.2} strokeLinecap="round" />
+        </g>
+      ))}
+
+      {/* Page outline */}
+      <rect x={28} y={32} width={144} height={130} rx={4} fill={SURFACE} stroke={MUTED} strokeWidth={1.6} />
+
+      {/* Header stubs */}
+      {headerStubs.map((s, i) => (
+        <rect key={`hdr-${i}`} x={s.x} y={s.y} width={s.w} height={2.4} rx={1.2} fill={MUTED} opacity={0.7} />
+      ))}
+      <line x1={32} y1={48} x2={168} y2={48} stroke={MUTED} strokeWidth={0.6} opacity={0.3} />
+
+      {/* Text stubs */}
+      {textStubs.map((s, i) => (
+        <rect key={`stub-${i}`} x={s.x} y={s.y} width={s.w} height={1.8} rx={0.9} fill={MUTED} opacity={0.7} />
+      ))}
+
+      {/* Invisibility-grid */}
+      {[40, 60, 80, 100, 120, 140].map((x) => (
+        <circle key={`grid-${x}`} cx={x} cy={54} r={0.5} fill={MUTED} opacity={0.3} />
+      ))}
+
+      {/* Hidden ×-glyphs — fully revealed */}
+      {hiddenGlyphs.map((g, i) => (
+        <g key={`hidden-${i}`}>
+          <line x1={g.gx - 3} y1={g.gy - 3} x2={g.gx + 3} y2={g.gy + 3} stroke={ACCENT} strokeWidth={1.6} strokeLinecap="round" />
+          <line x1={g.gx - 3} y1={g.gy + 3} x2={g.gx + 3} y2={g.gy - 3} stroke={ACCENT} strokeWidth={1.6} strokeLinecap="round" />
+          <line x1={g.gx} y1={g.gy - 6} x2={g.gx} y2={g.gy - 4.5} stroke={ACCENT} strokeWidth={1} strokeLinecap="round" />
+          <line x1={g.gx} y1={g.gy + 6} x2={g.gx} y2={g.gy + 4.5} stroke={ACCENT} strokeWidth={1} strokeLinecap="round" />
+          <line x1={g.gx - 6} y1={g.gy} x2={g.gx - 4.5} y2={g.gy} stroke={ACCENT} strokeWidth={1} strokeLinecap="round" />
+          <line x1={g.gx + 6} y1={g.gy} x2={g.gx + 4.5} y2={g.gy} stroke={ACCENT} strokeWidth={1} strokeLinecap="round" />
+        </g>
+      ))}
+
+      {/* Comet trail behind scanner */}
+      <circle cx={scannerX - 6} cy={100} r={1.6} fill={ACCENT} opacity={0.5} />
+      <circle cx={scannerX - 12} cy={100} r={1.4} fill={ACCENT} opacity={0.4} />
+      <circle cx={scannerX - 18} cy={100} r={1.2} fill={ACCENT} opacity={0.3} />
+      <circle cx={scannerX - 24} cy={100} r={1} fill={ACCENT} opacity={0.22} />
+      <circle cx={scannerX - 30} cy={100} r={0.9} fill={ACCENT} opacity={0.15} />
+
+      {/* Scanner ring + handle + reticle */}
+      <g transform={`translate(${scannerX} 0)`}>
+        <circle cx={0} cy={100} r={13} fill="none" stroke={ACCENT} strokeWidth={1.8} />
+        <circle cx={0} cy={100} r={1.6} fill={ACCENT} />
+        <line x1={-3} y1={100} x2={-1.5} y2={100} stroke={ACCENT} strokeWidth={1} strokeLinecap="round" />
+        <line x1={1.5} y1={100} x2={3} y2={100} stroke={ACCENT} strokeWidth={1} strokeLinecap="round" />
+        <line x1={0} y1={97} x2={0} y2={98.5} stroke={ACCENT} strokeWidth={1} strokeLinecap="round" />
+        <line x1={0} y1={101.5} x2={0} y2={103} stroke={ACCENT} strokeWidth={1} strokeLinecap="round" />
+        <line x1={9} y1={109} x2={16} y2={116} stroke={ACCENT} strokeWidth={2.2} strokeLinecap="round" />
+      </g>
+    </svg>
+  );
+}

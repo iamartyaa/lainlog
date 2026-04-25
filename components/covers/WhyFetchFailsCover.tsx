@@ -240,3 +240,53 @@ export function WhyFetchFailsCover() {
     </g>
   );
 }
+
+/**
+ * WhyFetchFailsCoverStatic — Satori-safe pure-JSX export.
+ * Reduced-motion end-state: comet bounced back at far-left, wall solid,
+ * ✕ visible, 2 echo-rings frozen at mid-expansion (the "impact moment").
+ */
+export function WhyFetchFailsCoverStatic() {
+  const ACCENT = "#d97341";
+  const TEXT = "#f8f5f0";
+  const MUTED = "#7a7570";
+  const SURFACE = "#1a1714";
+
+  const wallX = 122;
+  const impactX = 116;
+  const beamY = 100;
+
+  return (
+    <svg
+      viewBox="0 0 200 200"
+      xmlns="http://www.w3.org/2000/svg"
+      width="100%"
+      height="100%"
+    >
+      {/* Browser silhouette */}
+      <rect x={140} y={56} width={48} height={88} rx={5} fill={SURFACE} stroke={MUTED} strokeWidth={1.6} opacity={0.55} />
+      <line x1={140} y1={68} x2={188} y2={68} stroke={MUTED} strokeWidth={1.2} opacity={0.5} />
+      <circle cx={146} cy={62} r={1.6} fill={MUTED} opacity={0.55} />
+      <circle cx={152} cy={62} r={1.6} fill={MUTED} opacity={0.45} />
+      <circle cx={158} cy={62} r={1.6} fill={MUTED} opacity={0.4} />
+
+      {/* Wall */}
+      <rect x={wallX - 4} y={36} width={8} height={128} rx={3} fill={TEXT} />
+
+      {/* ✕ on wall */}
+      <line x1={wallX - 6} y1={beamY - 6} x2={wallX + 6} y2={beamY + 6} stroke={ACCENT} strokeWidth={2.4} strokeLinecap="round" />
+      <line x1={wallX - 6} y1={beamY + 6} x2={wallX + 6} y2={beamY - 6} stroke={ACCENT} strokeWidth={2.4} strokeLinecap="round" />
+
+      {/* Echo rings — frozen mid-expansion */}
+      <circle cx={impactX} cy={beamY} r={12} fill="none" stroke={ACCENT} strokeWidth={2} opacity={0.7} />
+      <circle cx={impactX} cy={beamY} r={20} fill="none" stroke={ACCENT} strokeWidth={1.6} opacity={0.45} />
+
+      {/* Comet bounced back to far-left */}
+      <rect x={16} y={beamY - 8} width={16} height={16} rx={4} fill={ACCENT} />
+      {/* Trail dots leading from bounce */}
+      <circle cx={40} cy={beamY} r={2.5} fill={ACCENT} opacity={0.4} />
+      <circle cx={52} cy={beamY} r={2} fill={ACCENT} opacity={0.28} />
+      <circle cx={64} cy={beamY} r={1.5} fill={ACCENT} opacity={0.18} />
+    </svg>
+  );
+}
