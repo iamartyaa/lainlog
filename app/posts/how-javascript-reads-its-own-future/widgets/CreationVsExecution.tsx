@@ -40,19 +40,19 @@ const STOPS: Stop[] = [
     phase: "creation",
     activeLine: null,
     memory: { name: "x", value: "undefined" },
-    beat: "found var x",
+    beat: "finding var x",
   },
   {
     phase: "creation",
     activeLine: null,
     memory: { name: "x", value: "undefined" },
-    beat: "binding installed",
+    beat: "installing the binding",
   },
   {
     phase: "creation",
     activeLine: null,
     memory: { name: "x", value: "undefined" },
-    beat: "ready to run line 1",
+    beat: "holding at line 1 — last creation stop",
   },
   {
     phase: "execution",
@@ -76,7 +76,7 @@ const STOPS: Stop[] = [
     phase: "execution",
     activeLine: 2,
     memory: { name: "x", value: "5" },
-    beat: "execution complete",
+    beat: "execution finishes",
   },
 ];
 
@@ -98,16 +98,14 @@ export function CreationVsExecution({ initialStop = 0 }: Props) {
   const caption = useMemo(() => {
     const phaseLabel =
       current.phase === "creation" ? "creation phase" : "execution phase";
-    const detail =
-      current.phase === "creation"
-        ? `The engine has not run a single line yet — it is ${current.beat}. The binding for `
-        : `${current.beat}. Memory holds `;
     return (
       <>
         <span style={{ color: "var(--color-accent)", fontWeight: 600 }}>
           {phaseLabel}.
         </span>{" "}
-        {detail}
+        {current.phase === "creation"
+          ? "No source line has run. The binding for "
+          : "Memory holds "}
         <span style={{ fontFamily: "var(--font-mono)" }}>x</span>{" "}
         {current.phase === "creation"
           ? "is already installed with value "

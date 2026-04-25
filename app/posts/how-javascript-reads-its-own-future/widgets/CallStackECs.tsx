@@ -52,7 +52,7 @@ const STEPS: Step[] = [
       { name: "inner", value: "[fn]" },
     ],
     beat:
-      "Global EC is the only frame. Both function declarations are bound at creation — the pre-walk has run.",
+      "Global EC is the only frame. Both function declarations are bound — the creation phase has run.",
   },
   {
     stack: [{ name: "global" }],
@@ -167,7 +167,7 @@ export function CallStackECs({ initialStep = 0 }: Props) {
           margin: "0 auto",
         }}
         role="img"
-        aria-label={`Call stack and variable environment. Step ${clamped + 1} of ${TOTAL}. Running: ${current.runningName}.`}
+        aria-label={`Call stack and variable environment. Step ${clamped + 1} of ${TOTAL}. Running: ${current.runningName === "global" ? "global" : `${current.runningName}()`}.`}
       >
         {/* Stack column header */}
         <text

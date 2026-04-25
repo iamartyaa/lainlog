@@ -64,7 +64,7 @@ const REASONS: Reason[] = [
     snippet: ["let x = 1", "let x = 2"],
     without: {
       label: "without pre-walk",
-      body: "Line 1 runs, x = 1. Line 2 also runs.",
+      body: "Line 1 runs, x = 1. Then line 2 runs too.",
     },
     withIt: {
       label: "with pre-walk",
@@ -148,7 +148,6 @@ export function WhyTwoPasses({ initialReason = "callable" }: Props) {
                 type="button"
                 onClick={() => setReasonId(r.id)}
                 aria-pressed={active}
-                aria-label={`Reason: ${r.label}`}
                 style={{
                   minHeight: 44,
                   padding: "0 var(--spacing-sm)",

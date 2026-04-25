@@ -71,11 +71,11 @@ const STATES: State[] = [
         <span style={{ color: "var(--color-accent)", fontWeight: 600 }}>
           let / const / class
         </span>{" "}
-        — binding exists, but reading it throws. The TDZ:{" "}
+        — binding exists, but reading it throws a{" "}
         <span style={{ fontFamily: "var(--font-mono)" }}>
           ReferenceError
         </span>
-        .
+        . That&apos;s the TDZ.
       </>
     ),
   },
@@ -162,7 +162,6 @@ export function DeclarationStates({ initialKind = "var" }: Props) {
                 type="button"
                 onClick={() => setKindId(s.id)}
                 aria-pressed={active}
-                aria-label={`Declaration kind: ${s.label}`}
                 style={{
                   minHeight: 44,
                   padding: "0 var(--spacing-sm)",

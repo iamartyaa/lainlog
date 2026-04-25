@@ -9,6 +9,7 @@ import {
   Aside,
   A,
   HeroTile,
+  Term,
 } from "@/components/prose";
 import { PostBackLink } from "@/components/nav/PostBackLink";
 import { PostNavCards } from "@/components/nav/PostNavCards";
@@ -66,7 +67,7 @@ export default function HowJavaScriptReadsItsOwnFuture() {
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
         <PostBackLink />
-        <div className="mt-[var(--spacing-md)] mb-[var(--spacing-md)] hidden md:flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
+        <div className="mt-[var(--spacing-md)] mb-[var(--spacing-md)] hidden md:flex">
           <HeroTile slug="how-javascript-reads-its-own-future" />
         </div>
         <H1 style={{ fontSize: "clamp(2.5rem, 2rem + 3.5vw, 4rem)" }}>
@@ -101,8 +102,8 @@ export default function HowJavaScriptReadsItsOwnFuture() {
           You type two lines into a console:{" "}
           <Code>console.log(x); var x = 5;</Code>. You expect an error — line 1
           reads a name that line 2 hasn&apos;t introduced yet. Instead, the
-          console prints <Code>undefined</Code>. The error never comes. By the
-          time line 1 ran, the engine had already read line 2.
+          console quietly logs <Code>undefined</Code>. The error never comes.
+          Line 1 ran with line 2 already known.
         </P>
       </div>
 
@@ -117,14 +118,14 @@ export default function HowJavaScriptReadsItsOwnFuture() {
             Nothing moves. The engine walks the body once before any of it
             runs.
           </HL>{" "}
-          On that first pass — call it the <Em>creation phase</Em> — every{" "}
+          On that first pass — call it the <Term>creation phase</Term> — every{" "}
           <Code>var</Code>, every <Code>let</Code>, every function declaration,
           every parameter gets a binding installed in the function&apos;s
           memory. Only after the whole body has been scanned does line 1
           actually start.
         </P>
         <P>
-          Drag the scrubber below across the labelled boundary. To the left,
+          Drag the scrubber below — past the labelled boundary. To the left,
           the engine is still scanning; the binding for <Code>x</Code> is
           already there with value <Code>undefined</Code>, but no source line
           has run. To the right, line 1 finally executes. It reads what was
@@ -160,12 +161,14 @@ export default function HowJavaScriptReadsItsOwnFuture() {
         <P>
           A <Code>var</Code> binding is created and initialised to{" "}
           <Code>undefined</Code> — that&apos;s the case the opening scene
-          showed. A function declaration goes further: the binding exists{" "}
-          <Em>and</Em> already points at the function value, which is why{" "}
-          <Code>f()</Code> can call <Code>f</Code> two lines above the{" "}
-          <Code>function f(){}</Code> that defines it. A{" "}
-          <Code>var x = function(){}</Code> is the deceptive one: only the{" "}
-          <Code>var x = undefined</Code> half survives the pre-walk; the
+          showed. A function declaration goes further: the binding exists and
+          already points at the function value, which is why <Code>f()</Code>{" "}
+          can call <Code>f</Code> two lines above the{" "}
+          <Code>function f(){}</Code> that defines it.
+        </P>
+        <P>
+          A <Code>var x = function(){}</Code> is the deceptive one. Only the{" "}
+          <Code>var x = undefined</Code> half survives the pre-walk. The
           function value attaches when the assignment line runs, so calling{" "}
           <Code>f()</Code> above it throws <Code>TypeError</Code>.
         </P>
@@ -173,7 +176,7 @@ export default function HowJavaScriptReadsItsOwnFuture() {
           And then there&apos;s <Code>let</Code>, <Code>const</Code>, and{" "}
           <Code>class</Code>. Their bindings are created on the pre-walk too,
           but they arrive at line 1 in a fourth state: uninitialised. The TC39
-          spec has a name for it — the <Em>temporal dead zone</Em> — and a
+          spec has a name for it — the <Term>temporal dead zone</Term> — and a
           rule for it:{" "}
           <HL>the binding exists, but reading it throws.</HL>
         </P>
@@ -189,7 +192,7 @@ export default function HowJavaScriptReadsItsOwnFuture() {
       <div className="pt-[var(--spacing-md)]">
         <P>
           One detail worth keeping: a <Code>let</Code> inside a block creates
-          its binding in a fresh inner <Em>lexical environment</Em> attached
+          its binding in a fresh inner <Term>lexical environment</Term> attached
           to that block, not in the function&apos;s top-level memory. That&apos;s
           why <Code>{"{ let x = 2 }"}</Code> doesn&apos;t collide with an
           outer <Code>let x</Code> — same name, different environment record.
@@ -207,10 +210,10 @@ export default function HowJavaScriptReadsItsOwnFuture() {
           Hoisting, the TDZ, and the question the opening scene started with
           all live inside one frame: the global execution context. Every
           script begins with that frame at the bottom of a stack. The frame is
-          a structure, not a name on a list — it carries its own variable
-          environment (where <Code>var</Code> and function-declaration
-          bindings live) and its own lexical environment (where{" "}
-          <Code>let</Code>, <Code>const</Code>, and block scopes live).
+          a structure, not a name on a list — it carries its own{" "}
+          <Term>variable environment</Term> (where <Code>var</Code> and
+          function-declaration bindings live) and its own lexical environment
+          (where <Code>let</Code>, <Code>const</Code>, and block scopes live).
         </P>
         <P>
           When a function is invoked, the engine pushes a new execution
@@ -231,7 +234,7 @@ export default function HowJavaScriptReadsItsOwnFuture() {
 
       <CallStackECs />
 
-      <div className="pt-[var(--spacing-md)]">
+      <div className="pt-[var(--spacing-lg)]">
         <P>
           That&apos;s also the answer to the opening scene. The line that
           printed <Code>undefined</Code> was running inside the global EC.
@@ -245,7 +248,7 @@ export default function HowJavaScriptReadsItsOwnFuture() {
       <div>
         <Dots />
         <Eyebrow>4 · why two passes</Eyebrow>
-        <H2>The two-pass model is required, not an optimisation.</H2>
+        <H2>The two-pass model is required.</H2>
         <P>
           A reasonable question at this point: couldn&apos;t the engine just
           run the file top to bottom and look up names as it goes? It would be
@@ -280,7 +283,7 @@ export default function HowJavaScriptReadsItsOwnFuture() {
           immutable from the moment it has a value. If the pre-walk gave it{" "}
           <Code>undefined</Code> first and the initialiser later flipped it to
           something else, the binding would have changed value once — by
-          definition not <Em>const</Em>. The TDZ resolves this:{" "}
+          definition not <Code>const</Code>. The TDZ resolves this:{" "}
           <HL>required, not an optimisation.</HL>
         </P>
         <Aside>
@@ -307,7 +310,7 @@ export default function HowJavaScriptReadsItsOwnFuture() {
           className="[margin-block-start:1.25em]"
           style={{ fontFamily: "var(--font-serif)", fontSize: "var(--text-body)" }}
         >
-          <VerticalCutReveal as="span">
+          <VerticalCutReveal as="span" staggerDuration={0.035}>
             The engine reads your future to run your present.
           </VerticalCutReveal>
         </p>
