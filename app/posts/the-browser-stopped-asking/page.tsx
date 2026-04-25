@@ -81,7 +81,6 @@ export default function TheBrowserStoppedAsking() {
         <CodeBlock
           lang="http"
           filename="the shape everything else lives inside"
-          tone="terminal"
           code={`GET /doc/42 HTTP/1.1
 Host: docs.example
 Accept: text/html
@@ -107,7 +106,7 @@ Content-Length: 1432
       {/* §2 — polling */}
       <div>
         <Dots />
-        <H2>First workaround: just keep asking</H2>
+        <H2>Just keep asking.</H2>
         <P>
           The most obvious answer is also the crudest. Fire a request every second
           and see if anything&apos;s new.
@@ -177,12 +176,12 @@ Content-Length: 1432
           listens, sometimes for tens of seconds, before the single reply arrives.
         </P>
         <P>
-          Alex Russell coined <Em>Comet</Em>{" "}for this family{" "}
+          Alex Russell coined <Term>Comet</Term> — long polling as a family name —{" "}
           <A href="https://infrequently.org/2006/03/comet-low-latency-data-for-the-browser/">
             in March 2006
-          </A>, and it was the secret sauce behind the first generation of
-          &ldquo;live&rdquo; web apps. <strong>Google Docs shipped on long polling
-          for years.</strong> Look inside Google&apos;s Closure Library and
+          </A>. It was the secret sauce behind the first generation of
+          &ldquo;live&rdquo; web apps. <Em>Google Docs shipped on long polling
+          for years.</Em> Look inside Google&apos;s Closure Library and
           you&apos;ll still find <Code>goog.net.BrowserChannel</Code> — long polling
           over XHR, with forever-iframe streaming as a fallback. Attribution comes
           from ex-Googlers and{" "}
@@ -367,7 +366,7 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=`}
         <P>
           Then why not use WebSocket for everything? Because SSE ships the one
           feature WebSocket doesn&apos;t:{" "}
-          <strong>automatic reconnect, with state recovery.</strong> The browser
+          <Em>automatic reconnect, with state recovery.</Em> The browser
           remembers the last event&apos;s <Code>id:</Code>{" "}field, and when the
           stream drops, it reopens the connection with a{" "}
           <Code>Last-Event-ID</Code>{" "}header so the server can resume from that

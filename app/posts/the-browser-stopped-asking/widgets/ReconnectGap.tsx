@@ -4,7 +4,12 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { SPRING } from "@/lib/motion";
 import { Scrubber } from "@/components/viz/Scrubber";
+import { TextHighlighter } from "@/components/fancy";
 import { WidgetShell } from "./WidgetShell";
+
+const HL_COLOR =
+  "color-mix(in oklab, var(--color-accent) 28%, transparent)";
+const HL_TX = { type: "spring" as const, duration: 0.9, bounce: 0 };
 
 const DURATION_MS = 10_000;
 const EVENT_TIMES_MS = [800, 2200, 4700, 6200, 8400] as const;
@@ -62,10 +67,18 @@ export function ReconnectGap() {
       measurements={`delivered: WS ${classified.length - wsLost}/${classified.length} · SSE ${sseDelivered}/${classified.length}`}
       caption={
         <>
-          Drag the dropout. WebSocket has no built-in way to recover the missed
-          events — the spec contains no reconnect. SSE auto-reconnects with a{" "}
-          <code>Last-Event-ID</code>{" "}header so the server can replay whatever the
-          browser missed.
+          <TextHighlighter
+            triggerType="auto"
+            transition={HL_TX}
+            highlightColor={HL_COLOR}
+            className="rounded-[0.2em] px-[1px]"
+          >
+            Drag the dropout
+          </TextHighlighter>{" "}
+          and watch what happens to each row. WebSocket has no built-in
+          reconnect. SSE auto-reconnects with a{" "}
+          <code>Last-Event-ID</code>{" "}header so the server can replay whatever
+          the browser missed.
         </>
       }
       controls={
@@ -197,10 +210,12 @@ function NarrowCanvas({
   dropEnd: number;
   lastSseId: number;
 }) {
-  const WIDTH = 380;
+  // Authored at 340 to read clean at iPhone SE (375 viewport, ~343 usable px).
+  // interaction-rules R5 + user directive 5.
+  const WIDTH = 340;
   const HEIGHT = 320;
-  const LEFT = 16;
-  const RIGHT = 16;
+  const LEFT = 14;
+  const RIGHT = 14;
   const TRACK_W = WIDTH - LEFT - RIGHT;
   // Labels sit ABOVE each timeline at narrow widths instead of in a left gutter.
   const WS_LABEL_Y = 22;
@@ -439,7 +454,9 @@ function ReconnectLabel({
   const xPos = xOfT(dropEnd);
   // Narrow places labels right of the reconnect line, below the SSE row.
   // Wide places them below-left of the row.
-  const labelX = variant === "narrow" ? Math.min(xPos + 6, 240) : 6;
+  // Cap labelX so the GET / Last-Event-ID strings stay visible when the
+  // reconnect line lives near the right edge of the 340-wide narrow canvas.
+  const labelX = variant === "narrow" ? Math.min(xPos + 6, 200) : 6;
   return (
     <motion.g
       initial={false}
