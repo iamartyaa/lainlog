@@ -1,36 +1,38 @@
 "use client";
 
 import { motion } from "motion/react";
-import { SPRING, STAGGER } from "@/lib/motion";
+import { TIMING } from "@/lib/motion";
 import type { ReactNode } from "react";
 
 /**
  * PostListMotion — client-only wrapper around each <li> in PostList.
- * Parent <ul> uses `variants` + `staggerChildren: STAGGER.tight` to reveal
- * rows one at a time on mount. Each child fades + lifts from y=8 to y=0
- * via SPRING.smooth.
+ * Each child fades in (opacity-only, no displacement) on TIMING.fast,
+ * with a tiny inter-row stagger. Reveal is intentionally lightning-fast
+ * on back-navigation; the only "slow" part is the optional first-visit
+ * delayChildren that holds the cascade until the hero choreography
+ * settles (set in PostList.tsx, not here).
  *
- * Respects prefers-reduced-motion via the global MotionConfigProvider —
- * durations collapse to near-instant, no per-component handling needed.
+ * Respects prefers-reduced-motion via the global MotionConfigProvider.
  */
+
+const ITEM_STAGGER = 0.02; // 20ms — perceptible texture, no visible build-up
 
 const makeListVariants = (delayChildren: number) => ({
   hidden: { opacity: 1 }, // keep the list itself visible; stagger drives children
   show: {
     opacity: 1,
     transition: {
-      staggerChildren: STAGGER.tight,
+      staggerChildren: ITEM_STAGGER,
       delayChildren,
     },
   },
 });
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 8 },
+  hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    y: 0,
-    transition: SPRING.smooth,
+    transition: TIMING.fast,
   },
 };
 
