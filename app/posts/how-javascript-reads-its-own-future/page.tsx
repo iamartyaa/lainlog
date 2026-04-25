@@ -13,7 +13,7 @@ import {
 } from "@/components/prose";
 import { PostBackLink } from "@/components/nav/PostBackLink";
 import { PostNavCards } from "@/components/nav/PostNavCards";
-import { TextHighlighter, VerticalCutReveal } from "@/components/fancy";
+import { TextHighlighter } from "@/components/fancy";
 import {
   CreationVsExecution,
   DeclarationStates,
@@ -294,9 +294,7 @@ export default function HowJavaScriptReadsItsOwnFuture() {
           className="[margin-block-start:1.25em]"
           style={{ fontFamily: "var(--font-serif)", fontSize: "var(--text-body)" }}
         >
-          <VerticalCutReveal as="span" staggerDuration={0.035}>
-            The engine reads your future to run your present.
-          </VerticalCutReveal>
+          The engine reads your future to run your present.
         </p>
         <ClosingDot />
       </div>
