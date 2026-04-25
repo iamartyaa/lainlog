@@ -19,7 +19,8 @@ import {
   NormaliseWalk,
   CacheWalk,
   BloomProbe,
-  SignupRace,
+  RaceMargin,
+  RaceVerdict,
   NetflixSplit,
 } from "./widgets";
 import { metadata, subtitle } from "./metadata";
@@ -275,11 +276,20 @@ export default function HowGmailKnowsYourEmailIsTaken() {
         <P>
           The pre-check (cache, Bloom, point-read) is a UX hint. It is allowed to be wrong,
           stale, or racing someone else. Drag the two sliders below to set when each user
-          clicks Submit, and watch the database resolve the race.
+          submits — the only thing that decides the winner is the gap to commit.
         </P>
       </div>
 
-      <SignupRace />
+      <RaceMargin />
+
+      <div className="pt-[var(--spacing-md)]">
+        <P>
+          Drag fast or slow — the verdict is the same shape. Now watch the canonical race
+          play out at the wire.
+        </P>
+      </div>
+
+      <RaceVerdict />
 
       <div className="pt-[var(--spacing-md)]">
         <P>
