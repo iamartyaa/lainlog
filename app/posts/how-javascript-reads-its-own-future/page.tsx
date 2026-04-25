@@ -19,6 +19,7 @@ import {
   DeclarationStates,
   CallStackECs,
   WhyTwoPasses,
+  ClosingDot,
 } from "./widgets";
 import { metadata, subtitle } from "./metadata";
 
@@ -297,19 +298,7 @@ export default function HowJavaScriptReadsItsOwnFuture() {
             The engine reads your future to run your present.
           </VerticalCutReveal>
         </p>
-        <p
-          aria-hidden
-          className="font-mono text-center select-none"
-          style={{
-            marginBlock: "var(--spacing-xl)",
-            color: "var(--color-accent)",
-            opacity: 0.8,
-            fontSize: "var(--text-body)",
-            letterSpacing: "0.2em",
-          }}
-        >
-          ·
-        </p>
+        <ClosingDot />
       </div>
       <PostNavCards slug="how-javascript-reads-its-own-future" />
     </Prose>

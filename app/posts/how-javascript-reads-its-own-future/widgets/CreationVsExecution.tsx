@@ -368,16 +368,20 @@ export function CreationVsExecution({ initialStop = 0 }: Props) {
           </motion.tspan>
         </text>
 
-        {/* Beat tag inside memory pane */}
-        <text
+        {/* Beat tag inside memory pane — crossfade per stop */}
+        <motion.text
+          key={`beat-${current.beat}`}
           x={MEM_X + 8}
           y={PANE_Y + PANE_H - 10}
           fontFamily="var(--font-sans)"
           fontSize={10}
           fill="var(--color-text-muted)"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={SPRING.smooth}
         >
           {current.beat}
-        </text>
+        </motion.text>
       </svg>
     </WidgetShell>
   );
