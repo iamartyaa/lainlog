@@ -2,15 +2,19 @@ import type { Metadata } from "next";
 import { SITE_URL as SITE } from "@/lib/site";
 
 const SLUG = "why-fetch-fails-only-in-browser";
-const TITLE = "Why `fetch` works in curl but the browser blocks it";
+const VISIBLE_HEADING = "Why fetch fails in browser but works in curl (CORS)";
+const LYRICAL_TAGLINE = "The server already said yes. The browser threw the answer away.";
 const HOOK =
-  "the server did answer — your browser is just holding the response back from your JavaScript.";
+  "Why `fetch` returns `TypeError: Failed to fetch` in the browser but works in curl: the same-origin policy, CORS preflights, and what the browser hides from your JS.";
+
+/** Visible subtitle on the post page (poetic tagline under the descriptive H1). */
+export const subtitle = LYRICAL_TAGLINE;
 
 export const metadata: Metadata = {
-  title: TITLE,
+  title: `${VISIBLE_HEADING} — bytesize`,
   description: HOOK,
   openGraph: {
-    title: TITLE,
+    title: `${VISIBLE_HEADING} — bytesize`,
     description: HOOK,
     url: `${SITE}/posts/${SLUG}`,
     type: "article",
@@ -18,7 +22,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: TITLE,
+    title: `${VISIBLE_HEADING} — bytesize`,
     description: HOOK,
     images: [`${SITE}/og/${SLUG}`],
   },

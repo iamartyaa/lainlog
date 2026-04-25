@@ -20,7 +20,7 @@ import {
   SignupRace,
   NetflixSplit,
 } from "./widgets";
-import { metadata } from "./metadata";
+import { metadata, subtitle } from "./metadata";
 
 export { metadata };
 
@@ -53,7 +53,7 @@ export default function HowGmailKnowsYourEmailIsTaken() {
           <HeroTile slug="how-gmail-knows-your-email-is-taken" />
         </div>
         <H1 style={{ fontSize: "clamp(2.5rem, 2rem + 3.5vw, 4rem)" }}>
-          How Gmail knows your email is taken, instantly
+          How instant email-availability checks work
         </H1>
         <p
           className="mt-[var(--spacing-sm)] font-mono tabular-nums"
@@ -65,6 +65,18 @@ export default function HowGmailKnowsYourEmailIsTaken() {
           <time dateTime="2026-04-19">apr 19, 2026</time>
           <span className="mx-2">·</span>
           <span>14 min read</span>
+        </p>
+        <p
+          className="mt-[var(--spacing-md)]"
+          style={{
+            fontSize: "var(--text-medium)",
+            color: "var(--color-text-muted)",
+            fontStyle: "normal",
+            maxWidth: "56ch",
+            lineHeight: "1.45",
+          }}
+        >
+          {subtitle}
         </p>
 
         {/* §1 — Lede */}

@@ -21,7 +21,7 @@ import {
   DefenceCoverage,
   DomReveal,
 } from "./widgets";
-import { metadata } from "./metadata";
+import { metadata, subtitle } from "./metadata";
 
 export { metadata };
 
@@ -85,7 +85,7 @@ export default function TheWebpageThatReadsTheAgent() {
   return (
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
-        <H1>The webpage that reads the agent</H1>
+        <H1>AI agent traps & prompt injection on the open web</H1>
         <p
           className="mt-[var(--spacing-sm)] font-mono tabular-nums"
           style={{
@@ -96,6 +96,18 @@ export default function TheWebpageThatReadsTheAgent() {
           <time dateTime="2026-04-24">apr 24, 2026</time>
           <span className="mx-2">·</span>
           <span>11 min read</span>
+        </p>
+        <p
+          className="mt-[var(--spacing-md)]"
+          style={{
+            fontSize: "var(--text-medium)",
+            color: "var(--color-text-muted)",
+            fontStyle: "normal",
+            maxWidth: "56ch",
+            lineHeight: "1.45",
+          }}
+        >
+          {subtitle}
         </p>
       </div>
 

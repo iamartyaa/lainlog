@@ -2,15 +2,19 @@ import type { Metadata } from "next";
 import { SITE_URL as SITE } from "@/lib/site";
 
 const SLUG = "the-browser-stopped-asking";
-const TITLE = "The browser stopped asking";
+const VISIBLE_HEADING = "WebSockets, SSE, and long-polling: how real-time web works";
+const LYRICAL_TAGLINE = "The browser stopped asking";
 const HOOK =
-  "HTTP is request-response by design. Real-time apps break that rule by keeping one request alive forever — and the server starts talking first.";
+  "How real-time web apps work: the path from HTTP request-response to long-polling, Server-Sent Events, and WebSockets — what each one keeps alive and why.";
+
+/** Visible subtitle on the post page (poetic tagline under the descriptive H1). */
+export const subtitle = LYRICAL_TAGLINE;
 
 export const metadata: Metadata = {
-  title: TITLE,
+  title: `${VISIBLE_HEADING} — bytesize`,
   description: HOOK,
   openGraph: {
-    title: TITLE,
+    title: `${VISIBLE_HEADING} — bytesize`,
     description: HOOK,
     url: `${SITE}/posts/${SLUG}`,
     type: "article",
@@ -18,7 +22,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: TITLE,
+    title: `${VISIBLE_HEADING} — bytesize`,
     description: HOOK,
     images: [`${SITE}/og/${SLUG}`],
   },
