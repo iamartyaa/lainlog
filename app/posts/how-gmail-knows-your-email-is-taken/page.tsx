@@ -16,7 +16,7 @@ import { PostNavCards } from "@/components/nav/PostNavCards";
 import { TextHighlighter } from "@/components/fancy";
 import {
   TypingPause,
-  NormalisePipeline,
+  NormaliseWalk,
   CacheWalk,
   BloomProbe,
   SignupRace,
@@ -137,12 +137,12 @@ export default function HowGmailKnowsYourEmailIsTaken() {
           discarded; only its canonical version exists from this point on.
         </P>
         <P>
-          The rewrite is three deterministic steps applied in order. Switch between the four
-          inputs below and step through what each rule does.
+          The rewrite is three deterministic steps applied in order. Step through the widget
+          below to watch each rule fire on the messy address.
         </P>
       </div>
 
-      <NormalisePipeline />
+      <NormaliseWalk />
 
       <div className="pt-[var(--spacing-md)]">
         <P>
@@ -154,8 +154,7 @@ export default function HowGmailKnowsYourEmailIsTaken() {
         <Aside>
           Workspace addresses — Google Workspace on a custom domain — don&apos;t follow this
           rule. Each tenant admin decides whether dots and +tags collapse. Only consumer{" "}
-          <Code>@gmail.com</Code> and <Code>@googlemail.com</Code> normalise this way. The
-          fourth scenario in the widget above shows the workspace branch.
+          <Code>@gmail.com</Code> and <Code>@googlemail.com</Code> normalise this way.
         </Aside>
       </div>
 
