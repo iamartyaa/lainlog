@@ -16,7 +16,14 @@ import { PostBackLink } from "@/components/nav/PostBackLink";
 import { PostNavCards } from "@/components/nav/PostNavCards";
 import { CodeBlock } from "@/components/code";
 import { TextHighlighter } from "@/components/fancy";
-import { PipeCompare, UpgradeHandshake, ReconnectGap, CostMatrix } from "./widgets";
+import {
+  Polling,
+  LongPoll,
+  WebSocketStream,
+  UpgradeHandshake,
+  ReconnectGap,
+  CostMatrix,
+} from "./widgets";
 import { metadata, subtitle } from "./metadata";
 
 export { metadata };
@@ -230,15 +237,32 @@ Content-Length: 1432
         </P>
       </div>
 
-      <PipeCompare />
+      <Polling />
 
       <div>
         <P>
-          Watch the long-polling row. The browser still asked — it just stopped
-          hanging up when the server had nothing to say. That one change —{" "}
-          <HL>refusing to finish the question</HL> — is what every later protocol
-          inherits. Long polling is also a hack: every reply still pays a full HTTP
-          round-trip of overhead. Someone was going to want to skip that.
+          Polling burns most of its bytes saying nothing. The natural next
+          move: don&apos;t hang up until there <Em>is</Em> news.
+        </P>
+      </div>
+
+      <LongPoll />
+
+      <div>
+        <P>
+          Long polling earns the latency back, but every reply still pays a
+          full HTTP round-trip of overhead. The next move skips that.
+        </P>
+      </div>
+
+      <WebSocketStream />
+
+      <div>
+        <P>
+          Three frames cost 562 bytes; polling spent 7.5 KB <Em>asking</Em>.{" "}
+          <HL>Refusing to finish the question</HL> is the move every later
+          protocol inherits — long polling did it inside HTTP&apos;s rules,
+          WebSocket did it by ending HTTP mid-socket.
         </P>
       </div>
 
