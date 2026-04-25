@@ -120,7 +120,7 @@ export default function TheLineThatWaitsItsTurn() {
       {/* §2 — Web APIs and the runtime simulator */}
       <div>
         <Dots />
-        <H2>Web APIs are not the JavaScript engine</H2>
+        <H2>The engine is single-threaded; the runtime is not</H2>
         <P>
           When you call <Code>setTimeout</Code>, almost nothing about it is
           JavaScript. The browser hands the timer to a separate, native bit of
@@ -157,15 +157,15 @@ export default function TheLineThatWaitsItsTurn() {
           reaches in. It pulls from the microtask queue first. Even though{" "}
           <Code>timerB</Code> was scheduled before <Code>thenC</Code>,{" "}
           <Code>C</Code> prints before <Code>B</Code>. The microtask{" "}
-          <Em>jumped the line</Em> — and the rule that let it isn&apos;t a
-          quirk; it&apos;s the entire model.
+          <Em>jumped the line</Em> —{" "}
+          <HL>the rule that let it isn&apos;t a quirk; it&apos;s the entire model</HL>.
         </P>
       </div>
 
       {/* §3 — two queues, microtasks first */}
       <div>
         <Dots />
-        <H2>Two queues, and one of them always wins</H2>
+        <H2>One of the two queues always wins</H2>
         <P>
           Two queues, not one. The <em>task queue</em> (sometimes called the
           macrotask queue) holds work scheduled by{" "}
@@ -204,12 +204,10 @@ export default function TheLineThatWaitsItsTurn() {
         <P>
           The single rule, stated plainly:{" "}
           <HL>
-            the runtime drains the microtask queue completely between every
-            other thing it does
+            between every task, every render, every idle frame — the
+            microtask queue drains to empty first
           </HL>
-          . Every other thing — every macrotask, every render, every idle
-          callback — sits behind that drain. Once you carry that sentence, the
-          rest of the post is corollaries.
+          . Once you carry that sentence, the rest of the post is corollaries.
         </P>
         <Aside>
           This wasn&apos;t always uniform. Through 2016–2017 the major browsers
@@ -256,10 +254,10 @@ export default function TheLineThatWaitsItsTurn() {
         <P>
           Step 2 is where the equivalence lands. Both panes annotate{" "}
           <em>microtask queue</em> at the same tick because, underneath the
-          syntax, the engine is doing the same thing. Read the right-hand pane
-          first if you came up writing <Code>.then</Code> chains; read the
-          left-hand pane first if you came up writing <Code>async/await</Code>.
-          The one rule from §3 covers both.
+          syntax, <HL>the engine is doing the same thing</HL>. Read the
+          right-hand pane first if you came up writing <Code>.then</Code>{" "}
+          chains; read the left-hand pane first if you came up writing{" "}
+          <Code>async/await</Code>. The one rule from §3 covers both.
         </P>
         <Aside>
           For most of the post-ES2017 era the desugaring was{" "}
@@ -347,24 +345,9 @@ export default function TheLineThatWaitsItsTurn() {
             as="span"
             className="inline"
           >
-            why one runaway Promise can stall your whole tab.
+            why one runaway Promise stalls your whole tab.
           </VerticalCutReveal>
         </P>
-        <p
-          className="font-sans"
-          style={{
-            fontSize: "var(--text-small)",
-            color: "var(--color-text-muted)",
-            marginBlockStart: "0.5em",
-          }}
-        >
-          For the call stack itself — frames, hoisting, the scopes a function
-          carries with it — read the sister post:{" "}
-          <A href="/posts/how-javascript-reads-its-own-future">
-            How JavaScript reads its own future
-          </A>
-          .
-        </p>
         <p
           aria-hidden
           className="font-mono text-center select-none"
