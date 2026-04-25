@@ -17,7 +17,7 @@ import { TextHighlighter } from "@/components/fancy";
 import {
   TypingPause,
   NormalisePipeline,
-  CacheTier,
+  CacheWalk,
   BloomProbe,
   SignupRace,
   NetflixSplit,
@@ -175,12 +175,12 @@ export default function HowGmailKnowsYourEmailIsTaken() {
         </P>
         <P>
           The second is a <Em>distributed</Em>{" "}cache that spans many front-end shards. A warm
-          answer from one shard can serve another. Pick a scenario below and step through the
+          answer from one shard can serve another. Pick a locality below and step through the
           two lookups; you&apos;ll see exactly where each kind of request exits.
         </P>
       </div>
 
-      <CacheTier />
+      <CacheWalk />
 
       <div className="pt-[var(--spacing-md)]">
         <Callout tone="note">
