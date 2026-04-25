@@ -14,10 +14,37 @@ import {
   Term,
 } from "@/components/prose";
 import { CodeBlock } from "@/components/code";
+import { TextHighlighter } from "@/components/fancy";
 import { PipeCompare, UpgradeHandshake, ReconnectGap } from "./widgets";
 import { metadata } from "./metadata";
 
 export { metadata };
+
+const HL_TRANSITION = { type: "spring" as const, duration: 0.9, bounce: 0 };
+const HL_COLOR =
+  "color-mix(in oklab, var(--color-accent) 28%, transparent)";
+const HL_OPTS = { once: true, initial: false, amount: 0.55 } as const;
+
+/** Highlight a load-bearing phrase. Default ltr swipe, spring, inView once. */
+function HL({
+  children,
+  direction = "ltr",
+}: {
+  children: React.ReactNode;
+  direction?: "ltr" | "rtl" | "ttb" | "btt";
+}) {
+  return (
+    <TextHighlighter
+      transition={HL_TRANSITION}
+      highlightColor={HL_COLOR}
+      useInViewOptions={HL_OPTS}
+      direction={direction}
+      className="rounded-[0.2em] px-[1px]"
+    >
+      {children}
+    </TextHighlighter>
+  );
+}
 
 export default function TheBrowserStoppedAsking() {
   return (
@@ -161,34 +188,31 @@ Content-Length: 1432
         <Dots />
         <H2>What if you asked once, and the server waited?</H2>
         <P>
-          Here&apos;s the clever move. The client still asks. But the server
+          Here&apos;s the clever move. The client still asks — but the server
           doesn&apos;t reply until it has news. The request goes out, the TCP socket
-          stays open, and the response just… sits there, a promise dangling on both
-          sides of the wire. When something happens — Jordan types a letter — the
-          server finally writes the response and closes. The client reads it and
-          immediately opens another request, and the cycle repeats.
+          stays open, and the response sits there, a promise dangling on both
+          sides of the wire. When something happens, the server writes the response
+          and closes. The client reads it and immediately opens another.
         </P>
         <P>
           Ably calls this shape <A href="https://ably.com/topic/long-polling">&ldquo;bending HTTP slightly out of shape&rdquo;</A>.
-          The request-response format is preserved — it&apos;s still one ask, one
-          answer. What changed is the client&apos;s tolerance for waiting. A polling
-          client fires and forgets; a <Term>long-polling</Term>{" "}client fires and
-          listens, sometimes for tens of seconds, before the single reply arrives.
+          The format is preserved — still one ask, one answer — but a{" "}
+          <Term>long-polling</Term>{" "}client fires and listens, sometimes for tens
+          of seconds, before its single reply arrives.
         </P>
         <P>
           Alex Russell coined <Term>Comet</Term> — long polling as a family name —{" "}
           <A href="https://infrequently.org/2006/03/comet-low-latency-data-for-the-browser/">
             in March 2006
-          </A>. It was the secret sauce behind the first generation of
-          &ldquo;live&rdquo; web apps. <Em>Google Docs shipped on long polling
-          for years.</Em> Look inside Google&apos;s Closure Library and
-          you&apos;ll still find <Code>goog.net.BrowserChannel</Code> — long polling
-          over XHR, with forever-iframe streaming as a fallback. Attribution comes
-          from ex-Googlers and{" "}
+          </A>. <Em>Google Docs shipped on long polling for years</Em>: look inside
+          Google&apos;s Closure Library and you&apos;ll still find{" "}
+          <Code>goog.net.BrowserChannel</Code>, long polling over XHR with
+          forever-iframe streaming as a fallback. Google never published it as an
+          API, which is its own kind of tell — attribution comes from ex-Googlers
+          and{" "}
           <A href="https://github.com/josephg/node-browserchannel">
             Joseph Gentle&apos;s node re-implementation
-          </A>; Google itself doesn&apos;t publish it as an API, which is its own
-          kind of tell.
+          </A>.
         </P>
       </div>
 
@@ -196,23 +220,11 @@ Content-Length: 1432
 
       <div>
         <P>
-          Press play and watch the first two rows together. Polling racks up
-          roundtrips — most empty. Long polling only sends a byte when it matters.
-          The third row is a different kind of thing. The rest of this post is about
-          how it gets there.
-        </P>
-        <P>
-          What&apos;s happening in the long-polling row is the move the whole
-          genre is built on. The client <Em>still asked.</Em> It just{" "}
-          <Em>stopped hanging up</Em>{" "}when the server had nothing to say. That one
-          change — the browser refusing to finish the question — is what every
-          later protocol inherits.
-        </P>
-        <P>
-          Long polling is the first trick that actually felt live. It&apos;s also a
-          hack: every reply still pays one full HTTP round-trip of overhead —
-          headers, TLS re-validation, a TCP handshake if the connection didn&apos;t
-          stay warm. Someone was going to want to skip that.
+          Watch the long-polling row. The browser still asked — it just stopped
+          hanging up when the server had nothing to say. That one change —{" "}
+          <HL>refusing to finish the question</HL> — is what every later protocol
+          inherits. Long polling is also a hack: every reply still pays a full HTTP
+          round-trip of overhead. Someone was going to want to skip that.
         </P>
       </div>
 
