@@ -52,7 +52,7 @@ export default function TheBrowserStoppedAsking() {
         <div className="mb-[var(--spacing-md)] hidden md:flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
           <HeroTile slug="the-browser-stopped-asking" />
         </div>
-        <H1>The browser stopped asking</H1>
+        <H1>WebSockets, SSE, and long-polling: how real-time web works</H1>
         <p
           className="mt-[var(--spacing-sm)] font-mono tabular-nums"
           style={{

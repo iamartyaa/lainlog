@@ -53,7 +53,7 @@ export default function HowGmailKnowsYourEmailIsTaken() {
           <HeroTile slug="how-gmail-knows-your-email-is-taken" />
         </div>
         <H1 style={{ fontSize: "clamp(2.5rem, 2rem + 3.5vw, 4rem)" }}>
-          How Gmail knows your email is taken, instantly
+          How instant email-availability checks work
         </H1>
         <p
           className="mt-[var(--spacing-sm)] font-mono tabular-nums"

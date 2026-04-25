@@ -31,7 +31,7 @@ export default function TheFunctionThatRemembered() {
           <HeroTile slug="the-function-that-remembered" />
         </div>
         <H1 style={{ fontSize: "clamp(2.5rem, 2rem + 3.5vw, 4rem)" }}>
-          The function that remembered
+          JavaScript closures, var vs let, and the loop bug
         </H1>
         <p
           className="mt-[var(--spacing-sm)] font-mono tabular-nums"

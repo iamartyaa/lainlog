@@ -46,7 +46,7 @@ export default function WhyFetchFailsOnlyInBrowser() {
         <div className="mb-[var(--spacing-md)] hidden md:flex">
           <HeroTile slug="why-fetch-fails-only-in-browser" />
         </div>
-        <H1>The server already said yes. The browser threw the answer away.</H1>
+        <H1>Why fetch fails in browser but works in curl (CORS)</H1>
         <p
           className="mt-[var(--spacing-sm)] font-mono tabular-nums"
           style={{

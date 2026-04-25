@@ -2,18 +2,19 @@ import type { Metadata } from "next";
 import { SITE_URL as SITE } from "@/lib/site";
 
 const SLUG = "the-webpage-that-reads-the-agent";
-const SEO_TITLE = "AI agent traps & prompt injection on the web — bytesize";
+const VISIBLE_HEADING = "AI agent traps & prompt injection on the open web";
+const LYRICAL_TAGLINE = "The webpage that reads the agent";
 const HOOK =
   "How attackers hijack AI agents through the pages they read: six classes of agent traps — content injection, memory poisoning, jailbreaks — mapped to cognition stages.";
 
-export const subtitle =
-  "Six classes of prompt-injection and agent-trap attacks on the open web, mapped to the stages of cognition they corrupt.";
+/** Visible subtitle on the post page (poetic tagline under the descriptive H1). */
+export const subtitle = LYRICAL_TAGLINE;
 
 export const metadata: Metadata = {
-  title: SEO_TITLE,
+  title: `${VISIBLE_HEADING} — bytesize`,
   description: HOOK,
   openGraph: {
-    title: SEO_TITLE,
+    title: `${VISIBLE_HEADING} — bytesize`,
     description: HOOK,
     url: `${SITE}/posts/${SLUG}`,
     type: "article",
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: SEO_TITLE,
+    title: `${VISIBLE_HEADING} — bytesize`,
     description: HOOK,
     images: [`${SITE}/og/${SLUG}`],
   },

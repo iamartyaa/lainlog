@@ -2,18 +2,19 @@ import type { Metadata } from "next";
 import { SITE_URL as SITE } from "@/lib/site";
 
 const SLUG = "the-function-that-remembered";
-const SEO_TITLE = "JavaScript closures, var vs let, and the loop bug — bytesize";
+const VISIBLE_HEADING = "JavaScript closures, var vs let, and the loop bug";
+const LYRICAL_TAGLINE = "The function that remembered";
 const HOOK =
   "Why a `for (var i…)` loop with `setTimeout` prints `5 5 5 5 5`: how JavaScript closures capture variables, what `let` actually fixes, and where half your JS bugs start.";
 
-export const subtitle =
-  "How JavaScript closures capture variables, why `var` vs `let` in a loop prints `5 5 5 5 5`, and what the heap is really holding.";
+/** Visible subtitle on the post page (poetic tagline under the descriptive H1). */
+export const subtitle = LYRICAL_TAGLINE;
 
 export const metadata: Metadata = {
-  title: SEO_TITLE,
+  title: `${VISIBLE_HEADING} — bytesize`,
   description: HOOK,
   openGraph: {
-    title: SEO_TITLE,
+    title: `${VISIBLE_HEADING} — bytesize`,
     description: HOOK,
     url: `${SITE}/posts/${SLUG}`,
     type: "article",
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: SEO_TITLE,
+    title: `${VISIBLE_HEADING} — bytesize`,
     description: HOOK,
     images: [`${SITE}/og/${SLUG}`],
   },

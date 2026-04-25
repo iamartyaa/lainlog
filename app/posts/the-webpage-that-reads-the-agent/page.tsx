@@ -85,7 +85,7 @@ export default function TheWebpageThatReadsTheAgent() {
   return (
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
-        <H1>The webpage that reads the agent</H1>
+        <H1>AI agent traps & prompt injection on the open web</H1>
         <p
           className="mt-[var(--spacing-sm)] font-mono tabular-nums"
           style={{

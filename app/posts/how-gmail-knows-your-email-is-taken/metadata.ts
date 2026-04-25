@@ -2,18 +2,19 @@ import type { Metadata } from "next";
 import { SITE_URL as SITE } from "@/lib/site";
 
 const SLUG = "how-gmail-knows-your-email-is-taken";
-const SEO_TITLE = "How instant email-availability checks work — bytesize";
+const VISIBLE_HEADING = "How instant email-availability checks work";
+const LYRICAL_TAGLINE = "How Gmail knows your email is taken, instantly";
 const HOOK =
   "How Gmail tells you an email is taken before you finish typing: debouncing, normalisation, caches, Bloom filters, and race-safe writes — explained with playable widgets.";
 
-export const subtitle =
-  "The six-stage pipeline behind instant username availability checks — debounce, normalisation, cache, Bloom filter, race-safe writes.";
+/** Visible subtitle on the post page (poetic tagline under the descriptive H1). */
+export const subtitle = LYRICAL_TAGLINE;
 
 export const metadata: Metadata = {
-  title: SEO_TITLE,
+  title: `${VISIBLE_HEADING} — bytesize`,
   description: HOOK,
   openGraph: {
-    title: SEO_TITLE,
+    title: `${VISIBLE_HEADING} — bytesize`,
     description: HOOK,
     url: `${SITE}/posts/${SLUG}`,
     type: "article",
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: SEO_TITLE,
+    title: `${VISIBLE_HEADING} — bytesize`,
     description: HOOK,
     images: [`${SITE}/og/${SLUG}`],
   },
