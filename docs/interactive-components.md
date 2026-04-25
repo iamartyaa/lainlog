@@ -20,8 +20,43 @@ Every widget we've shipped collapses to one of seven shapes. Pick the shape that
 | **Scan / reveal** | "What the human saw vs what the agent saw" (unmask) | `HostilePageScan`, `ParseVsRender` | transform-based sweep OR segmented toggle |
 | **Propagation network** | "One signal becomes many" / contagion | `InfectiousJailbreak` | SVG graph + tick-based state spread |
 | **Coverage matrix** | "This defence reaches these stages, not those" | `DefenceCoverage` | CSS grid with intensity-coded cells |
+| **Premise quiz** | "Predict X — most readers fail, here's why" | `PredictTheStart` (event-loop post) | code snippet + multiple-choice + verdict |
 
 **Rule**: if a proposed widget doesn't fit one of these, ask whether the teaching claim is actually one claim. Most "doesn't fit" widgets are two claims in a trench coat.
+
+### Premise quiz — the article-anchor opener (added after PR #45)
+
+When a post explains a non-obvious *order*, *outcome*, or *output* — event-loop firing order, hoisting trace, type-coercion result — open with a quiz the reader is *expected* to fail. The wrong answer is the article's reason to exist; the verdict copy steers them in.
+
+**Shape**: a hard code snippet (or scenario), 4 multiple-choice options, a verdict that flips on click. The 4 options model real wrong mental models, not random distractors.
+
+```tsx
+// PredictTheStart.tsx pattern
+<WidgetShell title="predict the output" caption="…">
+  <CodeBlock>{HARD_SNIPPET}</CodeBlock>
+  <OptionGrid options={FOUR_PLAUSIBLE} onSelect={onPick} />
+  <Verdict
+    state={pickState}
+    wrong="Most readers miss this. Now we'll learn how this output emerges."
+    right="You've seen this before. Let's see why it produces this output."
+  />
+</WidgetShell>
+```
+
+**Why it works as an opener**:
+- The reader's wrong answer creates demand for the explanation. They came for entertainment; now they have a question.
+- A single, specific snippet anchors the article. The narrative can reference *the snippet's letters / lines / ECs* rather than abstract examples — every section reinforces the opener.
+- A reader who answers correctly still gets a verdict ("let's see why") that carries them in.
+
+**Discipline**:
+- **Aim for ~80% fail rate**. Not a trick, not a typo trap — a genuinely hard order/output question. If a reader who hasn't read the article would get it right by intuition, the snippet is too easy.
+- **Distractors must be plausible** — each option is a real mental model. (Sync-first, microtasks-before-macros, FIFO across all queues, etc.)
+- **One quiz per article**, at the very top. Two is a shape collision.
+- **Reference the snippet through the article**, but with restraint — 3-4 callbacks is enough; don't shoehorn it into every paragraph.
+- **Reveal-answer escape hatch**: a small "Reveal answer" link routes to the same "we'll learn how" verdict. Don't punish readers who'd rather not guess.
+- **Frame-stable**: reserve vertical space for the verdict before any answer is given (use `min-h-*` or similar). The container size never changes after click.
+
+The closer should refer back to the opener: *"Run the opener again. The order isn't a riddle anymore — it's the sequence the runtime had to take."* This closes the loop and lets the reader retry with their new mental model.
 
 ## 2. External primitives we've integrated
 
@@ -53,13 +88,15 @@ Animated text-background swipe on in-view / hover / auto / ref.
   }
   ```
 
-### `DragElements` (⚠️ niche)
+### `DragElements` (⚠️ niche — almost always the wrong primitive)
 
 Free-drag layout for multiple children, with optional momentum and `initialPositions` per child.
 
 - **Use case**: rare. Consider before using: does editorial-calm register want dragging? Usually no.
-- **What we learned**: the article-tarp post first used `<TrapDeck>` as a 6-card drag hero. Reader feedback: *"chaotic"*. Replaced with the `HostilePageScan` scanner-reveal. Lesson: **drag as a primary hero interaction doesn't fit the editorial-calm register**. Keep the primitive for future experiments but don't reach for it first.
-- **If you use it**: set `dragMomentum={false}` (no physics in editorial-calm), strip any `shadow-2xl` from the card demos (§12 ban), axis-align (no random tilt), and pass `initialPositions` to distribute children — the default stacks everything at (0,0).
+- **What we learned (round 1)**: the agent-traps post first used `<TrapDeck>` as a 6-card drag hero. Reader feedback: *"chaotic"*. Replaced with the `HostilePageScan` scanner-reveal. **Drag as a primary hero interaction doesn't fit the editorial-calm register.**
+- **What we learned (round 2 — the harder lesson)**: the hoisting/TDZ post (PR #46) tried `DragElements` for a call-stack visualization on user request. Round-2 shipped it; user reviewed and reversed: *"draggable feels overdone here. Instead a simple call stack and execution context interface could be used with arrows pointing to what is happening and where and how."* Round-3 replaced it with a static stack + animated push/pop springs + an SVG arrow connecting the active code line to the active EC. **Drag is wrong for any *sequenced* or *structured* concept (stacks, queues, ordered traces). Position carries meaning in those mechanics — letting the user move cards arbitrarily destroys the metaphor.**
+- **The decision rule**: only reach for `DragElements` when the affordance *teaches* — sorting unrelated items into bins, organising ambiguously-positioned things, or any scenario where the *point* is "you decide where these go." For anything where the runtime decides position (a call stack pushes; a queue dequeues from the front), use static layout + motion springs + `<AnimatePresence>` instead. Try the static-with-arrow-annotations approach first.
+- **If you do use it**: set `dragMomentum={false}` (no physics in editorial-calm), strip any `shadow-2xl` from the card demos (§12 ban), axis-align (no random tilt), and pass `initialPositions` to distribute children — the default stacks everything at (0,0).
 
 ### `MediaBetweenText` (✅ surgical)
 
@@ -333,6 +370,24 @@ Every widget wraps in `<WidgetShell>`. Consistent header/canvas/controls/caption
 **What happened**: the fetch-polish review caught `"RequestJourney · same network, different outcomes"` and `"RequestClassifier · will this preflight?"` as `WidgetShell` titles. The CamelCase identifier was reader-facing.
 
 **Fix**: title the widget, not the component. Lowercase Plex-Sans-muted per `§4`. Strip the component name. E.g. `"request journey · same wire, different verdict"`. Add a grep for `/[A-Z][a-z]+[A-Z]/` inside `title=` props to catch this.
+
+### Simulating a real performance hazard inside a teaching widget
+**What happened**: the event-loop post (PR #45) round-2 shipped a `MicrotaskStarvation` widget with a real self-rescheduling `Promise.resolve().then(loop)` (capped at 500 hops / 1000 ms) and a click-me button that genuinely stopped responding while the loop ran. User feedback: *"I still don't understand the point of this. Also it feels like leaking memory of least optimised."* The honest mechanism (real recursion) read as a bug, not a lesson — readers can't tell a deliberate freeze from a broken page.
+
+**Fix**: replace real-hazard simulations with **state-machine simulations**. Round-3 rebuilt the widget as Queue Race: a deterministic state machine with a self-scheduling-microtask button capped at 6 hops, no real timers, no real Promise chain, no rAF consumption. Same teaching outcome; the reader sees the rule, doesn't experience a real freeze. **A teaching widget should never make the reader's tab actually unresponsive — even briefly, even safely-capped.** If the mechanism in the article is performance-fragile, abstract it into pure state.
+
+### DragElements for sequenced or structured concepts
+**What happened**: PR #46 round-2 used `DragElements` for a call-stack visualization. User pushed back: *"draggable feels overdone here. Instead a simple call stack and execution context interface could be used with arrows pointing to what is happening and where and how."*
+
+**Fix**: see the updated `DragElements` entry in §2 — drag destroys the metaphor for any concept where position is the runtime's, not the user's. For stacks, queues, traces, and ordered mechanisms: static layout + motion springs + `<AnimatePresence>` for enter/exit + an SVG arrow overlay (desktop) or matched-highlight pair (mobile) for cross-pane "thread of execution" annotation. The PR #46 round-3 `CallStackECs` is the canonical example.
+
+### Clanky transitions when stepping through scripted content
+**What happened**: the event-loop post's `RuntimeSimulator` shipped with raw style updates between Next/Prev steps — call-stack frames remounted, queue chips popped in/out, the program-counter highlight teleported. User: *"the animation feels clanky a bit when the next and prev buttons are clicked. Make the animation smooth."*
+
+**Fix** — three patterns make scripted-stepper widgets glide:
+1. **Shared element transitions** for indicators that move between fixed positions — wrap the parent in `<LayoutGroup id="...">` and give the moving indicator a `motion.<el> layoutId="..."`. The program-counter highlight that walks code lines, the active EC card outline that moves up/down the stack — these need `layoutId`, not remount-fades.
+2. **`<AnimatePresence>` for items that enter/exit** — queue chips, stack frames, EC cards. `motion.div initial={{ y: -16, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -16, opacity: 0 }} transition={SPRING.smooth}`. Without `<AnimatePresence>`, exiting items pop instantly because React unmounted them before motion could animate exit.
+3. **Spring transitions everywhere movement happens** — never raw `style.top` / `style.transform`. Use `motion.<el> animate={{ y: targetY }} transition={SPRING.smooth}`. The canonical "smooth" spring for this codebase: `{ type: "spring", stiffness: 240, damping: 28, mass: 0.8 }`. Use `SPRING.snappy` for press feedback, `SPRING.smooth` for traversal.
 
 ## 6. Widget catalogue — lessons from each
 

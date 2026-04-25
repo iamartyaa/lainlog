@@ -147,3 +147,52 @@ Four memories back this document. If any gets updated, this doc must update too.
 - `feedback_widget_density.md` — flows over essays; show branches, don't describe them.
 
 This doc is the shipping version of the feedback. Memories are the raw capture; the doc is the refined rules.
+
+## 11. SEO surface — descriptive title, lyrical subtitle (added after PR #45 + #46)
+
+Both the event-loop post and the hoisting/TDZ post shipped first with poetic-only headings (`"The line that waits its turn"`, `"How JavaScript reads its own future"`). User pushed back on both: *"Improve the title and subtitle for SEO optimisation and the title should be very clear on what the article is all about."* The fix was the same pattern in both cases: descriptive H1, lyrical subtitle, both visible on the page; meta `<title>` mirrors the descriptive H1, not the lyrical phrase.
+
+### The split
+
+```ts
+// metadata.ts — canonical pattern
+const VISIBLE_HEADING = "JavaScript Event Loop Explained: Microtasks and the Call Stack";
+const LYRICAL_TAGLINE = "The line that waits its turn";
+const HOOK = "How the JavaScript event loop schedules microtasks before timers, why await feels seamless, and why one runaway Promise can freeze a tab.";
+
+export const subtitle = LYRICAL_TAGLINE;
+
+export const metadata: Metadata = {
+  title: `${VISIBLE_HEADING} — bytesize`,           // SEO surface — descriptive
+  description: HOOK,                                 // 160-char ceiling
+  keywords: [/* 8–10 terms */],                      // helps internal indexing
+  alternates: { canonical: `${SITE}/posts/${SLUG}` },
+  openGraph: { title: ..., description: ..., type: "article", publishedTime: "..." },
+  twitter:   { title: ..., description: ..., card: "summary_large_image" },
+};
+```
+
+The page renders **both**: the descriptive `<h1>` matches `VISIBLE_HEADING`; the lyrical subtitle sits beneath in muted Plex Mono. SEO surface gets the keyword payload; the reader gets the poetic frame as the eyebrow they'll remember.
+
+### Length discipline
+
+- `metadata.title`: ≤ 70 chars (60 ideal — Google truncates around 60–70 in SERP). Trim the brand suffix if it pushes over.
+- `metadata.description`: ≤ 160 chars (Google SERP truncation). Front-load the keyword sentence.
+- `keywords`: 8–10 terms, lowercased, including domain phrases (`"javascript event loop"`, `"temporal dead zone"`, `"call stack"`). Helps internal indexing even where Google deprecates it.
+- `alternates.canonical`: always set to the post URL. Prevents duplicate-content dilution if the post is ever re-syndicated.
+- `openGraph.publishedTime`: include from the `metadata.ts`. Helps article-card renderers and SEO crawlers.
+
+### Why this is a voice file's problem
+
+The split between descriptive and lyrical *is* a voice decision. The lyrical phrase is the part that sounds like bytesize; the descriptive heading is the part that earns the click. Both belong on the page — the lyrical line is what the reader recognises in their browser tab eyebrow, but it's not what the search engine indexes. Don't ship a poetic-only title and call it stylish; the article will not surface for the keywords it actually teaches.
+
+### Phase H validation gate
+
+When validating a post, the SEO sweep is part of the gate (`pipeline-playbook.md §H`):
+- title length ≤ 70 chars
+- description length ≤ 160 chars
+- `keywords` array present
+- `alternates.canonical` set
+- OG + Twitter mirror title + description
+- Visible H1 matches `VISIBLE_HEADING` exactly
+- `subtitle` export matches `LYRICAL_TAGLINE`

@@ -91,12 +91,13 @@ Other orchestrator-mode constraints:
 - Re-run `pnpm build` + audit after each batch.
 
 ### Phase H — Validation
-- Write `validation.md` with five checks:
+- Write `validation.md` with six checks:
   1. Technical correctness — every numeric claim traces to `facts-primary.md` / `facts-incidents.md`
   2. Code correctness — every runnable snippet typechecks and runs
   3. A11y — keyboard nav, reduced-motion, focus visibility, colour-only-info
   4. Build + Lighthouse targets ≥ 95
   5. Reading-sanity — end-to-end read for voice drift, undefined terms, flow breaks
+  6. **SEO sweep** — title ≤ 70 chars (60 ideal), description ≤ 160 chars, `keywords[]` present (8–10 terms), `alternates.canonical` set, OG + Twitter mirror title + description, `openGraph.type === "article"`, `openGraph.publishedTime` set, visible H1 matches `VISIBLE_HEADING`, `subtitle` export matches `LYRICAL_TAGLINE`. See `voice-profile.md §11`.
 - Any failing check blocks Checkpoint 4 until resolved.
 
 ### Phase I — PR + preview
@@ -205,6 +206,21 @@ Each of the six design-review skills targets a specific quality axis. Run all si
 - **Auto-playing widgets on mount** — always require user interaction.
 - **Muted captions when they're teaching** — use `captionTone="prominent"`.
 - **Under-represented persona hyperstition / speculative-class content** — treat it at the weight its weirdness deserves, not the weight its evidence does.
+- **Poetic-only title** — descriptive H1 is the SEO surface; lyrical phrase is the subtitle. See `voice-profile.md §11`.
+- **Simulating real performance hazards in teaching widgets** — state-machine simulation, not real recursion / timer-flooding / rAF consumption. See `interactive-components.md §5`.
+- **DragElements for sequenced/structured concepts** — use static layout + springs + `<AnimatePresence>` instead. Drag is for "you decide where these go" affordances only.
+- **Clanky scripted-stepper transitions** — use `<LayoutGroup>` + `layoutId` for shared elements that move (program-counter, active-frame indicator), `<AnimatePresence>` for items that enter/exit (queue chips, stack frames), and springs (not duration tweens) for transitions.
+
+## 6.5 Redesign-vs-iterate signal
+
+When the user pushes back on a widget, the response is sometimes a tweak and sometimes a full rebuild. The signal:
+
+- **First time the user says "I don't understand this widget"** → tweak. Maybe the caption is unclear, maybe a label is wrong. Reword and re-validate.
+- **Second time the user says it about the same widget** → redesign. The metaphor is wrong. Don't keep polishing the surface; throw the widget out and pick a different metaphor.
+
+PR #45's MicrotaskStarvation went through this: round-2 was a click-me freeze test the user rejected ("doesn't make sense, feels like a memory leak"). Round-3 replaced it entirely with Queue Race — different mechanic, different shape, same article slot. **Redesigns are cheaper than two more polish rounds on a wrong metaphor.**
+
+PR #46's CallStackECs went through it too: round-2 used `DragElements`, round-3 replaced with a static stack + arrow annotations. The user explicitly directed the round-2 attempt — even direct-from-user widget choices can fail in execution and need a redesign rather than a tweak. Trust the *second* signal over the first instruction.
 
 ## 7. Reference reading order for a new Claude session
 
