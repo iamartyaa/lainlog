@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { WidgetShell } from "@/components/viz/WidgetShell";
-import { Stepper } from "@/components/viz";
+import { WidgetNav } from "@/components/viz";
 import { TextHighlighter } from "@/components/fancy";
 import { SPRING } from "@/lib/motion";
 
@@ -113,7 +113,7 @@ export function MemoryPoisonTimeline() {
   return (
     <WidgetShell
       title="memory · delayed write"
-      measurements={`${step + 1}/${STEPS.length} · ${s.label}`}
+      measurements={s.label}
       captionTone="prominent"
       caption={
         <AnimatePresence mode="wait">
@@ -129,7 +129,7 @@ export function MemoryPoisonTimeline() {
         </AnimatePresence>
       }
       controls={
-        <Stepper
+        <WidgetNav
           value={step}
           total={STEPS.length}
           onChange={setStep}

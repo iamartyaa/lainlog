@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { WidgetShell } from "@/components/viz/WidgetShell";
-import { Stepper, SvgDefs } from "@/components/viz";
+import { WidgetNav, SvgDefs } from "@/components/viz";
 import { TextHighlighter } from "@/components/fancy";
 import { SPRING } from "@/lib/motion";
 
@@ -76,7 +76,6 @@ export function AgentLoopMap() {
   return (
     <WidgetShell
       title="agent loop · six stages"
-      measurements={`stage ${step + 1}/${N}`}
       captionTone="prominent"
       caption={
         <AnimatePresence mode="wait">
@@ -127,11 +126,12 @@ export function AgentLoopMap() {
         </AnimatePresence>
       }
       controls={
-        <Stepper
+        <WidgetNav
           value={step}
           total={N}
           onChange={setStep}
           playInterval={2400}
+          counterNoun="stage"
         />
       }
     >
