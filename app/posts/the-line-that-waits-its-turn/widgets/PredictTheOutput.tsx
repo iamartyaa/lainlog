@@ -111,7 +111,7 @@ const VARIANTS: Variant[] = [
     options: [
       `"first?" "second?"`,
       `"second?" "first?"`,
-      `tied (depends on browser)`,
+      `nondeterministic`,
       `only one prints`,
     ],
     correctIndex: 1,
@@ -249,7 +249,7 @@ export function PredictTheOutput() {
 
   return (
     <WidgetShell
-      title="predict the output · 3 variants"
+      title="predict the output"
       measurements={variant.label}
       caption={
         revealed ? (
@@ -259,7 +259,7 @@ export function PredictTheOutput() {
         ) : picked !== null ? (
           <>
             <CaptionCue>Locked in.</CaptionCue> Tap{" "}
-            <em>reveal</em> to play the run with queue annotations.
+            <em>play it</em> to run the program with queue annotations.
           </>
         ) : (
           <>
@@ -283,7 +283,7 @@ export function PredictTheOutput() {
               }}
               {...PRESS}
             >
-              reveal ▸
+              play it ▸
             </motion.button>
           ) : null}
           {revealed ? (
@@ -394,8 +394,11 @@ export function PredictTheOutput() {
                 transition={SPRING.snappy}
                 className="flex flex-col gap-[var(--spacing-xs)]"
               >
-                <div
+                <motion.div
                   className="font-sans"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={SPRING.snappy}
                   style={{
                     fontSize: "var(--text-small)",
                     color:
@@ -407,7 +410,7 @@ export function PredictTheOutput() {
                   {picked === variant.correctIndex
                     ? "Correct — here's why."
                     : `Actual run order (your pick: ${variant.options[picked ?? 0]}):`}
-                </div>
+                </motion.div>
                 <RevealStrip reveal={variant.reveal} />
               </motion.div>
             )}

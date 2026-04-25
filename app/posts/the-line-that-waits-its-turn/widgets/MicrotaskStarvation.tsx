@@ -94,7 +94,7 @@ function PulseDot({ frozen }: { frozen: boolean }) {
   const reduce = useReducedMotion();
   return (
     <span
-      aria-label={frozen ? "render thread blocked" : "render thread alive"}
+      aria-label={frozen ? "paint loop frozen" : "paint loop alive"}
       className="inline-flex items-center gap-[var(--spacing-2xs)] font-sans"
       style={{
         fontSize: "var(--text-small)",
@@ -111,15 +111,15 @@ function PulseDot({ frozen }: { frozen: boolean }) {
           background: "var(--color-accent)",
         }}
         animate={
-          frozen || reduce ? { opacity: 0.25 } : { opacity: [0.3, 1, 0.3] }
+          frozen || reduce ? { opacity: 0.25 } : { opacity: [0.3, 1] }
         }
         transition={
           frozen || reduce
             ? { duration: 0 }
-            : { duration: 1.6, repeat: Infinity, ease: "linear" }
+            : { ...SPRING.gentle, repeat: Infinity, repeatType: "reverse" }
         }
       />
-      <span>{frozen ? "render frozen" : "render alive"}</span>
+      <span>{frozen ? "paint loop frozen" : "paint loop alive"}</span>
     </span>
   );
 }
@@ -190,7 +190,7 @@ export function MicrotaskStarvation() {
 
   return (
     <WidgetShell
-      title={`microtask starvation · mode: ${mode}`}
+      title="microtask starvation"
       measurements={`${count.toLocaleString()} / ${MAX_ITER.toLocaleString()}`}
       caption={
         running ? (
@@ -207,11 +207,11 @@ export function MicrotaskStarvation() {
           </>
         ) : (
           <>
-            <CaptionCue>Toggle the mode</CaptionCue> and tap <em>run</em>. In
-            starve mode, a recursive <code className="font-mono">.then</code>{" "}
-            chain runs to completion before the browser repaints. In yield
-            mode, <code className="font-mono">setTimeout(0)</code> between
-            batches gives the renderer a turn.
+            <CaptionCue>Pick a scheduler</CaptionCue> — starve or yield — and
+            tap <em>run</em>. Starve mode runs a recursive{" "}
+            <code className="font-mono">.then</code> chain to completion before
+            the browser can repaint. Yield mode breaks the work into batches
+            with <code className="font-mono">setTimeout(0)</code>.
           </>
         )
       }
@@ -304,7 +304,7 @@ export function MicrotaskStarvation() {
               border: "1px solid var(--color-rule)",
               transformOrigin: "left center",
             }}
-            aria-label="counter progress"
+            aria-label={`${mode} run progress, ${count} of ${MAX_ITER} iterations`}
             role="progressbar"
             aria-valuenow={Math.round(pct)}
             aria-valuemin={0}
@@ -324,24 +324,6 @@ export function MicrotaskStarvation() {
           </div>
         </div>
 
-        <div
-          className="font-mono"
-          style={{
-            fontSize: 11,
-            color: "var(--color-text-muted)",
-            background:
-              "color-mix(in oklab, var(--color-surface) 60%, transparent)",
-            padding: "var(--spacing-sm)",
-            borderRadius: "var(--radius-sm)",
-            lineHeight: 1.6,
-            whiteSpace: "pre",
-            overflowX: "auto",
-          }}
-        >
-          {mode === "starve"
-            ? `function step(i) {\n  if (i >= MAX) return;\n  Promise.resolve().then(() => step(i + 1));\n}\nstep(0); // microtask drains hold the loop`
-            : `function batch(i) {\n  if (i >= MAX) return;\n  for (let j = 0; j < 200; j++) i++;\n  setTimeout(() => batch(i), 0); // yield between batches\n}\nbatch(0);`}
-        </div>
       </div>
     </WidgetShell>
   );

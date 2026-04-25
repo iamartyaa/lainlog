@@ -212,7 +212,7 @@ export default function TheLineThatWaitsItsTurn() {
           rest of the post is corollaries.
         </P>
         <Aside>
-          This wasn&apos;t always tidy. Through 2016–2017 the major browsers
+          This wasn&apos;t always uniform. Through 2016–2017 the major browsers
           implemented the queue ordering with quiet inconsistencies — Edge and
           Safari resolved Promises in places where Chrome ran microtasks, and a
           handful of MutationObserver edge cases drifted off-spec. Convergence
@@ -317,24 +317,16 @@ export default function TheLineThatWaitsItsTurn() {
           work, different scheduler.
         </P>
         <Aside>
-          Node has a different inventory but the same hazard. Its event loop
-          runs in six phases — timers, pending callbacks, idle/prepare, poll,
-          check, close — with{" "}
-          <Code>process.nextTick</Code> and microtask drains <em>between</em>{" "}
-          phases (
+          Node has a different inventory but the same hazard. Its loop runs in
+          six phases instead of one, with <Code>process.nextTick</Code> and
+          microtask drains <em>between</em> phases (
           <A href="https://nodejs.org/en/learn/asynchronous-work/event-loop-timers-and-nexttick">
             Node docs
           </A>
           ). <Code>process.nextTick</Code> outranks Promise microtasks; both
-          outrank anything in the next phase. The Node maintainers flag
-          recursive <Code>nextTick</Code> calls as a starvation hazard for the
-          same reason: a queue that drains to empty before yielding will hold
-          the loop forever if you keep refilling it.{" "}
-          <Code>setImmediate</Code> is what you reach for when you need to{" "}
-          <em>not</em> jump the line — it runs in the check phase, after I/O.
-          Browsers don&apos;t ship <Code>setImmediate</Code> or{" "}
-          <Code>process.nextTick</Code>; the equivalents are{" "}
-          <Code>queueMicrotask</Code> and <Code>setTimeout(fn, 0)</Code>.
+          outrank anything in the next phase — and a recursive{" "}
+          <Code>nextTick</Code> chain starves the loop the same way a recursive{" "}
+          <Code>.then</Code> chain does in the browser.
         </Aside>
       </div>
 

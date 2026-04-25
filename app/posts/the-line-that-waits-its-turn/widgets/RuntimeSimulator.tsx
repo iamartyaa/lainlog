@@ -314,9 +314,9 @@ function StackZone({ frames }: { frames: string[] }) {
   // never reflows.
   const SLOT_H = 24;
   const GAP = 4;
-  const ZONE_X = 212;
+  const ZONE_X = 224;
   const ZONE_Y = 0;
-  const ZONE_W = 148;
+  const ZONE_W = 136;
   const ZONE_H = 120;
   const reserved = 4;
   return (
@@ -599,7 +599,7 @@ function Canvas({ tick }: { tick: Tick }) {
         maxWidth: 480,
       }}
       role="img"
-      aria-label="JavaScript runtime simulator: program, call stack, Web APIs, microtask queue, task queue, and output."
+      aria-label="JavaScript runtime simulator. Step controls below."
     >
       <ProgramZone activeLine={tick.activeLine} />
       <StackZone frames={tick.stack} />
@@ -631,7 +631,7 @@ export function RuntimeSimulator() {
   return (
     <WidgetShell
       title="runtime · scripted stepper"
-      measurements={`tick ${step} / ${TICKS.length - 1}`}
+      measurements={`tick ${step + 1} / ${TICKS.length}`}
       caption={tick.caption}
       captionTone="prominent"
       controls={

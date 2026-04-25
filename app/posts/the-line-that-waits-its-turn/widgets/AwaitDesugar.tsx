@@ -71,7 +71,7 @@ const STEPS: Step[] = [
     thenChip: "running",
     caption: (
       <>
-        <CaptionCue>Tick 1.</CaptionCue> Both panes call{" "}
+        <CaptionCue>Step 1.</CaptionCue> Both panes call{" "}
         <code className="font-mono">console.log(&quot;1&quot;)</code> synchronously
         inside the function body.
       </>
@@ -84,7 +84,7 @@ const STEPS: Step[] = [
     thenChip: "→ microtask queue",
     caption: (
       <>
-        <CaptionCue>Tick 2 — the load-bearing one.</CaptionCue> On the left,{" "}
+        <CaptionCue>Step 2 — the load-bearing one.</CaptionCue> On the left,{" "}
         <code className="font-mono">await</code> suspends the function. On the
         right, the explicit <code className="font-mono">.then</code> attaches
         its callback. <strong>Both lines park their continuation in the same
@@ -99,7 +99,7 @@ const STEPS: Step[] = [
     thenChip: "queued",
     caption: (
       <>
-        <CaptionCue>Tick 3.</CaptionCue> The function frame pops. Stack empty
+        <CaptionCue>Step 3.</CaptionCue> The function frame pops. Stack empty
         → the loop reaches into the microtask queue and pulls the
         continuation back out.
       </>
@@ -108,11 +108,11 @@ const STEPS: Step[] = [
   {
     asyncActive: [3],
     thenActive: [4],
-    asyncChip: "running (continuation)",
-    thenChip: "running (callback)",
+    asyncChip: "running",
+    thenChip: "running",
     caption: (
       <>
-        <CaptionCue>Tick 4.</CaptionCue> Both panes log{" "}
+        <CaptionCue>Step 4.</CaptionCue> Both panes log{" "}
         <code className="font-mono">&quot;2&quot;</code>. The continuation
         and the <code className="font-mono">.then</code> callback are the
         same kind of work — they ran on the same trip through the loop.
@@ -194,6 +194,7 @@ function CodePane({
           fontSize: 12,
           lineHeight: `${LINE_H}px`,
           color: "var(--color-text)",
+          overflowX: "auto",
         }}
       >
         {lines.map((line, i) => {
@@ -216,8 +217,7 @@ function CodePane({
                     position: "absolute",
                     inset: `0 -6px 0 -6px`,
                     background:
-                      "color-mix(in oklab, var(--color-accent) 14%, transparent)",
-                    borderLeft: `2px solid var(--color-accent)`,
+                      "color-mix(in oklab, var(--color-accent) 18%, transparent)",
                     borderRadius: 2,
                     pointerEvents: "none",
                   }}
@@ -263,7 +263,7 @@ export function AwaitDesugar() {
   return (
     <WidgetShell
       title="await · the .then in disguise"
-      measurements={`tick ${step + 1} / ${STEPS.length}`}
+      measurements={`step ${step + 1} / ${STEPS.length}`}
       caption={tick.caption}
       captionTone="prominent"
       controls={
@@ -272,7 +272,7 @@ export function AwaitDesugar() {
             value={step}
             total={STEPS.length}
             onChange={setStep}
-            counterNoun="tick"
+            counterNoun="step"
           />
         </div>
       }
