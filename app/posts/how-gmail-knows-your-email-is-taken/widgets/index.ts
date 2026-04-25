@@ -1,6 +1,7 @@
 export { TypingPause } from "./TypingPause";
-export { NormalisePipeline } from "./NormalisePipeline";
-export { CacheTier } from "./CacheTier";
+export { NormaliseWalk } from "./NormaliseWalk";
+export { CacheWalk } from "./CacheWalk";
 export { BloomProbe } from "./BloomProbe";
-export { SignupRace } from "./SignupRace";
+export { RaceMargin } from "./RaceMargin";
+export { RaceVerdict } from "./RaceVerdict";
 export { NetflixSplit } from "./NetflixSplit";

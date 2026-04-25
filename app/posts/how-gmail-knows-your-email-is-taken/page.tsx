@@ -16,10 +16,11 @@ import { PostNavCards } from "@/components/nav/PostNavCards";
 import { TextHighlighter } from "@/components/fancy";
 import {
   TypingPause,
-  NormalisePipeline,
-  CacheTier,
+  NormaliseWalk,
+  CacheWalk,
   BloomProbe,
-  SignupRace,
+  RaceMargin,
+  RaceVerdict,
   NetflixSplit,
 } from "./widgets";
 import { metadata, subtitle } from "./metadata";
@@ -137,12 +138,12 @@ export default function HowGmailKnowsYourEmailIsTaken() {
           discarded; only its canonical version exists from this point on.
         </P>
         <P>
-          The rewrite is three deterministic steps applied in order. Switch between the four
-          inputs below and step through what each rule does.
+          The rewrite is three deterministic steps applied in order. Step through the widget
+          below to watch each rule fire on the messy address.
         </P>
       </div>
 
-      <NormalisePipeline />
+      <NormaliseWalk />
 
       <div className="pt-[var(--spacing-md)]">
         <P>
@@ -154,8 +155,7 @@ export default function HowGmailKnowsYourEmailIsTaken() {
         <Aside>
           Workspace addresses — Google Workspace on a custom domain — don&apos;t follow this
           rule. Each tenant admin decides whether dots and +tags collapse. Only consumer{" "}
-          <Code>@gmail.com</Code> and <Code>@googlemail.com</Code> normalise this way. The
-          fourth scenario in the widget above shows the workspace branch.
+          <Code>@gmail.com</Code> and <Code>@googlemail.com</Code> normalise this way.
         </Aside>
       </div>
 
@@ -175,12 +175,12 @@ export default function HowGmailKnowsYourEmailIsTaken() {
         </P>
         <P>
           The second is a <Em>distributed</Em>{" "}cache that spans many front-end shards. A warm
-          answer from one shard can serve another. Pick a scenario below and step through the
+          answer from one shard can serve another. Pick a locality below and step through the
           two lookups; you&apos;ll see exactly where each kind of request exits.
         </P>
       </div>
 
-      <CacheTier />
+      <CacheWalk />
 
       <div className="pt-[var(--spacing-md)]">
         <Callout tone="note">
@@ -276,11 +276,20 @@ export default function HowGmailKnowsYourEmailIsTaken() {
         <P>
           The pre-check (cache, Bloom, point-read) is a UX hint. It is allowed to be wrong,
           stale, or racing someone else. Drag the two sliders below to set when each user
-          clicks Submit, and watch the database resolve the race.
+          submits — the only thing that decides the winner is the gap to commit.
         </P>
       </div>
 
-      <SignupRace />
+      <RaceMargin />
+
+      <div className="pt-[var(--spacing-md)]">
+        <P>
+          Drag fast or slow — the verdict is the same shape. Now watch the canonical race
+          play out at the wire.
+        </P>
+      </div>
+
+      <RaceVerdict />
 
       <div className="pt-[var(--spacing-md)]">
         <P>
