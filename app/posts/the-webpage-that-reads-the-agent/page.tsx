@@ -10,6 +10,8 @@ import {
   Term,
   A,
 } from "@/components/prose";
+import { PostBackLink } from "@/components/nav/PostBackLink";
+import { PostNavCards } from "@/components/nav/PostNavCards";
 import { CodeBlock } from "@/components/code";
 import { TextHighlighter } from "@/components/fancy";
 import {
@@ -85,6 +87,7 @@ export default function TheWebpageThatReadsTheAgent() {
   return (
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
+        <PostBackLink />
         <p
           className="font-mono"
           style={{
@@ -495,6 +498,7 @@ export default function TheWebpageThatReadsTheAgent() {
           ·
         </p>
       </div>
+      <PostNavCards slug="the-webpage-that-reads-the-agent" />
     </Prose>
   );
 }
