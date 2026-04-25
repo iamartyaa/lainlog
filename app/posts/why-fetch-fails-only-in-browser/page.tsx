@@ -100,13 +100,9 @@ export default function WhyFetchFailsOnlyInBrowser() {
         <Dots />
         <H2>Same origin is three things, not one.</H2>
         <P>
-          Before the mechanism makes sense, the vocabulary has to. An <Term>origin</Term>{" "}
-          is the triple <Code>(scheme, host, port)</Code>. Two URLs are the same origin
-          only if all three match.{" "}
-          <HL>Path doesn&apos;t count. Subdomains don&apos;t match.</HL>{" "}
-          And yes, <Code>http</Code> vs <Code>https</Code> on the exact same hostname
-          is cross-origin — TLS changes the trust boundary. Tap (or tab to) any row
-          below to see which part differs.
+          An <Term>origin</Term>{" "}is the triple{" "}
+          <Code>(scheme, host, port)</Code>. Two URLs are the same origin only if
+          all three match.
         </P>
       </div>
 
@@ -114,20 +110,15 @@ export default function WhyFetchFailsOnlyInBrowser() {
 
       <div>
         <P>
-          The <Em>same-origin policy</Em>{" "}is{" "}
-          <HL>the browser&apos;s default</HL>. JS running in one origin can&apos;t
-          read a response from another. Loading assets across origins — an{" "}
-          <Code>&lt;img&gt;</Code>, a <Code>&lt;script&gt;</Code>, a stylesheet —
-          has always been allowed, which is why the restriction feels arbitrary
-          until you notice what <Em>is</Em>{" "}forbidden:{" "}
-          <HL>reading a response from JS</HL>. CORS is the opt-in mechanism for
-          punching holes in that wall.
+          That triple is what the browser checks before it lets one page read
+          another&apos;s response. CORS is the opt-in mechanism for relaxing
+          that rule, narrowly.
         </P>
-        <Callout tone="note">
+        <Aside>
           Your dev setup on <Code>localhost:3000</Code> and your API on{" "}
           <Code>localhost:4000</Code> are cross-origin. CORS is a localhost
           problem before it&apos;s a production one.
-        </Callout>
+        </Aside>
       </div>
 
       {/* §3 — THE reveal */}
@@ -228,9 +219,9 @@ export default function WhyFetchFailsOnlyInBrowser() {
           request will use, and any non-safelisted headers it plans to send. The
           server answers with a matching <Code>Access-Control-Allow-Methods</Code>{" "}
           and <Code>Access-Control-Allow-Headers</Code>, and <Em>only then</Em>{" "}does
-          the browser let the real request go. If any of those don&apos;t line up,{" "}
-          <HL>the real <Code>POST</Code>, <Code>DELETE</Code>, or <Code>PATCH</Code> never reaches your backend</HL>
-          . This is{" "}
+          the browser let the real request go. If any of those don&apos;t line up,
+          the real <Code>POST</Code>, <Code>DELETE</Code>, or <Code>PATCH</Code> never
+          reaches your backend. This is{" "}
           <HL>the one case where CORS genuinely blocks the wire, not just the read</HL>
           .
         </P>
@@ -301,8 +292,8 @@ await fetch('https://api.other.com/me', {
           that origin <Em>exactly</Em>? And if there&apos;s an{" "}
           <Code>OPTIONS</Code> row before your real request, does{" "}
           <Em>that</Em>{" "}response approve the method and headers you&apos;re
-          about to send?{" "}
-          <HL>Almost every CORS failure is one of those three, in that order.</HL>
+          about to send? Almost every CORS failure is one of those three, in that
+          order.
         </Callout>
         <P>
           The browser isn&apos;t being rude. It&apos;s doing the thing that keeps

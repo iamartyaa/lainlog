@@ -76,6 +76,8 @@ export function RequestClassifier({
   const [contentType, setContentType] = useState<ContentType>(initialContentType);
   const [auth, setAuth] = useState(initialAuth);
   const [custom, setCustom] = useState(initialCustom);
+  const [touched, setTouched] = useState(false);
+  const touch = () => setTouched(true);
 
   const verdict = useMemo(
     () => classify(method, contentType, auth, custom),
@@ -86,12 +88,15 @@ export function RequestClassifier({
 
   return (
     <WidgetShell
-      title="preflight classifier · does this OPTIONS first?"
+      title="preflight classifier · request shape decides"
       measurements={verdict.preflight ? "OPTIONS first" : "sends directly"}
+      captionTone="prominent"
       caption={
-        verdict.preflight
-          ? "OPTIONS goes first. If the server doesn't approve it, the real request never leaves your browser."
-          : "Safelisted. The request goes straight out; only the response is gated."
+        !touched
+          ? "Toggle a method, a content-type, or a header. Watch the verdict — and the OPTIONS handshake when one fires."
+          : verdict.preflight
+            ? "OPTIONS goes first. If the server doesn't approve it, the real request never leaves your browser."
+            : "Safelisted. The request goes straight out; only the response is gated."
       }
     >
       <div className="flex flex-col gap-[var(--spacing-md)]">
@@ -101,13 +106,19 @@ export function RequestClassifier({
             label="method"
             options={METHODS}
             value={method}
-            onChange={setMethod}
+            onChange={(v) => {
+              touch();
+              setMethod(v);
+            }}
           />
           <SegmentedRow
             label="Content-Type"
             options={CONTENT_TYPES}
             value={contentType}
-            onChange={setContentType}
+            onChange={(v) => {
+              touch();
+              setContentType(v);
+            }}
             disabled={ctDisabled}
             disabledHint={ctDisabled ? "(no body on this method)" : undefined}
           />
@@ -122,18 +133,24 @@ export function RequestClassifier({
                 minWidth: "12ch",
               }}
             >
-              headers
+              extra headers
             </span>
             <div className="bs-classifier-options flex items-center gap-[var(--spacing-2xs)] flex-wrap">
               <Toggle
                 label="Authorization"
                 pressed={auth}
-                onToggle={() => setAuth((v) => !v)}
+                onToggle={() => {
+                  touch();
+                  setAuth((v) => !v);
+                }}
               />
               <Toggle
                 label="X-Custom"
                 pressed={custom}
-                onToggle={() => setCustom((v) => !v)}
+                onToggle={() => {
+                  touch();
+                  setCustom((v) => !v);
+                }}
               />
             </div>
           </div>
