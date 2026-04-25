@@ -114,7 +114,7 @@ export function HostilePageScan() {
               fontWeight: 600,
             }}
             aria-label={
-              scanning ? "Replay the scan" : "Scan the page"
+              scanning ? "Press replay to sweep the page again" : "Press scan to sweep the page"
             }
           >
             {scanning ? "↻ replay" : "▸ scan"}
