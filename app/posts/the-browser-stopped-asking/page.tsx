@@ -15,7 +15,7 @@ import {
 import { CodeBlock } from "@/components/code";
 import { TextHighlighter } from "@/components/fancy";
 import { PipeCompare, UpgradeHandshake, ReconnectGap, CostMatrix } from "./widgets";
-import { metadata } from "./metadata";
+import { metadata, subtitle } from "./metadata";
 
 export { metadata };
 
@@ -63,6 +63,18 @@ export default function TheBrowserStoppedAsking() {
           <time dateTime="2026-04-20">apr 20, 2026</time>
           <span className="mx-2">·</span>
           <span>9 min read</span>
+        </p>
+        <p
+          className="mt-[var(--spacing-md)]"
+          style={{
+            fontSize: "var(--text-medium)",
+            color: "var(--color-text-muted)",
+            fontStyle: "normal",
+            maxWidth: "56ch",
+            lineHeight: "1.45",
+          }}
+        >
+          {subtitle}
         </p>
 
         {/* §0 — the scene */}
