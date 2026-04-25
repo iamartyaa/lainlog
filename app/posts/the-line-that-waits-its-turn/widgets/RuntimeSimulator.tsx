@@ -24,10 +24,7 @@ function CaptionCue({ children }: { children: React.ReactNode }) {
 }
 
 /* ---------------------------------------------------------------------------
- * The scripted program is hand-authored as 10 tick states. Each tick is a
- * complete snapshot of the runtime — stack frames, web-API timers, queue
- * contents, the output strip, and a one-sentence caption. No live execution.
- * The program being simulated:
+ * The simulated program.
  *
  *    console.log("A");
  *    setTimeout(() => console.log("B"), 0);
@@ -210,9 +207,6 @@ const TICKS: Tick[] = [
   },
 ];
 
-/* ---------------------------------------------------------------------------
- * The simulated source. Constant — only the active-line highlight changes.
- * --------------------------------------------------------------------------*/
 const PROGRAM = [
   `console.log("A");`,
   `setTimeout(() => console.log("B"), 0);`,
@@ -221,393 +215,422 @@ const PROGRAM = [
 ];
 
 /* ---------------------------------------------------------------------------
- * Canvas — fixed 360 × 320 SVG. Five reserved zones:
- *   1. program (top-left)              x=0  y=0   w=200 h=120
- *   2. call stack (top-right)          x=212 y=0   w=148 h=120
- *   3. web APIs (mid)                  x=0  y=132  w=360 h=44
- *   4. microtask queue (bottom-upper)  x=0  y=184  w=360 h=44
- *   5. task queue (bottom-mid)         x=0  y=232  w=360 h=44
- *   6. output strip (bottom)           x=0  y=284  w=360 h=36
- * Every zone is fixed-size with reserved rows so the frame never reflows.
+ * Mobile-first redesign. Six stacked HTML zones (single column on <lg) — no
+ * SVG overlay, no overlapping panes. At lg+ the program + call stack pair
+ * sit side-by-side, with the Web-APIs / queues / output rows underneath.
+ *
+ * Every zone has a fixed `min-height` so the frame is invariant across
+ * ticks (R6).
  * --------------------------------------------------------------------------*/
 
-const QUEUE_SLOT_W = 70;
-const QUEUE_SLOT_H = 26;
-const QUEUE_GAP = 8;
+function ProgramPane({ activeLine }: { activeLine: number | null }) {
+  return (
+    <div className="flex flex-col gap-[var(--spacing-2xs)]">
+      <div
+        className="font-sans"
+        style={{
+          fontSize: 11,
+          color: "var(--color-text-muted)",
+          letterSpacing: "0.02em",
+        }}
+      >
+        program
+      </div>
+      <div
+        className="font-mono"
+        style={{
+          background: "color-mix(in oklab, var(--color-surface) 60%, transparent)",
+          border: "1px solid var(--color-rule)",
+          borderRadius: "var(--radius-sm)",
+          padding: "10px 12px",
+          fontSize: 12,
+          lineHeight: "22px",
+          // Reserve space for 4 lines.
+          minHeight: 4 * 22 + 20,
+          overflowX: "auto",
+          whiteSpace: "pre",
+        }}
+      >
+        {PROGRAM.map((line, i) => {
+          const isActive = activeLine === i + 1;
+          return (
+            <div
+              key={i}
+              style={{
+                position: "relative",
+                paddingLeft: 4,
+                color: isActive ? "var(--color-text)" : "var(--color-text-muted)",
+              }}
+            >
+              {isActive ? (
+                <motion.span
+                  aria-hidden
+                  initial={false}
+                  animate={{ opacity: 1 }}
+                  transition={SPRING.snappy}
+                  style={{
+                    position: "absolute",
+                    inset: "0 -8px 0 -8px",
+                    background:
+                      "color-mix(in oklab, var(--color-accent) 14%, transparent)",
+                    borderRadius: 2,
+                    pointerEvents: "none",
+                  }}
+                />
+              ) : null}
+              <span style={{ position: "relative" }}>{line}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
-function QueueRow({
+function StackPane({ frames }: { frames: string[] }) {
+  // Reserve 4 slots so the column never reflows.
+  const reserved = 4;
+  const SLOT_H = 26;
+  return (
+    <div className="flex flex-col gap-[var(--spacing-2xs)]">
+      <div
+        className="font-sans"
+        style={{
+          fontSize: 11,
+          color: "var(--color-text-muted)",
+          letterSpacing: "0.02em",
+        }}
+      >
+        call stack
+      </div>
+      <div
+        style={{
+          position: "relative",
+          background: "color-mix(in oklab, var(--color-surface) 60%, transparent)",
+          border: "1px solid var(--color-rule)",
+          borderRadius: "var(--radius-sm)",
+          padding: 8,
+          minHeight: reserved * (SLOT_H + 4) + 16,
+          display: "flex",
+          flexDirection: "column-reverse",
+          gap: 4,
+        }}
+      >
+        <AnimatePresence initial={false}>
+          {frames.map((frame, i) => (
+            <motion.div
+              key={`${frame}-${i}`}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              transition={SPRING.snappy}
+              className="font-mono"
+              style={{
+                height: SLOT_H,
+                lineHeight: `${SLOT_H}px`,
+                textAlign: "center",
+                fontSize: 12,
+                color: "var(--color-text)",
+                background: "color-mix(in oklab, var(--color-accent) 14%, transparent)",
+                border: "1px solid var(--color-accent)",
+                borderRadius: 3,
+              }}
+            >
+              {frame}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        {/* Faint reserved-slot guides (drawn first, behind frames). */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 8,
+            display: "flex",
+            flexDirection: "column-reverse",
+            gap: 4,
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        >
+          {Array.from({ length: reserved }).map((_, i) => (
+            <div
+              key={i}
+              style={{
+                height: SLOT_H,
+                border: "1px dashed var(--color-rule)",
+                borderRadius: 3,
+                opacity: 0.4,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WebApiPane({ items }: { items: string[] }) {
+  return (
+    <div className="flex flex-col gap-[var(--spacing-2xs)]">
+      <div
+        className="font-sans"
+        style={{
+          fontSize: 11,
+          color: "var(--color-text-muted)",
+          letterSpacing: "0.02em",
+        }}
+      >
+        web APIs (outside JS)
+      </div>
+      <div
+        style={{
+          border: "1px dashed var(--color-rule)",
+          borderRadius: "var(--radius-sm)",
+          padding: 8,
+          minHeight: 44,
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+          alignItems: "center",
+        }}
+      >
+        <AnimatePresence initial={false}>
+          {items.length === 0 ? (
+            <motion.span
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="font-sans"
+              style={{
+                fontSize: 11,
+                color: "var(--color-text-muted)",
+                opacity: 0.6,
+                fontStyle: "italic",
+              }}
+            >
+              empty
+            </motion.span>
+          ) : (
+            items.map((label, i) => (
+              <motion.span
+                key={`${label}-${i}`}
+                initial={{ opacity: 0, x: -4 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0 }}
+                transition={SPRING.snappy}
+                className="font-mono"
+                style={{
+                  padding: "4px 10px",
+                  fontSize: 11,
+                  border: "1px dashed var(--color-text-muted)",
+                  borderRadius: 3,
+                  color: "var(--color-text-muted)",
+                }}
+              >
+                {label}
+              </motion.span>
+            ))
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+function QueuePane({
   label,
   items,
-  y,
   filled,
 }: {
   label: string;
   items: string[];
-  y: number;
-  /** Filled (terracotta) chip vs outlined chip. */
   filled: boolean;
 }) {
   return (
-    <g>
-      <text
-        x={0}
-        y={y - 6}
-        fontFamily="var(--font-sans)"
-        fontSize={11}
-        fill="var(--color-text-muted)"
+    <div className="flex flex-col gap-[var(--spacing-2xs)]">
+      <div
+        className="font-sans"
+        style={{
+          fontSize: 11,
+          color: "var(--color-text-muted)",
+          letterSpacing: "0.02em",
+        }}
       >
         {label}
-      </text>
-      {/* Reserved row outline so empty rows don't collapse. */}
-      <rect
-        x={0}
-        y={y}
-        width={360}
-        height={QUEUE_SLOT_H + 4}
-        rx={3}
-        ry={3}
-        fill="transparent"
-        stroke="var(--color-rule)"
-        strokeDasharray="2 3"
-        strokeOpacity={0.5}
-      />
-      <AnimatePresence initial={false}>
-        {items.map((label, i) => (
-          <motion.g
-            key={`${label}-${i}`}
-            initial={{ opacity: 0, x: -6 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0 }}
-            transition={SPRING.snappy}
-          >
-            <rect
-              x={6 + i * (QUEUE_SLOT_W + QUEUE_GAP)}
-              y={y + 2}
-              width={QUEUE_SLOT_W}
-              height={QUEUE_SLOT_H}
-              rx={3}
-              ry={3}
-              fill={filled ? "var(--color-accent)" : "transparent"}
-              stroke={filled ? "transparent" : "var(--color-accent)"}
-              strokeWidth={1.5}
-            />
-            <text
-              x={6 + i * (QUEUE_SLOT_W + QUEUE_GAP) + QUEUE_SLOT_W / 2}
-              y={y + 2 + QUEUE_SLOT_H / 2 + 1}
-              dominantBaseline="central"
-              textAnchor="middle"
-              fontFamily="var(--font-mono)"
-              fontSize={11}
-              fill={filled ? "var(--color-bg)" : "var(--color-accent)"}
-            >
-              {label}
-            </text>
-          </motion.g>
-        ))}
-      </AnimatePresence>
-    </g>
-  );
-}
-
-function StackZone({ frames }: { frames: string[] }) {
-  // Stack grows upward — newest frame on top. Reserve 4 slots so the zone
-  // never reflows.
-  const SLOT_H = 24;
-  const GAP = 4;
-  const ZONE_X = 224;
-  const ZONE_Y = 0;
-  const ZONE_W = 136;
-  const ZONE_H = 120;
-  const reserved = 4;
-  return (
-    <g>
-      <text
-        x={ZONE_X}
-        y={ZONE_Y - 6}
-        fontFamily="var(--font-sans)"
-        fontSize={11}
-        fill="var(--color-text-muted)"
+      </div>
+      <div
+        style={{
+          border: "1px dashed var(--color-rule)",
+          borderRadius: "var(--radius-sm)",
+          padding: 8,
+          minHeight: 44,
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+          alignItems: "center",
+        }}
       >
-        call stack
-      </text>
-      <rect
-        x={ZONE_X}
-        y={ZONE_Y}
-        width={ZONE_W}
-        height={ZONE_H}
-        rx={3}
-        ry={3}
-        fill="transparent"
-        stroke="var(--color-rule)"
-        strokeDasharray="2 3"
-        strokeOpacity={0.5}
-      />
-      {/* Reserved slot outlines (faint) */}
-      {Array.from({ length: reserved }).map((_, i) => (
-        <rect
-          key={`slot-${i}`}
-          x={ZONE_X + 6}
-          y={ZONE_Y + ZONE_H - 6 - (i + 1) * SLOT_H - i * GAP}
-          width={ZONE_W - 12}
-          height={SLOT_H}
-          rx={2}
-          ry={2}
-          fill="transparent"
-          stroke="var(--color-rule)"
-          strokeOpacity={0.25}
-        />
-      ))}
-      <AnimatePresence initial={false}>
-        {frames.map((frame, i) => (
-          <motion.g
-            key={`${frame}-${i}`}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 6 }}
-            transition={SPRING.snappy}
-          >
-            <rect
-              x={ZONE_X + 6}
-              y={ZONE_Y + ZONE_H - 6 - (i + 1) * SLOT_H - i * GAP}
-              width={ZONE_W - 12}
-              height={SLOT_H}
-              rx={2}
-              ry={2}
-              fill="color-mix(in oklab, var(--color-accent) 14%, transparent)"
-              stroke="var(--color-accent)"
-              strokeWidth={1}
-            />
-            <text
-              x={ZONE_X + ZONE_W / 2}
-              y={ZONE_Y + ZONE_H - 6 - (i + 1) * SLOT_H - i * GAP + SLOT_H / 2 + 1}
-              dominantBaseline="central"
-              textAnchor="middle"
-              fontFamily="var(--font-mono)"
-              fontSize={11}
-              fill="var(--color-text)"
+        <AnimatePresence initial={false}>
+          {items.length === 0 ? (
+            <motion.span
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="font-sans"
+              style={{
+                fontSize: 11,
+                color: "var(--color-text-muted)",
+                opacity: 0.6,
+                fontStyle: "italic",
+              }}
             >
-              {frame}
-            </text>
-          </motion.g>
-        ))}
-      </AnimatePresence>
-    </g>
-  );
-}
-
-function ProgramZone({ activeLine }: { activeLine: number | null }) {
-  const ZONE_X = 0;
-  const ZONE_Y = 0;
-  const ZONE_W = 200;
-  const ZONE_H = 120;
-  const LINE_H = 22;
-  return (
-    <g>
-      <text
-        x={ZONE_X}
-        y={ZONE_Y - 6}
-        fontFamily="var(--font-sans)"
-        fontSize={11}
-        fill="var(--color-text-muted)"
-      >
-        program
-      </text>
-      <rect
-        x={ZONE_X}
-        y={ZONE_Y}
-        width={ZONE_W}
-        height={ZONE_H}
-        rx={3}
-        ry={3}
-        fill="transparent"
-        stroke="var(--color-rule)"
-        strokeDasharray="2 3"
-        strokeOpacity={0.5}
-      />
-      {PROGRAM.map((line, i) => {
-        const isActive = activeLine === i + 1;
-        return (
-          <g key={i}>
-            {isActive ? (
-              <motion.rect
-                x={ZONE_X + 4}
-                y={ZONE_Y + 8 + i * LINE_H - 2}
-                width={ZONE_W - 8}
-                height={LINE_H - 2}
-                rx={2}
-                ry={2}
-                initial={false}
-                animate={{
-                  fill: "color-mix(in oklab, var(--color-accent) 14%, transparent)",
-                }}
+              empty
+            </motion.span>
+          ) : (
+            items.map((slot, i) => (
+              <motion.span
+                key={`${slot}-${i}`}
+                initial={{ opacity: 0, x: -4 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0 }}
                 transition={SPRING.snappy}
-              />
-            ) : null}
-            <text
-              x={ZONE_X + 8}
-              y={ZONE_Y + 8 + i * LINE_H + LINE_H / 2}
-              dominantBaseline="central"
-              fontFamily="var(--font-mono)"
-              fontSize={10}
-              fill={
-                isActive ? "var(--color-text)" : "var(--color-text-muted)"
-              }
-            >
-              {line}
-            </text>
-          </g>
-        );
-      })}
-    </g>
+                className="font-mono"
+                style={{
+                  padding: "4px 12px",
+                  fontSize: 12,
+                  borderRadius: 3,
+                  background: filled ? "var(--color-accent)" : "transparent",
+                  color: filled ? "var(--color-bg)" : "var(--color-accent)",
+                  border: filled ? "none" : "1.5px solid var(--color-accent)",
+                }}
+              >
+                {slot}
+              </motion.span>
+            ))
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }
 
-function WebApiRow({ items }: { items: string[] }) {
-  const Y = 132;
+function OutputPane({ output }: { output: string[] }) {
   return (
-    <g>
-      <text
-        x={0}
-        y={Y - 6}
-        fontFamily="var(--font-sans)"
-        fontSize={11}
-        fill="var(--color-text-muted)"
-      >
-        web APIs (outside JS)
-      </text>
-      <rect
-        x={0}
-        y={Y}
-        width={360}
-        height={36}
-        rx={3}
-        ry={3}
-        fill="transparent"
-        stroke="var(--color-rule)"
-        strokeDasharray="2 3"
-        strokeOpacity={0.5}
-      />
-      <AnimatePresence initial={false}>
-        {items.map((label, i) => (
-          <motion.g
-            key={`${label}-${i}`}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={SPRING.snappy}
-          >
-            <rect
-              x={8 + i * 140}
-              y={Y + 6}
-              width={132}
-              height={24}
-              rx={2}
-              ry={2}
-              fill="transparent"
-              stroke="var(--color-text-muted)"
-              strokeWidth={1}
-              strokeDasharray="3 2"
-            />
-            <text
-              x={8 + i * 140 + 66}
-              y={Y + 6 + 12 + 1}
-              dominantBaseline="central"
-              textAnchor="middle"
-              fontFamily="var(--font-mono)"
-              fontSize={11}
-              fill="var(--color-text-muted)"
-            >
-              {label}
-            </text>
-          </motion.g>
-        ))}
-      </AnimatePresence>
-    </g>
-  );
-}
-
-function OutputStrip({ output }: { output: string[] }) {
-  const Y = 284;
-  return (
-    <g>
-      <text
-        x={0}
-        y={Y - 6}
-        fontFamily="var(--font-sans)"
-        fontSize={11}
-        fill="var(--color-text-muted)"
+    <div className="flex flex-col gap-[var(--spacing-2xs)]">
+      <div
+        className="font-sans"
+        style={{
+          fontSize: 11,
+          color: "var(--color-text-muted)",
+          letterSpacing: "0.02em",
+        }}
       >
         output
-      </text>
-      <rect
-        x={0}
-        y={Y}
-        width={360}
-        height={36}
-        rx={3}
-        ry={3}
-        fill="color-mix(in oklab, var(--color-surface) 60%, transparent)"
-        stroke="var(--color-rule)"
-        strokeOpacity={0.4}
-      />
-      {output.map((letter, i) => (
-        <motion.text
-          key={`${letter}-${i}`}
-          x={16 + i * 28}
-          y={Y + 18 + 1}
-          dominantBaseline="central"
-          fontFamily="var(--font-mono)"
-          fontSize={16}
-          fill="var(--color-accent)"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={SPRING.snappy}
-        >
-          {letter}
-        </motion.text>
-      ))}
-      {output.length > 1 ? (
-        // separator dots between letters — pure decoration of the cumulative log
-        output.slice(0, -1).map((_, i) => (
-          <text
-            key={`sep-${i}`}
-            x={16 + i * 28 + 16}
-            y={Y + 18 + 1}
-            dominantBaseline="central"
-            fontFamily="var(--font-mono)"
-            fontSize={14}
-            fill="var(--color-text-muted)"
-            opacity={0.6}
-          >
-            ·
-          </text>
-        ))
-      ) : null}
-    </g>
+      </div>
+      <div
+        style={{
+          background: "color-mix(in oklab, var(--color-surface) 60%, transparent)",
+          border: "1px solid var(--color-rule)",
+          borderRadius: "var(--radius-sm)",
+          padding: "8px 12px",
+          minHeight: 40,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+        }}
+      >
+        <AnimatePresence initial={false}>
+          {output.length === 0 ? (
+            <motion.span
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="font-sans"
+              style={{
+                fontSize: 11,
+                color: "var(--color-text-muted)",
+                opacity: 0.6,
+                fontStyle: "italic",
+              }}
+            >
+              empty
+            </motion.span>
+          ) : (
+            output.flatMap((letter, i) => {
+              const elements = [
+                <motion.span
+                  key={`${letter}-${i}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={SPRING.snappy}
+                  className="font-mono"
+                  style={{
+                    fontSize: 16,
+                    color: "var(--color-accent)",
+                    fontWeight: 600,
+                    minWidth: "1ch",
+                    textAlign: "center",
+                  }}
+                >
+                  {letter}
+                </motion.span>,
+              ];
+              if (i < output.length - 1) {
+                elements.push(
+                  <span
+                    key={`sep-${i}`}
+                    aria-hidden
+                    className="font-mono"
+                    style={{
+                      fontSize: 14,
+                      color: "var(--color-text-muted)",
+                      opacity: 0.6,
+                    }}
+                  >
+                    ·
+                  </span>,
+                );
+              }
+              return elements;
+            })
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }
 
 function Canvas({ tick }: { tick: Tick }) {
   return (
-    <svg
-      viewBox="0 0 360 320"
-      width="100%"
-      preserveAspectRatio="xMidYMid meet"
-      style={{
-        display: "block",
-        margin: "0 auto",
-        maxWidth: 480,
-      }}
-      role="img"
-      aria-label="JavaScript runtime simulator. Step controls below."
-    >
-      <ProgramZone activeLine={tick.activeLine} />
-      <StackZone frames={tick.stack} />
-      <WebApiRow items={tick.webApi} />
-      <QueueRow label="microtask queue" items={tick.micro} y={196} filled />
-      <QueueRow label="task queue" items={tick.task} y={244} filled={false} />
-      <OutputStrip output={tick.output} />
-    </svg>
+    <div className="flex flex-col gap-[var(--spacing-md)]">
+      {/* Top row: program + call stack. Stacked on mobile, side-by-side on lg. */}
+      <div className="bs-runtime-top">
+        <ProgramPane activeLine={tick.activeLine} />
+        <StackPane frames={tick.stack} />
+      </div>
+      <WebApiPane items={tick.webApi} />
+      <QueuePane label="microtask queue" items={tick.micro} filled />
+      <QueuePane label="task queue" items={tick.task} filled={false} />
+      <OutputPane output={tick.output} />
+      <style>{`
+        .bs-runtime-top {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: var(--spacing-md);
+        }
+        @media (min-width: 720px) {
+          .bs-runtime-top {
+            grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+            align-items: stretch;
+          }
+        }
+      `}</style>
+    </div>
   );
 }
 
@@ -621,8 +644,10 @@ const MemoCanvas = memo(Canvas);
  *
  * One verb: step (via WidgetNav). No play/scrub alongside.
  *
- * Frame stability (R6): SVG is fixed 360×320 with reserved zones for every
- * row. Empty queues keep their dashed outline so nothing reflows.
+ * Layout: mobile-first. Single column at <720px (program → stack → web-apis
+ * → micro queue → task queue → output). At lg+, program and call stack sit
+ * side-by-side; the queues + output remain full-width below them. No
+ * overlapping panes; every zone has its own fixed min-height (R6).
  */
 export function RuntimeSimulator() {
   const [step, setStep] = useState(0);

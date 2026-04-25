@@ -12,9 +12,10 @@ import {
 } from "@/components/prose";
 import { PostBackLink } from "@/components/nav/PostBackLink";
 import { PostNavCards } from "@/components/nav/PostNavCards";
-import { TextHighlighter, VerticalCutReveal } from "@/components/fancy";
+import { TextHighlighter } from "@/components/fancy";
 import {
   RuntimeSimulator,
+  PredictTheStart,
   PredictTheOutput,
   AwaitDesugar,
   MicrotaskStarvation,
@@ -81,14 +82,25 @@ export default function TheLineThatWaitsItsTurn() {
           {subtitle}
         </p>
 
-        {/* §0 — scene */}
+        {/* §0 — the quiz hook */}
         <P>
-          You write <Code>setTimeout(log, 0)</Code> on one line and{" "}
-          <Code>Promise.resolve().then(log)</Code> right under it. You hit run.
-          The Promise prints first. <em>Zero</em> milliseconds was supposed to
-          mean now — and somehow the line you wrote afterward got there sooner.
-          You&apos;ve hit two queues you didn&apos;t know existed:{" "}
-          <HL>the line that waits its turn, and the line that doesn&apos;t.</HL>
+          Before we explain anything, try the snippet below. Read it once, then
+          guess the order it prints. Most readers get this wrong on the first
+          try — and{" "}
+          <HL>the gap between your guess and the truth is exactly what this post fills</HL>.
+        </P>
+      </div>
+
+      <PredictTheStart />
+
+      <div>
+        <P>
+          The runtime didn&apos;t reorder anything at random. Every letter
+          landed where it did because of one rule about how JavaScript drains
+          its queues — a rule that explains <Code>setTimeout(0)</Code>, makes{" "}
+          <Code>await</Code> seamless, and is the reason a single Promise can
+          freeze a tab. The rest of the post traces that snippet, line by line,
+          until the order isn&apos;t a guess anymore.
         </P>
       </div>
 
@@ -105,6 +117,13 @@ export default function TheLineThatWaitsItsTurn() {
           <HL>The loop only reaches into its queues when the stack is empty.</HL>{" "}
           That&apos;s the whole trigger. Not a 16-millisecond tick, not a
           priority interrupt — just an empty stack.
+        </P>
+        <P>
+          That&apos;s why <Code>A</Code>, <Code>F</Code>, and <Code>H</Code>{" "}
+          print before anything else in the snippet above. They&apos;re all{" "}
+          <em>synchronous</em> calls that ran inside <Code>main</Code>; the
+          stack stayed busy until <Code>console.log(&quot;H&quot;)</Code>{" "}
+          returned. Only then does the rest of the runtime get a turn.
         </P>
         <P>
           If the stack itself feels new — what a frame is, what hoisting does to
@@ -179,6 +198,14 @@ export default function TheLineThatWaitsItsTurn() {
             HTML §8.1.7
           </A>
           ).
+        </P>
+        <P>
+          That&apos;s why the snippet&apos;s <Code>B</Code> — a 0 ms{" "}
+          <Code>setTimeout</Code> — comes <em>last</em>, even though it was
+          scheduled second. The task queue can&apos;t advance until the
+          microtask queue has been drained completely; <Code>C</Code>,{" "}
+          <Code>E</Code>, <Code>G</Code>, and <Code>D</Code> all clear before{" "}
+          <Code>B</Code> gets its turn.
         </P>
         <P>
           The priority isn&apos;t subtle. After every task — including the
@@ -259,6 +286,28 @@ export default function TheLineThatWaitsItsTurn() {
           chains; read the left-hand pane first if you came up writing{" "}
           <Code>async/await</Code>. The one rule from §3 covers both.
         </P>
+        <P>
+          And it&apos;s exactly why the snippet&apos;s <Code>G</Code> doesn&apos;t
+          land where you&apos;d expect. The <Code>await null</Code> splits the
+          async IIFE: <Code>F</Code> runs synchronously, then the line after the{" "}
+          <Code>await</Code> gets parked as a microtask. <Code>G</Code> can&apos;t
+          fire until the microtask queue reaches it — which is why it lands
+          after <Code>C</Code> and <Code>E</Code>, not next to <Code>F</Code>.
+        </P>
+        <P>
+          The trickiest letter in the snippet is <Code>D</Code>. The first{" "}
+          <Code>.then</Code> callback returns <Code>Promise.resolve(&quot;D&quot;)</Code>;
+          adopting that returned promise costs <em>two</em> extra microtask
+          hops before the chained <Code>.then((d) =&gt; log(d))</Code> finally
+          fires. By the time those hops complete, <Code>G</Code> has already
+          run. That&apos;s why the order is <Code>C E G D</Code> and not{" "}
+          <Code>C E D G</Code>: returning a Promise from a <Code>.then</Code>{" "}
+          isn&apos;t free — it&apos;s a queue-line you didn&apos;t see (
+          <A href="https://v8.dev/blog/fast-async">
+            V8 blog: faster async functions and promises
+          </A>
+          ).
+        </P>
         <Aside>
           For most of the post-ES2017 era the desugaring was{" "}
           <em>also</em> what the engine literally did, just slower. V8&apos;s
@@ -295,11 +344,12 @@ export default function TheLineThatWaitsItsTurn() {
           ).
         </P>
         <P>
-          The widget below runs a bounded version of exactly that: 50,000
-          iterations of <Code>Promise.resolve().then(loop)</Code> versus the
-          same work split across <Code>setTimeout(0)</Code> batches. The cap
-          exists so the page can&apos;t actually freeze on you — but the shape
-          of the freeze is real.
+          The widget below makes the freeze tactile: a recursive{" "}
+          <Code>Promise.resolve().then(loop)</Code> chain on one side, a frame
+          counter and a click-me button on the other. Tap{" "}
+          <em>start runaway</em> and the microtask lane fills instantly while
+          the frame lane stops dead — and your click is left waiting too. Tap{" "}
+          <em>stop</em> to watch the page recover.
         </P>
       </div>
 
@@ -307,12 +357,12 @@ export default function TheLineThatWaitsItsTurn() {
 
       <div>
         <P>
-          In starve mode the counter jumps from <Code>0</Code> straight to its
-          final value in a single paint, and the pulse-dot freezes for the
-          duration of the run. In yield mode the counter ticks visibly and the
-          dot keeps pulsing, because each <Code>setTimeout(0)</Code> hands the
-          loop back — opening a window for the renderer between batches. Same
-          work, different scheduler.
+          While the Promise kept resolving itself, no rAF fired and no click
+          registered. The microtask queue stayed non-empty, so the loop never
+          moved on to the next phase — even though the CPU wasn&apos;t actually
+          that busy. Same rule, different consequence: the priority that lets{" "}
+          <Code>await</Code> feel seamless is the same priority that lets one
+          runaway Promise hold a tab hostage.
         </P>
         <Aside>
           Node has a different inventory but the same hazard. Its loop runs in
@@ -337,16 +387,11 @@ export default function TheLineThatWaitsItsTurn() {
           <em>doesn&apos;t</em> is the microtask queue — it gets drained
           completely, every checkpoint, before anything else moves. One rule
           explains why <Code>await</Code> works, why <Code>setTimeout(0)</Code>{" "}
-          is never zero, and{" "}
-          <VerticalCutReveal
-            staggerDuration={0.04}
-            staggerFrom="first"
-            transition={{ type: "spring" as const, stiffness: 200, damping: 22 }}
-            as="span"
-            className="inline"
-          >
-            why one runaway Promise stalls your whole tab.
-          </VerticalCutReveal>
+          is never zero, and why one runaway Promise stalls your whole tab.
+        </P>
+        <P>
+          Scroll back up and run the opener again. The order isn&apos;t a
+          riddle anymore — it&apos;s the sequence the runtime had to take.
         </P>
         <p
           aria-hidden
