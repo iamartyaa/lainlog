@@ -5,7 +5,6 @@ import Image from "next/image";
 import { motion } from "motion/react";
 import type { PostMeta } from "@/content/posts-manifest";
 import { PRESS } from "@/lib/motion";
-import { useFirstVisit } from "@/lib/hooks/use-first-visit";
 import { MotionItem, MotionList } from "./PostListMotion";
 
 const MotionLink = motion.create(Link);
@@ -33,12 +32,6 @@ function coverSrc(p: PostMeta): string {
  * Year headings are rendered as small muted caps above their groups.
  */
 export function PostList({ posts }: { posts: PostMeta[] }) {
-  const { ready, firstVisit } = useFirstVisit();
-  // On first visit, hold the list until the hero choreography finishes
-  // (~1.2s). Return visits — and pre-hydration SSR — use the default tight
-  // stagger start. Keeping the SSR default matches the static render.
-  const delayChildren = ready && firstVisit ? 1.2 : 0.05;
-
   const groups = new Map<string, PostMeta[]>();
   for (const p of posts) {
     const year = p.date.slice(0, 4);
@@ -64,7 +57,7 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
           >
             {year}
           </h2>
-          <MotionList className="mt-[var(--spacing-sm)]" delayChildren={delayChildren}>
+          <MotionList className="mt-[var(--spacing-sm)]">
             {entries.map((p, i) => (
               <MotionItem
                 key={p.slug}

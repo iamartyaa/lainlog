@@ -1,62 +1,27 @@
-"use client";
-
-import { motion } from "motion/react";
-import { TIMING } from "@/lib/motion";
 import type { ReactNode } from "react";
 
 /**
- * PostListMotion — client-only wrapper around each <li> in PostList.
- * Each child fades in (opacity-only, no displacement) on TIMING.fast,
- * with a tiny inter-row stagger. Reveal is intentionally lightning-fast
- * on back-navigation; the only "slow" part is the optional first-visit
- * delayChildren that holds the cascade until the hero choreography
- * settles (set in PostList.tsx, not here).
+ * PostList wrappers — plain semantic <ul>/<li> with no entrance animation.
  *
- * Respects prefers-reduced-motion via the global MotionConfigProvider.
+ * Earlier revisions used motion/react to fade rows in on mount. That fired
+ * on every back-navigation to home, which read as a "page reload" even at
+ * 260ms. The hero choreography in AboutColumn (wordmark, paragraph) carries
+ * first-visit branding; the article list is content and renders instantly.
+ *
+ * Kept as named exports (MotionList / MotionItem) so the PostList import
+ * stays stable; the names are now historical. delayChildren is accepted
+ * and ignored to preserve the call-site signature.
  */
-
-const ITEM_STAGGER = 0.02; // 20ms — perceptible texture, no visible build-up
-
-const makeListVariants = (delayChildren: number) => ({
-  hidden: { opacity: 1 }, // keep the list itself visible; stagger drives children
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: ITEM_STAGGER,
-      delayChildren,
-    },
-  },
-});
-
-const itemVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: TIMING.fast,
-  },
-};
 
 export function MotionList({
   children,
   className,
-  delayChildren = 0.05,
 }: {
   children: ReactNode;
   className?: string;
-  /** Seconds to wait before the first child fires. First-visit home
-   *  choreography passes ~1.2s so the list arrives after the hero beat. */
   delayChildren?: number;
 }) {
-  return (
-    <motion.ul
-      className={className}
-      variants={makeListVariants(delayChildren)}
-      initial="hidden"
-      animate="show"
-    >
-      {children}
-    </motion.ul>
-  );
+  return <ul className={className}>{children}</ul>;
 }
 
 export function MotionItem({
@@ -66,9 +31,5 @@ export function MotionItem({
   children: ReactNode;
   className?: string;
 }) {
-  return (
-    <motion.li className={className} variants={itemVariants}>
-      {children}
-    </motion.li>
-  );
+  return <li className={className}>{children}</li>;
 }
