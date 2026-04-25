@@ -44,3 +44,7 @@ next-env.d.ts
 # shipped runs for future reference. None of this lives in git.
 /research/
 
+# orchestrator session state — task registry, mailbox JSONs, plan drafts, brainstorm briefs.
+# Local-only; survives session exits but never lives in commits or PRs.
+/.orchestrator/
+

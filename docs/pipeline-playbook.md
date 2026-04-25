@@ -26,6 +26,19 @@ Hard rules (never skip):
 - Research, design, and validation artefacts live in `research/<slug>/` (gitignored). The run is resumable across sessions because every decision is on disk.
 - Never implement a DESIGN.md-banned pattern even if a design skill suggests it — reject with the ban cited in the review file.
 
+## 1.5 Running the pipeline under `/orchestrate`
+
+When the pipeline runs as a `post-author` or `article-polisher` agent under `/orchestrate`, the four checkpoints become **mailbox transactions**, not direct user conversations. The agent never speaks to the user; it writes a prompt into `.orchestrator/tasks/<TASK_ID>.json` (`pending_user_input` field), flips status to `awaiting-user`, then polls every 15s for a response. The orchestrator session — a separate, long-running Claude Code session — surfaces the prompt to the user and writes the response back into the JSON. The agent reads the response on its next poll and continues.
+
+Detection: if the agent's prompt declares `ORCHESTRATOR_STATE_DIR` and `TASK_ID`, it's in orchestrator mode. Absent → behave exactly as the canonical pipeline above. This is a purely additive shim — same checkpoints, same quality bars, just a different transport for the user response.
+
+Status updates: write your task JSON at every phase boundary (`phase` letter from A–I, `status` from the lifecycle enum). Append a one-line entry to `.orchestrator/log.md` per status change. See `.claude/agents/post-author.md` and `.claude/agents/article-polisher.md` for the full marshalling protocol per checkpoint.
+
+Other orchestrator-mode constraints:
+- Use `DEV_PORT` (passed in your prompt) for `pnpm dev`, never `3000`. Two parallel posts on the default port collide.
+- Slug reservation: `registry.json` tracks reserved slugs across in-flight tasks. If you change the slug at Checkpoint 1, release the old reservation and reserve the new one atomically.
+- Shared-primitive lifts (e.g. promoting a widget to `components/viz/`) go through the orchestrator (mailbox prompt prefixed `primitive-lift:`), not directly to the user. The orchestrator coordinates against other in-flight tasks.
+
 ## 2. Phase-by-phase lessons
 
 ### Phase A — Intake
