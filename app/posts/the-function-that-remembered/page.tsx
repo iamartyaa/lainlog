@@ -258,10 +258,9 @@ const add10 = makeAdder(10);`}
 
       <div>
         <P>
-          The interval keeps ticking; the screen never moves past one. Flip the callback to the
-          updater form — <Code>c =&gt; c + 1</Code> — and the topology changes. The callback no
-          longer reads anything from the enclosing render. No tether to a stale frame; no frame
-          to go stale.
+          Five ticks, same one. Flip the callback to the updater form —{" "}
+          <Code>c =&gt; c + 1</Code> — and the topology changes. The callback no longer reads
+          anything from the enclosing render. No tether to a stale frame; no frame to go stale.
         </P>
       </div>
 
