@@ -14,9 +14,13 @@ export type PostMeta = {
   /** Topic tag(s) for future filtering. */
   tags?: string[];
   /**
-   * Optional hand-crafted cover image. When omitted, the home page falls
-   * back to the auto-generated `/cover/<slug>` route, which produces a
-   * deterministic typographic tile seeded on the slug.
+   * @deprecated The home page and post hero now resolve through
+   * `<PostCover slug={…} />`, which dispatches to a bespoke per-post React
+   * SVG component (see `components/covers/PostCover.tsx` and
+   * `docs/interactive-components.md` §6). The `/cover/<slug>` route is
+   * preserved as the OG / social-share PNG fallback only. This field is
+   * kept in the schema as an emergency static-image override path; it is
+   * not consumed by `<PostCover>`. New posts should not set it.
    */
   coverImage?: string;
 };

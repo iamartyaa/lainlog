@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { motion } from "motion/react";
 import type { PostMeta } from "@/content/posts-manifest";
 import { PRESS } from "@/lib/motion";
 import { MotionItem, MotionList } from "./PostListMotion";
+import { PostCover } from "@/components/covers/PostCover";
 
 const MotionLink = motion.create(Link);
 
@@ -18,10 +18,6 @@ function formatDate(iso: string): string {
       day: "numeric",
       timeZone: "UTC",
     });
-}
-
-function coverSrc(p: PostMeta): string {
-  return p.coverImage ?? `/cover/${p.slug}`;
 }
 
 /**
@@ -69,25 +65,14 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
                   aria-label={`${p.title} — ${p.hook}`}
                   {...PRESS}
                 >
-                  {/* Icon / thumbnail — square crop of auto-generated cover.
-                      `view-transition-name` pairs with the hero tile on the
-                      post page so the cover morphs between home and post. */}
-                  <div
-                    className="relative aspect-square h-[64px] w-[64px] lg:h-[80px] lg:w-[80px] overflow-hidden rounded-[var(--radius-sm)] transition-transform duration-[200ms] will-change-transform group-hover:-translate-y-[2px]"
-                    style={{
-                      background:
-                        "color-mix(in oklab, var(--color-surface) 60%, transparent)",
-                      border: "1px solid var(--color-rule)",
-                      viewTransitionName: `cover-${p.slug}`,
-                    }}
-                  >
-                    <Image
-                      src={coverSrc(p)}
-                      alt=""
-                      fill
-                      sizes="(min-width: 1024px) 80px, 64px"
-                      className="object-cover"
-                    />
+                  {/* Icon / thumbnail — bespoke per-post animated SVG cover.
+                      `view-transition-name` lives on PostCover's outer wrapper
+                      (CoverFrame) so home → post morphs work on the still
+                      snapshot while ambient animation continues underneath.
+                      The hover-lift wraps the cover so the morph target is
+                      stable. */}
+                  <div className="transition-transform duration-[200ms] will-change-transform group-hover:-translate-y-[2px]">
+                    <PostCover slug={p.slug} size="thumb" />
                   </div>
 
                   {/* Title + date stacked */}

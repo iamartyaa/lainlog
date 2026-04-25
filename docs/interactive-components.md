@@ -421,3 +421,70 @@ Do NOT ship a widget when:
 - **Lift to `components/viz/`** only when a second post wants the same widget. Confirm with the user before lifting.
 - **Shared primitives** (`Block`, `Arrow`, `Scrubber`, `Stepper`, `SvgDefs`, `WidgetShell`) are in `components/viz/`. Don't duplicate.
 - **Fancy primitives** (`TextHighlighter`, `DragElements`, `MediaBetweenText`) are in `components/fancy/`. Add new fancy primitives sparingly.
+
+## 9. Animated cover components
+
+Every post on the home list and post-page hero tile renders a bespoke
+React SVG component instead of the auto-generated raster from
+`/cover/<slug>`. The route still serves the deterministic typographic PNG
+for OG / social-share embeds (Twitter, LinkedIn, Slack previews — animation
+is impossible there); in-app rendering bypasses it.
+
+**Entry point**: `<PostCover slug={…} size="thumb" | "hero" />` in
+`components/covers/PostCover.tsx`. Internally it switches on slug, picks
+the matching component from a registry, and mounts it inside a shared
+`<CoverFrame>` that owns:
+
+- Sizing (64×64 base, 80×80 from `lg`).
+- The `view-transition-name: cover-<slug>` pairing on the outer wrapper —
+  not on the animated SVG inside, so the morph runs on a still snapshot
+  and ambient animation continues underneath.
+- The `useInView` gate. Off-screen → cover renders the static end-state
+  and never schedules a rAF. The `inView` boolean reaches per-cover
+  components via `useCoverInView()` (a React context).
+
+### Adding a cover for a new post
+
+1. Create `components/covers/<Name>Cover.tsx`, exporting a function that
+   returns a `<g>` of paths/rects/circles. The wrapper supplies the
+   `<motion.svg viewBox="0 0 100 100">` — your component fills it.
+2. Register the slug → component in
+   `components/covers/PostCover.tsx`'s `REGISTRY`.
+3. Read `useCoverInView()` and `useReducedMotion()` to gate animation;
+   when either says no, render the static end-state.
+
+### Animation budget per cover (hard rules)
+
+- **One animation primitive per cover.** Either one element pulses, or
+  one path draws, or one element drifts — not all three. A derived
+  signal (a `useTransform` of a single motion value) counts as the same
+  primitive, not a second one.
+- **Loop period ≥ 6 seconds** (active phase + idle gap). The home list
+  must feel calm at rest.
+- **Phase offsets**: stagger `delay` across the home-list set (0s, 1.4s,
+  2.8s, 4.2s, 5.6s for the current 5 covers). Goal: no two covers peak
+  at the same instant.
+- **Viewport-paused**: `inView === false` → no animation, render the
+  static end-state.
+- **Reduced-motion** → render the static end-state, which is always the
+  *teaching frame* (the meaningful moment — e.g. the arrow at the wall,
+  the magnifier over the glyph, the closure's outer scope dimmed), never
+  the animation's start or terminus.
+- **Tokens-only**: `var(--color-accent)` and `var(--color-text-muted)`.
+  No hex, no gradient, no drop-shadow (DESIGN.md §3, §12).
+- **Frame-stability hard rule R6**: the wrapping `<motion.svg>`
+  dimensions never change. Animate `transform`, `opacity`, `pathLength`,
+  or motion-value-derived attributes (`cx`, `x1`). Never animate
+  `width` or `height` on the container.
+- **Thumbnail readability**: design at 100×100 viewBox; verify at
+  ~64×64 px (4× downscale). Use
+  `vector-effect="non-scaling-stroke"` so 1.5px strokes survive the
+  downscale. Bump dot/glyph radii if they approach single-pixel collapse.
+
+### When to bypass the system (rare)
+
+Only one escape hatch: `coverImage?` on `PostMeta` is preserved as a
+deprecated emergency override path. It is not consumed by `<PostCover>`
+today; if a future post needs a hand-cropped raster, wire it through
+the registry by adding a static-image cover component instead of
+re-introducing the field.
