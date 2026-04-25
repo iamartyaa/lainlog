@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Stepper } from "@/components/viz/Stepper";
+import { WidgetNav } from "@/components/viz/WidgetNav";
 import { SvgDefs } from "@/components/viz/SvgDefs";
 import { Arrow } from "@/components/viz/Arrow";
 import { SPRING } from "@/lib/motion";
@@ -64,7 +64,10 @@ export function RenderLoom() {
   const [mode, setMode] = useState<Mode>("broken");
   const [step, setStep] = useState(0);
 
-  const ticks = buildTimeline(mode);
+  // Memoise the timeline — buildTimeline is the headline R6 hot path.
+  // Recomputing only when `mode` flips drops parent re-render cost on every
+  // step tick. (Plan §B.5 R6.2.)
+  const ticks = useMemo(() => buildTimeline(mode), [mode]);
   const tick = ticks[Math.min(step, ticks.length - 1)];
 
   // Canvas geometry
@@ -91,7 +94,8 @@ export function RenderLoom() {
   return (
     <WidgetShell
       title="RenderLoom"
-      measurements={`${mode === "broken" ? "count + 1" : "c => c + 1"} · tick ${step}/${TICK_STEPS - 1}`}
+      measurements={mode === "broken" ? "count + 1" : "c => c + 1"}
+      captionTone="prominent"
       caption={
         mode === "broken"
           ? step === 0
@@ -104,7 +108,7 @@ export function RenderLoom() {
             : `Tick ${step}. React produces render ${step} with count = ${step}. The interval fires, the updater runs, React hands it the current count, and a new render with count + 1 is produced. No staleness to accumulate.`
       }
       controls={
-        <div className="flex flex-wrap items-center gap-[var(--spacing-md)]">
+        <div className="flex flex-wrap items-center justify-center gap-[var(--spacing-md)] w-full">
           <ModeToggle
             mode={mode}
             onChange={(m) => {
@@ -112,7 +116,13 @@ export function RenderLoom() {
               setStep(0);
             }}
           />
-          <Stepper value={step} total={TICK_STEPS} onChange={setStep} playInterval={1200} />
+          <WidgetNav
+            value={step}
+            total={TICK_STEPS}
+            onChange={setStep}
+            playInterval={1200}
+            counterNoun="tick"
+          />
         </div>
       }
     >
@@ -378,7 +388,7 @@ export function RenderLoom() {
       </svg>
       </div>
       <div className="bs-renderloom-narrow">
-        <NarrowRenderLoom mode={mode} step={step} tick={tick} />
+        <MemoNarrowRenderLoom mode={mode} step={step} tick={tick} />
       </div>
     </WidgetShell>
   );
@@ -395,6 +405,8 @@ export function RenderLoom() {
  * at the bottom — connected to its tethered render by a vertical arrow in
  * `broken` mode, or labeled "no tether" in `fixed` mode.
  */
+const MemoNarrowRenderLoom = memo(NarrowRenderLoom);
+
 function NarrowRenderLoom({
   mode,
   step,
