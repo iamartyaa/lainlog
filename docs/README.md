@@ -7,6 +7,7 @@ The canonical reference set for authoring, reviewing, and shipping bytesize post
 1. **[`voice-profile.md`](./voice-profile.md)** — how posts should *sound* and *feel*. Tone, framing, prose rules, widget rules, tone-calibration examples. The taste file.
 2. **[`interactive-components.md`](./interactive-components.md)** — widget-shape taxonomy (§1), external primitives we've integrated (§2: `TextHighlighter`, `DragElements`, `MediaBetweenText`), the full Fancy-library curation with fit ratings for every upstream component (§2.5), DESIGN.md compliance invariants, anti-patterns from actual review feedback, widget catalogue with per-widget lessons.
 3. **[`pipeline-playbook.md`](./pipeline-playbook.md)** — the nine-phase authoring pipeline, per-phase lessons, session-resumption rules, checkpoint crib sheet, and per-skill lessons from Phase F design-review orchestration.
+4. **[`svg-cover-playbook.md`](./svg-cover-playbook.md)** — animated SVG cover authoring rules. Element budget, motion amplitudes, mobile-thumbnail legibility, the v3→v4 refactor lessons. Read before touching any `components/covers/*Cover.tsx`.
 
 ## Secondary references
 
@@ -27,6 +28,7 @@ The canonical reference set for authoring, reviewing, and shipping bytesize post
 | Start a new article | `voice-profile.md` → `pipeline-playbook.md` → run `/new-post` |
 | Improve an existing article | `voice-profile.md` → `interactive-components.md` → `pipeline-playbook.md §5` → run `/improve-an-article <slug>` |
 | Design a new widget | `interactive-components.md §1` (shapes) → `../DESIGN.md §7` → `§6` (catalogue lessons) |
+| Author an animated SVG cover | `svg-cover-playbook.md` (entire doc — short and prescriptive) |
 | Run a single design-review skill | `pipeline-playbook.md §5` for the brief template |
 | Write a callout, aside, or microcopy | `voice-profile.md §3` |
 | Audit code for DESIGN.md compliance | `interactive-components.md §3` (the invariants checklist) |
@@ -42,5 +44,6 @@ After a post ships, update the playbook:
 4. **Any voice-drift the user corrected** → add to `voice-profile.md §9` (or the appropriate earlier section).
 5. **Any pipeline lesson learned** → add to `pipeline-playbook.md §2` for the phase or `§6` for common pitfalls.
 6. **Any new skill-review insight** → add to `pipeline-playbook.md §5`.
+7. **Any new SVG-cover failure mode** → append a numbered diagnostic to `svg-cover-playbook.md §11` and update §10's checklist.
 
 The playbook is the shipping version of what we learned. Memories are the raw capture; these docs are the refined rules. If they go out of sync, the docs win.
