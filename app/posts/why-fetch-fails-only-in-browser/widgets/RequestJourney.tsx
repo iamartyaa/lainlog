@@ -60,7 +60,7 @@ const STEPS: Step[] = [
  */
 type Beat = {
   /** Arrow direction: which lane the connector points TO. */
-  dir: "right" | "left" | "self-server";
+  dir: "right" | "left" | "self-server" | "self-browser";
   /** Compact token displayed on the connector. */
   token: string;
   /** Tone for color treatment. */
@@ -72,7 +72,10 @@ const BEATS: Beat[] = [
   { dir: "right", token: "GET /me · Origin" }, // step 2: request on the wire
   { dir: "self-server", token: "handler runs", tone: "muted" }, // step 3
   { dir: "left", token: "200 OK · body" }, // step 4: response back
-  { dir: "left", token: "verdict", tone: "accent" }, // step 5: gatekeeper
+  // step 5: the verdict is browser-internal — no wire transmission.
+  // Self-loop on the BROWSER lane mirrors beat 3's self-loop on the server,
+  // and reinforces the post's thesis: the browser is the enforcer.
+  { dir: "self-browser", token: "ACAO match?", tone: "accent" },
 ];
 
 type Props = {
@@ -329,7 +332,7 @@ function Journey({
               markerEnd={arrowMarker}
             />
           );
-        } else {
+        } else if (beat.dir === "self-server") {
           // self-loop on the server lane: small horizontal arc to the right of
           // LANE_RIGHT_X and back, terminating on the lane.
           const xs = LANE_RIGHT_X - CONNECTOR_INSET;
@@ -338,6 +341,22 @@ function Journey({
               d={`M ${xs} ${y - 8}
                   q 22 0 22 8
                   q 0 8 -22 8`}
+              fill="none"
+              stroke={tone}
+              strokeWidth={isCurrent ? 1.8 : 1.2}
+              markerEnd={arrowMarker}
+            />
+          );
+        } else {
+          // self-loop on the browser lane: mirror of self-server, on the left.
+          // Used for the verdict beat — encodes "browser decides internally,
+          // no wire transmission" — supports the post's thesis.
+          const xs = LANE_LEFT_X + CONNECTOR_INSET;
+          connector = (
+            <path
+              d={`M ${xs} ${y - 8}
+                  q -22 0 -22 8
+                  q 0 8 22 8`}
               fill="none"
               stroke={tone}
               strokeWidth={isCurrent ? 1.8 : 1.2}
