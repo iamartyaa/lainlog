@@ -205,43 +205,6 @@ export default function WhyFetchFailsOnlyInBrowser() {
           <Code>Access-Control-Max-Age</Code> so the handshake doesn&apos;t
           repeat on every call.
         </P>
-
-        {/* §4.5 — credentials (folded in) */}
-        <H3Like>…and when credentials are in play, both sides opt in.</H3Like>
-        <P>
-          <Code>fetch</Code> to a cross-origin URL does <Em>not</Em>{" "}send cookies
-          or HTTP auth unless you ask. You opt in; the server opts in separately.
-          Both sides have to agree.
-        </P>
-      </div>
-
-      <FullBleed>
-        <CodeBlock
-          lang="javascript"
-          filename="client"
-          code={`// client opt-in
-await fetch('https://api.other.com/me', {
-  credentials: 'include',
-});
-
-// server must respond with, exactly:
-//   Access-Control-Allow-Origin: https://app.example.com
-//   Access-Control-Allow-Credentials: true
-//
-// not '*' — wildcard + credentials is an error.`}
-        />
-      </FullBleed>
-
-      <div>
-        <P>
-          Notice what&apos;s missing: the wildcard.{" "}
-          <Code>{"Access-Control-Allow-Origin: *"}</Code>{" "}
-          is illegal once credentials are in play, and the browser will reject
-          the response even if the server sends it. The origin has to be{" "}
-          <Em>named</Em>{" "}— because a wildcard would mean &ldquo;any site can
-          read this response using this user&apos;s cookies,&rdquo; which is the
-          thing CORS exists to prevent.
-        </P>
         <Callout tone="warn">
           If your server reflects the request&apos;s <Code>Origin</Code> header
           back in <Code>Access-Control-Allow-Origin</Code> to support many
@@ -285,24 +248,5 @@ await fetch('https://api.other.com/me', {
         </p>
       </div>
     </Prose>
-  );
-}
-
-/** Inline sub-head used for the folded credentials beat inside §4. */
-function H3Like({ children }: { children: React.ReactNode }) {
-  return (
-    <h3
-      className="font-sans"
-      style={{
-        marginBlockStart: "2em",
-        marginBlockEnd: "0.5em",
-        fontSize: "var(--text-h3)",
-        fontWeight: 600,
-        letterSpacing: "-0.005em",
-        color: "var(--color-text)",
-      }}
-    >
-      {children}
-    </h3>
   );
 }
