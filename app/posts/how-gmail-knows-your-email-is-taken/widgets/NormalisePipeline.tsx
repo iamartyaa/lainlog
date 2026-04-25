@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Stepper } from "@/components/viz/Stepper";
+import { WidgetNav } from "@/components/viz/WidgetNav";
 import { PRESS, SPRING } from "@/lib/motion";
 import { WidgetShell } from "./WidgetShell";
 
@@ -117,11 +117,11 @@ export function NormalisePipeline({ initialScenario = "messy" }: Props) {
   return (
     <WidgetShell
       title="normalise · three deterministic steps"
-      measurements={`step ${clamped}/${totalSteps - 1}`}
       caption={stepCaption}
+      captionTone="prominent"
       controls={
-        <div className="flex flex-col gap-[var(--spacing-sm)]">
-          <Stepper
+        <div className="flex flex-col items-center gap-[var(--spacing-sm)] w-full">
+          <WidgetNav
             value={clamped}
             total={totalSteps}
             onChange={setStep}
