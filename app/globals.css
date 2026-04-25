@@ -384,18 +384,21 @@ html[data-theme-transitioning] {
    pure CSS, no hydration mismatch, no ResizeObserver. Wide stays the existing
    680-unit landscape layout; narrow stacks into a portrait composition where
    labels keep their native size. */
-.bs-looptrap-narrow,
+.bs-loopvar-narrow,
+.bs-looplet-narrow,
 .bs-tetherscope-narrow,
 .bs-renderloom-narrow {
   display: none;
 }
 @container widget (max-width: 560px) {
-  .bs-looptrap-wide,
+  .bs-loopvar-wide,
+  .bs-looplet-wide,
   .bs-tetherscope-wide,
   .bs-renderloom-wide {
     display: none;
   }
-  .bs-looptrap-narrow,
+  .bs-loopvar-narrow,
+  .bs-looplet-narrow,
   .bs-tetherscope-narrow,
   .bs-renderloom-narrow {
     display: block;

@@ -16,7 +16,8 @@ import { PostBackLink } from "@/components/nav/PostBackLink";
 import { PostNavCards } from "@/components/nav/PostNavCards";
 import { CodeBlock } from "@/components/code";
 import {
-  LoopTrap,
+  LoopVar,
+  LoopLet,
   TetherScope,
   RenderLoom,
   PredictReveal,
@@ -84,31 +85,36 @@ export default function TheFunctionThatRemembered() {
         </P>
       </div>
 
-      {/* §2 — LoopTrap widget */}
+      {/* §2 — var/let widgets */}
       <div>
         <Dots />
         <H2>Five callbacks, one cell</H2>
         <P>
-          Flip the toggle below between <Code>var</Code> and <Code>let</Code>. In both modes,
-          the loop has already finished by the time the timers fire — the five callbacks are
-          sitting in the queue, each one pointing back at whatever it captured when it was
-          scheduled. Hit play and watch them fire.
+          The loop has finished by the time the timers fire — the five callbacks are in the
+          queue, each one pointing back at whatever it captured when it was scheduled. With{" "}
+          <Code>var</Code>, there&apos;s only ever one <Code>i</Code>: the loop walked it from{" "}
+          <Code>0</Code> to <Code>5</Code> and stopped. Step through to watch the callbacks
+          fire.
         </P>
       </div>
 
-      <LoopTrap />
+      <LoopVar />
 
       <div>
         <P>
-          With <Code>var</Code>, there&apos;s only ever one <Code>i</Code>. The loop walked it
-          from <Code>0</Code> to <Code>5</Code> and stopped. Each callback has a line out to the
-          same cell. When the timers fire, they all look at the cell and they all see{" "}
-          <Code>5</Code>. Five fives.
+          Five fives — every callback ran a line back to the same cell, and every cell held{" "}
+          <Code>5</Code> by the time they fired. Now switch the declaration to <Code>let</Code>:
+          same five callbacks, but the language gives each iteration its own fresh binding.
         </P>
+      </div>
+
+      <LoopLet />
+
+      <div>
         <P>
-          With <Code>let</Code>, the picture is different: five lines, fanning out to five
-          different cells, each frozen at the value <Code>i</Code> had that round. Same five
-          callbacks. Different thing on the other end of the line.
+          Five lines, fanning out to five different cells, each frozen at the value{" "}
+          <Code>i</Code> had that round. Same callbacks. Same mechanism — a line back to whatever
+          scope the function was born in. Different topology.
         </P>
       </div>
 
@@ -172,7 +178,7 @@ const add10 = makeAdder(10);`}
         <Dots />
         <H2>Why one letter fixed the loop</H2>
         <P>
-          With that, scroll back up to <Em>LoopTrap</Em>{" "}and look at it again. The reason{" "}
+          With that, scroll back up to the <Em>var</Em> case and look at it again. The reason{" "}
           <Code>var</Code> prints <Code>5 5 5 5 5</Code> isn&apos;t that the loop copied{" "}
           <Code>i</Code> wrong. It&apos;s that <Code>var</Code> declares one binding for the
           whole function. The five arrow functions picked up five tethers. All five tethers
