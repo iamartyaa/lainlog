@@ -22,7 +22,8 @@ import {
   WebSocketStream,
   HandshakeSteps,
   KeyDerivation,
-  ReconnectGap,
+  DropTiming,
+  GapDuration,
   CostMatrix,
 } from "./widgets";
 import { metadata, subtitle } from "./metadata";
@@ -262,8 +263,8 @@ Content-Length: 1432
         <P>
           Three frames cost 562 bytes; polling spent 7.5 KB <Em>asking</Em>.{" "}
           <HL>Refusing to finish the question</HL> is the move every later
-          protocol inherits — long polling did it inside HTTP&apos;s rules,
-          WebSocket did it by ending HTTP mid-socket.
+          protocol inherits — long polling did it inside HTTP, WebSocket did
+          it by ending HTTP mid-socket.
         </P>
       </div>
 
@@ -444,17 +445,24 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=`}
         </P>
       </div>
 
-      <ReconnectGap />
+      <DropTiming />
 
       <div>
         <P>
-          Drag the dropout in the widget. Both rows experience the same outage; only
-          one of them quietly heals. This is why SSE is not a weaker WebSocket —
-          it&apos;s a different trade. For one-way flows (notifications, logs,
-          progress streams, a live leaderboard), SSE gives you resilience for free.
-          For real two-way exchanges — say, sending Jordan&apos;s keystrokes back to
-          Google&apos;s ack path — you need <Term>full-duplex</Term>, both ends
-          talking at once instead of in turns. SSE can&apos;t give you that.
+          The dropout has two dials: <HL>when</HL> it starts, and{" "}
+          <HL>how long</HL>{" "}it lasts. Hold the timing fixed and stretch the
+          gap.
+        </P>
+      </div>
+
+      <GapDuration />
+
+      <div>
+        <P>
+          Both dials compose into the shape §6 names: every long-poll and
+          WebSocket client racing back the moment the gateway heals, the same
+          instant. SSE absorbs that storm on the protocol; the others invent
+          it.
         </P>
       </div>
 
