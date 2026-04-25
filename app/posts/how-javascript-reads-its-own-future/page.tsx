@@ -225,11 +225,17 @@ export default function HowJavaScriptReadsItsOwnFuture() {
           it had paused.
         </P>
         <P>
-          Step through the widget below. Two columns, one cursor. The left
-          column is the call stack growing and shrinking. The right column is
-          the variable environment of whichever frame is on top — the running
-          execution context. They move together because they&apos;re the same
-          thing seen twice. <HL>Whichever frame is on top is the engine&apos;s thread of execution.</HL>
+          Press <Em>Run</Em> in the widget below to step through a tiny
+          program: <Code>compute(7)</Code> calls <Code>multiply(7, 2)</Code>,
+          which returns <Code>14</Code>. Each call pushes a new EC card onto
+          the stage; each return pops one. The console pane mirrors the
+          actual <Code>console.log</Code> output as the runtime emits it. The
+          card glowing terracotta is the running EC — drag the cards around
+          if you like; the metaphor is literal.{" "}
+          <HL>
+            Whichever frame is on top is the engine&apos;s thread of
+            execution.
+          </HL>
         </P>
       </div>
 
@@ -237,9 +243,13 @@ export default function HowJavaScriptReadsItsOwnFuture() {
 
       <div className="pt-[var(--spacing-lg)]">
         <P>
-          That&apos;s also the answer to the opening scene. The line that
-          printed <Code>undefined</Code> was running inside the global EC.
-          Its <Em>variable environment</Em> already held{" "}
+          Each function call gets its own execution context — its own
+          private memory and its own slot on the stack. The thread of
+          execution moves into a new context when a function is called, and
+          back to the previous one when it returns. That&apos;s also the
+          answer to the opening scene. The line that printed{" "}
+          <Code>undefined</Code> was running inside the global EC. Its{" "}
+          <Em>variable environment</Em> already held{" "}
           <Code>x: undefined</Code>, courtesy of the pre-walk. The console
           asked memory; memory answered.
         </P>

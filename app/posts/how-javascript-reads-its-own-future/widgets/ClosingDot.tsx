@@ -6,7 +6,7 @@ import { SPRING } from "@/lib/motion";
 /**
  * ClosingDot — final brand signature for the post closer.
  * Reveals once on viewport entry with SPRING.smooth opacity.
- * Aria-hidden — purely decorative; the climax is the VerticalCutReveal above.
+ * Aria-hidden — purely decorative.
  */
 export function ClosingDot() {
   return (

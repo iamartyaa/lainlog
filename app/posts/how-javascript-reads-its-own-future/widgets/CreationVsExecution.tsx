@@ -14,8 +14,14 @@ import { SPRING } from "@/lib/motion";
  * already populated (`x: undefined`). On the execution side, code lines
  * highlight as the cursor advances.
  *
- * Frame-stability R6: 360 wide, fixed canvas height, every stop reserves the
- * same memory-column geometry.
+ * Layout is mobile-first: on narrow widths the time-track sits on top with
+ * source + memory stacked below as flexible HTML rows (proper text-overflow
+ * handling — values like `undefined` can never escape the cell). At
+ * container ≥ 480px, source + memory sit side-by-side.
+ *
+ * Frame-stability R6: the widget shell reserves a fixed minimum height for
+ * each pane so the layout doesn't reflow as the scrubber advances. Memory
+ * row is one binding deep at every stop — geometry never moves.
  */
 
 type Stop = {
@@ -123,24 +129,17 @@ export function CreationVsExecution({ initialStop = 0 }: Props) {
     );
   }, [current]);
 
-  // Geometry — 360 wide, mobile-first.
-  const WIDTH = 360;
-  const PAD = 14;
-  const SOURCE_X = PAD;
-  const SOURCE_W = 200;
-  const MEM_X = SOURCE_X + SOURCE_W + 12;
-  const MEM_W = WIDTH - MEM_X - PAD;
+  // Time-track geometry — SVG only renders the temporal axis.
+  const TRACK_W = 360;
+  const TRACK_PAD = 14;
   const TRACK_Y = 22;
   const TRACK_H = 28;
-  const PANE_Y = TRACK_Y + TRACK_H + 22;
-  const PANE_H = 92;
-  const HEIGHT = PANE_Y + PANE_H + 14;
-
-  // Boundary x in the time-track band.
+  const TRACK_TOTAL_H = TRACK_Y + TRACK_H + 14;
   const BOUNDARY_X =
-    PAD + ((BOUNDARY_INDEX - 0.5) / (TOTAL - 1)) * (WIDTH - PAD * 2);
+    TRACK_PAD +
+    ((BOUNDARY_INDEX - 0.5) / (TOTAL - 1)) * (TRACK_W - TRACK_PAD * 2);
   const CURSOR_X =
-    PAD + (clamped / (TOTAL - 1)) * (WIDTH - PAD * 2);
+    TRACK_PAD + (clamped / (TOTAL - 1)) * (TRACK_W - TRACK_PAD * 2);
 
   return (
     <WidgetShell
@@ -160,21 +159,21 @@ export function CreationVsExecution({ initialStop = 0 }: Props) {
         </div>
       }
     >
+      {/* Time track — mobile-first, scales fluidly */}
       <svg
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        viewBox={`0 0 ${TRACK_W} ${TRACK_TOTAL_H}`}
         width="100%"
         style={{
-          maxWidth: WIDTH,
+          maxWidth: TRACK_W,
           height: "auto",
           display: "block",
           margin: "0 auto",
         }}
         role="img"
-        aria-label={`Creation vs execution scrubber. Stop ${clamped + 1} of ${TOTAL}, ${current.phase} phase.`}
+        aria-label={`Time track. Stop ${clamped + 1} of ${TOTAL}, ${current.phase} phase.`}
       >
-        {/* Time-track band with creation/execution labels */}
         <text
-          x={PAD + (BOUNDARY_X - PAD) / 2}
+          x={TRACK_PAD + (BOUNDARY_X - TRACK_PAD) / 2}
           y={TRACK_Y - 6}
           textAnchor="middle"
           fontFamily="var(--font-sans)"
@@ -189,7 +188,7 @@ export function CreationVsExecution({ initialStop = 0 }: Props) {
           CREATION
         </text>
         <text
-          x={BOUNDARY_X + (WIDTH - PAD - BOUNDARY_X) / 2}
+          x={BOUNDARY_X + (TRACK_W - TRACK_PAD - BOUNDARY_X) / 2}
           y={TRACK_Y - 6}
           textAnchor="middle"
           fontFamily="var(--font-sans)"
@@ -205,17 +204,15 @@ export function CreationVsExecution({ initialStop = 0 }: Props) {
         </text>
 
         <rect
-          x={PAD}
+          x={TRACK_PAD}
           y={TRACK_Y}
-          width={WIDTH - PAD * 2}
+          width={TRACK_W - TRACK_PAD * 2}
           height={TRACK_H}
           rx={3}
           fill="color-mix(in oklab, var(--color-surface) 35%, transparent)"
           stroke="var(--color-rule)"
           strokeWidth={1}
         />
-
-        {/* Boundary divider */}
         <line
           x1={BOUNDARY_X}
           y1={TRACK_Y - 2}
@@ -225,8 +222,6 @@ export function CreationVsExecution({ initialStop = 0 }: Props) {
           strokeWidth={1}
           strokeDasharray="3 3"
         />
-
-        {/* Cursor on the track */}
         <motion.g
           initial={false}
           animate={{ x: CURSOR_X - 5 }}
@@ -241,148 +236,197 @@ export function CreationVsExecution({ initialStop = 0 }: Props) {
             fill="var(--color-accent)"
           />
         </motion.g>
-
-        {/* Source pane */}
-        <rect
-          x={SOURCE_X}
-          y={PANE_Y}
-          width={SOURCE_W}
-          height={PANE_H}
-          rx={3}
-          fill="color-mix(in oklab, var(--color-surface) 35%, transparent)"
-          stroke="var(--color-rule)"
-          strokeWidth={1}
-        />
-        <text
-          x={SOURCE_X + 8}
-          y={PANE_Y + 14}
-          fontFamily="var(--font-sans)"
-          fontSize={9}
-          letterSpacing="0.08em"
-          fill="var(--color-text-muted)"
-        >
-          SOURCE
-        </text>
-        {SOURCE_LINES.map((line, i) => {
-          const isActive = current.activeLine === line.n;
-          const y = PANE_Y + 34 + i * 24;
-          return (
-            <motion.g
-              key={line.n}
-              initial={false}
-              animate={{ opacity: isActive ? 1 : 0.55 }}
-              transition={SPRING.smooth}
-            >
-              {isActive ? (
-                <rect
-                  x={SOURCE_X + 4}
-                  y={y - 13}
-                  width={SOURCE_W - 8}
-                  height={20}
-                  rx={2}
-                  fill="color-mix(in oklab, var(--color-accent) 14%, transparent)"
-                />
-              ) : null}
-              <text
-                x={SOURCE_X + 12}
-                y={y}
-                fontFamily="var(--font-mono)"
-                fontSize={11}
-                fill="var(--color-text-muted)"
-              >
-                {line.n}
-              </text>
-              <text
-                x={SOURCE_X + 28}
-                y={y}
-                fontFamily="var(--font-mono)"
-                fontSize={12}
-                fill={isActive ? "var(--color-accent)" : "var(--color-text)"}
-              >
-                {line.text}
-              </text>
-            </motion.g>
-          );
-        })}
-
-        {/* Memory pane */}
-        <rect
-          x={MEM_X}
-          y={PANE_Y}
-          width={MEM_W}
-          height={PANE_H}
-          rx={3}
-          fill="color-mix(in oklab, var(--color-surface) 35%, transparent)"
-          stroke={
-            current.phase === "creation"
-              ? "var(--color-accent)"
-              : "var(--color-rule)"
-          }
-          strokeWidth={current.phase === "creation" ? 1.4 : 1}
-        />
-        <text
-          x={MEM_X + 8}
-          y={PANE_Y + 14}
-          fontFamily="var(--font-sans)"
-          fontSize={9}
-          letterSpacing="0.08em"
-          fill="var(--color-text-muted)"
-        >
-          MEMORY
-        </text>
-        {/* The single binding row — geometry never changes. */}
-        <rect
-          x={MEM_X + 6}
-          y={PANE_Y + 28}
-          width={MEM_W - 12}
-          height={28}
-          rx={2}
-          fill="transparent"
-          stroke="var(--color-rule)"
-          strokeWidth={1}
-        />
-        <text
-          x={MEM_X + 14}
-          y={PANE_Y + 46}
-          fontFamily="var(--font-mono)"
-          fontSize={12}
-          fill="var(--color-text)"
-        >
-          x
-        </text>
-        <text
-          x={MEM_X + MEM_W - 14}
-          y={PANE_Y + 46}
-          textAnchor="end"
-          fontFamily="var(--font-mono)"
-          fontSize={11}
-          fill="var(--color-accent)"
-        >
-          <motion.tspan
-            key={`mem-${current.memory.value}`}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={SPRING.smooth}
-          >
-            {current.memory.value}
-          </motion.tspan>
-        </text>
-
-        {/* Beat tag inside memory pane — crossfade per stop */}
-        <motion.text
-          key={`beat-${current.beat}`}
-          x={MEM_X + 8}
-          y={PANE_Y + PANE_H - 10}
-          fontFamily="var(--font-sans)"
-          fontSize={10}
-          fill="var(--color-text-muted)"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={SPRING.smooth}
-        >
-          {current.beat}
-        </motion.text>
       </svg>
+
+      {/* Source + memory panes — HTML rows, mobile-first stack, side-by-side at >=480 container */}
+      <div
+        className="bs-cve-panes"
+        style={{
+          display: "grid",
+          gap: "var(--spacing-sm)",
+          marginTop: "var(--spacing-sm)",
+          maxWidth: TRACK_W,
+          marginInline: "auto",
+        }}
+      >
+        {/* SOURCE pane */}
+        <div
+          className="bs-cve-pane"
+          style={{
+            background: "color-mix(in oklab, var(--color-surface) 35%, transparent)",
+            border: "1px solid var(--color-rule)",
+            borderRadius: 3,
+            padding: "10px 12px",
+            minHeight: 96,
+            minWidth: 0,
+          }}
+        >
+          <div
+            className="font-sans"
+            style={{
+              fontSize: 9,
+              letterSpacing: "0.08em",
+              color: "var(--color-text-muted)",
+              marginBottom: 8,
+            }}
+          >
+            SOURCE
+          </div>
+          <ol
+            className="font-mono"
+            style={{
+              listStyle: "none",
+              margin: 0,
+              padding: 0,
+              display: "flex",
+              flexDirection: "column",
+              gap: 4,
+              fontSize: 12,
+            }}
+          >
+            {SOURCE_LINES.map((line) => {
+              const isActive = current.activeLine === line.n;
+              return (
+                <motion.li
+                  key={line.n}
+                  initial={false}
+                  animate={{ opacity: isActive ? 1 : 0.55 }}
+                  transition={SPRING.smooth}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1.5em minmax(0, 1fr)",
+                    alignItems: "center",
+                    columnGap: 8,
+                    padding: "3px 6px",
+                    borderRadius: 2,
+                    background: isActive
+                      ? "color-mix(in oklab, var(--color-accent) 14%, transparent)"
+                      : "transparent",
+                    color: isActive
+                      ? "var(--color-accent)"
+                      : "var(--color-text)",
+                  }}
+                >
+                  <span style={{ color: "var(--color-text-muted)" }}>
+                    {line.n}
+                  </span>
+                  <span
+                    style={{
+                      minWidth: 0,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {line.text}
+                  </span>
+                </motion.li>
+              );
+            })}
+          </ol>
+        </div>
+
+        {/* MEMORY pane */}
+        <div
+          className="bs-cve-pane"
+          style={{
+            background: "color-mix(in oklab, var(--color-surface) 35%, transparent)",
+            border: `${current.phase === "creation" ? 1.4 : 1}px solid ${
+              current.phase === "creation"
+                ? "var(--color-accent)"
+                : "var(--color-rule)"
+            }`,
+            borderRadius: 3,
+            padding: "10px 12px",
+            minHeight: 96,
+            minWidth: 0,
+            transition: "border-color 200ms ease",
+          }}
+        >
+          <div
+            className="font-sans"
+            style={{
+              fontSize: 9,
+              letterSpacing: "0.08em",
+              color: "var(--color-text-muted)",
+              marginBottom: 8,
+            }}
+          >
+            MEMORY
+          </div>
+          {/* The single binding row — geometry never changes */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(0, auto) minmax(0, 1fr)",
+              alignItems: "center",
+              columnGap: 8,
+              padding: "5px 8px",
+              border: "1px solid var(--color-rule)",
+              borderRadius: 2,
+              minHeight: 28,
+            }}
+          >
+            <span
+              className="font-mono"
+              style={{
+                fontSize: 12,
+                color: "var(--color-text)",
+                minWidth: 0,
+              }}
+            >
+              x
+            </span>
+            <motion.span
+              key={`mem-${current.memory.value}`}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={SPRING.smooth}
+              className="font-mono"
+              title={current.memory.value}
+              style={{
+                fontSize: 11,
+                color: "var(--color-accent)",
+                textAlign: "right",
+                minWidth: 0,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {current.memory.value}
+            </motion.span>
+          </div>
+
+          <motion.div
+            key={`beat-${current.beat}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={SPRING.smooth}
+            className="font-sans"
+            style={{
+              marginTop: 10,
+              fontSize: 10,
+              color: "var(--color-text-muted)",
+              minWidth: 0,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+            title={current.beat}
+          >
+            {current.beat}
+          </motion.div>
+        </div>
+
+        <style jsx>{`
+          @container widget (min-width: 480px) {
+            .bs-cve-panes {
+              grid-template-columns: 1fr 1fr;
+            }
+          }
+        `}</style>
+      </div>
     </WidgetShell>
   );
 }
