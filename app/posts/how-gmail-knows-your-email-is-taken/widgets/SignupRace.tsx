@@ -15,10 +15,10 @@ type Props = {
 };
 
 /**
- * SignupRace — §8. Two clients, same canonical email, racing to Submit.
- * Reader drags two scrubbers to set each user's Submit time. The UI shows
- * both optimistic pre-checks returning "available"; the database decides who
- * actually commits based on which INSERT transaction wins the UNIQUE index.
+ * SignupRace — two clients race to INSERT the same canonical email. Mobile-first:
+ * 360-unit canvas, three stacked lanes (A / DB / B) over one time axis. The
+ * pre-check showed "available" for both; the database's serial ordering at
+ * commit is the only thing that actually resolves the race.
  */
 export function SignupRace({
   initialAMs = 20,
@@ -29,26 +29,25 @@ export function SignupRace({
   const [aMs, setAMs] = useState(initialAMs);
   const [bMs, setBMs] = useState(initialBMs);
 
-  // Winner: whichever Submit landed first. Tie → A wins by stable ordering
-  // (matches the "database picks one" behaviour — there IS a winner, even on a tie).
   const aWins = aMs <= bMs;
   const winnerMs = Math.min(aMs, bMs);
   const loserMs = Math.max(aMs, bMs);
+  const tie = aMs === bMs;
 
-  // Geometry
-  const WIDTH = 680;
-  const HEIGHT = 300;
-  const PAD_L = 68;
-  const PAD_R = 110;
+  // Mobile-first geometry — 360 wide.
+  const WIDTH = 360;
+  const HEIGHT = 280;
+  const PAD_L = 44;
+  const PAD_R = 70;
   const PAD_T = 28;
-  const PAD_B = 48;
+  const PAD_B = 44;
   const timelineW = WIDTH - PAD_L - PAD_R;
   const scale = timelineW / scaleMs;
   const xAt = (ms: number) => PAD_L + ms * scale;
-  const ROW_A_Y = PAD_T + 32;
-  const DB_Y = PAD_T + 112;
-  const ROW_B_Y = PAD_T + 196;
-  const MILE_R = 8;
+  const ROW_A_Y = PAD_T + 24;
+  const DB_Y = PAD_T + 102;
+  const ROW_B_Y = PAD_T + 180;
+  const MILE_R = 7;
 
   const keyRowStart = 2;
   const precheckAt = 8;
@@ -59,10 +58,9 @@ export function SignupRace({
     submitMs: number,
     isWinner: boolean,
   ) => {
-    const commitMs = submitMs + 3; // small constant delay for INSERT landing at DB
+    const commitMs = submitMs + 3;
     return (
       <g>
-        {/* Row axis */}
         <line
           x1={PAD_L}
           x2={WIDTH - PAD_R}
@@ -72,33 +70,35 @@ export function SignupRace({
           strokeWidth={1}
         />
 
-        {/* User label */}
         <text
           x={PAD_L - 8}
           y={yBase}
           textAnchor="end"
           dominantBaseline="central"
           fontFamily="var(--font-sans)"
-          fontSize={11}
+          fontSize={10}
           fill="var(--color-text-muted)"
         >
           {userLabel}
         </text>
 
-        {/* Typing start */}
-        <circle cx={xAt(keyRowStart)} cy={yBase} r={MILE_R / 2} fill="var(--color-text-muted)" />
+        <circle
+          cx={xAt(keyRowStart)}
+          cy={yBase}
+          r={MILE_R / 2}
+          fill="var(--color-text-muted)"
+        />
         <text
           x={xAt(keyRowStart)}
-          y={yBase - 12}
+          y={yBase - 10}
           textAnchor="middle"
           fontFamily="var(--font-sans)"
-          fontSize={9}
+          fontSize={8}
           fill="var(--color-text-muted)"
         >
           typing
         </text>
 
-        {/* Pre-check "available" */}
         <g>
           <circle
             cx={xAt(precheckAt)}
@@ -109,36 +109,41 @@ export function SignupRace({
           />
           <text
             x={xAt(precheckAt)}
-            y={yBase - 12}
+            y={yBase - 10}
             textAnchor="middle"
             fontFamily="var(--font-sans)"
-            fontSize={9}
+            fontSize={8}
             fill="var(--color-text-muted)"
           >
-            pre-check: available
+            available
           </text>
         </g>
 
-        {/* Submit click */}
         <motion.g
           initial={false}
           animate={{ x: xAt(submitMs) - xAt(0) }}
           transition={SPRING.smooth}
         >
-          <circle cx={xAt(0)} cy={yBase} r={MILE_R} fill="var(--color-accent)" stroke="var(--color-bg)" strokeWidth={2} />
+          <circle
+            cx={xAt(0)}
+            cy={yBase}
+            r={MILE_R}
+            fill="var(--color-accent)"
+            stroke="var(--color-bg)"
+            strokeWidth={2}
+          />
           <text
             x={xAt(0)}
-            y={yBase - 14}
+            y={yBase - 12}
             textAnchor="middle"
             fontFamily="var(--font-mono)"
-            fontSize={10}
+            fontSize={9}
             fill="var(--color-accent)"
           >
             submit
           </text>
         </motion.g>
 
-        {/* Commit landing at DB */}
         <motion.g
           initial={false}
           animate={{ x: xAt(commitMs) - xAt(0) }}
@@ -165,7 +170,6 @@ export function SignupRace({
                 stroke="var(--color-text)"
                 strokeWidth={1.5}
               />
-              {/* Cross-hatch X inside the reject cell */}
               <line
                 x1={xAt(0) - MILE_R + 2}
                 y1={yBase - MILE_R + 2}
@@ -186,16 +190,15 @@ export function SignupRace({
           )}
         </motion.g>
 
-        {/* Result label, right of timeline */}
         <text
-          x={WIDTH - PAD_R + 12}
+          x={WIDTH - PAD_R + 8}
           y={yBase}
           dominantBaseline="central"
           fontFamily="var(--font-mono)"
-          fontSize={12}
+          fontSize={10}
           fill={isWinner ? "var(--color-accent)" : "var(--color-text-muted)"}
         >
-          {isWinner ? "commit" : "already taken"}
+          {isWinner ? "commit" : "taken"}
         </text>
       </g>
     );
@@ -203,45 +206,36 @@ export function SignupRace({
 
   return (
     <WidgetShell
-      title="SignupRace"
-      measurements={`t(A) = ${aMs} ms · t(B) = ${bMs} ms · winner: ${aWins ? "A" : "B"}`}
+      title="signup race · a / b"
+      measurements={`winner: ${aWins ? "A" : "B"}${tie ? " · tie" : ""}`}
       caption={
-        aMs === bMs ? (
-          <>
-            Exact tie. The database still has to pick one — some serial order is always imposed.
-            Here, A wins the tie. The loser's INSERT hits the UNIQUE constraint on{" "}
-            <span className="font-mono">{canonical}</span> and returns{" "}
-            <span className="font-mono">EMAIL_EXISTS</span>. Which user "went first" in the UI
-            doesn't matter. The database decides.
-          </>
-        ) : (
-          <>
-            {aWins ? "A" : "B"} submitted first and commits. {aWins ? "B" : "A"}'s INSERT for{" "}
-            <span className="font-mono">{canonical}</span> hits the UNIQUE constraint and returns{" "}
-            <span className="font-mono">EMAIL_EXISTS</span>. Both users saw "available" during
-            typing — that check was advisory. The database is the truth.
-          </>
-        )
+        <>
+          {aWins ? "A" : "B"} commits. {aWins ? "B" : "A"}'s INSERT on{" "}
+          <span className="font-mono">{canonical}</span> hits UNIQUE and returns{" "}
+          <span className="font-mono">EMAIL_EXISTS</span>. Both saw{" "}
+          <span className="font-mono">available</span> while typing. The database
+          is the truth.
+        </>
       }
       controls={
         <div className="bs-race-controls grid grid-cols-1 gap-[var(--spacing-2xs)]">
           <Scrubber
-            label="A submit"
+            label="A · t"
             value={aMs}
             min={0}
             max={scaleMs}
             step={1}
             onChange={setAMs}
-            format={(v) => `t = ${v} ms`}
+            format={(v) => `${v} ms`}
           />
           <Scrubber
-            label="B submit"
+            label="B · t"
             value={bMs}
             min={0}
             max={scaleMs}
             step={1}
             onChange={setBMs}
-            format={(v) => `t = ${v} ms`}
+            format={(v) => `${v} ms`}
           />
         </div>
       }
@@ -249,16 +243,15 @@ export function SignupRace({
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         width="100%"
-        style={{ maxWidth: WIDTH, height: "auto", display: "block" }}
+        style={{ maxWidth: WIDTH, height: "auto", display: "block", margin: "0 auto" }}
         role="img"
-        aria-label={`Signup race: user A submits at ${aMs} ms, user B at ${bMs} ms. ${aWins ? "A" : "B"} commits; the other gets EMAIL_EXISTS.`}
+        aria-label={`Signup race timeline. A submits at ${aMs} ms, B at ${bMs} ms.`}
       >
-        {/* Time axis label */}
         <text
           x={PAD_L}
           y={PAD_T - 10}
           fontFamily="var(--font-sans)"
-          fontSize={10}
+          fontSize={9}
           fill="var(--color-text-muted)"
         >
           time →
@@ -267,13 +260,13 @@ export function SignupRace({
         {renderRow(ROW_A_Y, "USER A", aMs, aWins)}
         {renderRow(ROW_B_Y, "USER B", bMs, !aWins)}
 
-        {/* Database lane in the middle */}
+        {/* Database lane between the two users */}
         <g>
           <rect
             x={PAD_L}
-            y={DB_Y - 24}
+            y={DB_Y - 22}
             width={WIDTH - PAD_L - PAD_R}
-            height={48}
+            height={44}
             rx={3}
             fill="color-mix(in oklab, var(--color-surface) 40%, transparent)"
             stroke="var(--color-rule)"
@@ -285,13 +278,12 @@ export function SignupRace({
             textAnchor="end"
             dominantBaseline="central"
             fontFamily="var(--font-sans)"
-            fontSize={11}
+            fontSize={10}
             fill="var(--color-text-muted)"
           >
-            DATABASE
+            DB
           </text>
 
-          {/* Winner's commit marker */}
           <motion.g
             initial={false}
             animate={{ x: xAt(winnerMs + 3) - xAt(0) }}
@@ -305,19 +297,32 @@ export function SignupRace({
               stroke="var(--color-bg)"
               strokeWidth={2}
             />
+            {/* Press-ring halo — re-fires only when the winner flips, so the
+                ring reads as "commit landed" not "slider moved". §9 carve-out. */}
+            <motion.circle
+              key={`ring-${aWins ? "a" : "b"}`}
+              cx={xAt(0)}
+              cy={DB_Y}
+              r={6}
+              fill="none"
+              stroke="var(--color-accent)"
+              strokeWidth={1.5}
+              initial={{ scale: 1, opacity: 0.6 }}
+              animate={{ scale: 2.4, opacity: 0 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] as const }}
+            />
             <text
               x={xAt(0)}
-              y={DB_Y - 14}
+              y={DB_Y - 12}
               textAnchor="middle"
               fontFamily="var(--font-mono)"
-              fontSize={10}
+              fontSize={9}
               fill="var(--color-accent)"
             >
-              {aWins ? "A" : "B"} commits {canonical}
+              {aWins ? "A" : "B"} commits
             </text>
           </motion.g>
 
-          {/* Loser's reject marker — only if loser is distinct from winner */}
           {loserMs !== winnerMs ? (
             <motion.g
               initial={false}
@@ -350,13 +355,13 @@ export function SignupRace({
               />
               <text
                 x={xAt(0)}
-                y={DB_Y + 18}
+                y={DB_Y + 16}
                 textAnchor="middle"
                 fontFamily="var(--font-mono)"
-                fontSize={10}
+                fontSize={9}
                 fill="var(--color-text-muted)"
               >
-                {aWins ? "B" : "A"} rejected (UNIQUE)
+                {aWins ? "B" : "A"} UNIQUE
               </text>
             </motion.g>
           ) : null}
@@ -364,7 +369,7 @@ export function SignupRace({
 
         {/* Time ticks along bottom */}
         <g>
-          {[0, 10, 20, 30, 40, 50, 60]
+          {[0, 15, 30, 45, 60]
             .filter((t) => t <= scaleMs)
             .map((t) => (
               <g key={t}>
@@ -381,7 +386,7 @@ export function SignupRace({
                   y={HEIGHT - PAD_B + 22}
                   textAnchor="middle"
                   fontFamily="var(--font-mono)"
-                  fontSize={10}
+                  fontSize={9}
                   fill="var(--color-text-muted)"
                 >
                   {t}
@@ -393,13 +398,26 @@ export function SignupRace({
             y={HEIGHT - PAD_B + 22}
             textAnchor="end"
             fontFamily="var(--font-sans)"
-            fontSize={10}
+            fontSize={9}
             fill="var(--color-text-muted)"
           >
             ms
           </text>
         </g>
-
+        {/* Tie note lives inside the SVG so the widget frame never resizes. */}
+        <motion.text
+          x={WIDTH / 2}
+          y={HEIGHT - 4}
+          textAnchor="middle"
+          fontFamily="var(--font-mono)"
+          fontSize={9}
+          fill="var(--color-text-muted)"
+          initial={false}
+          animate={{ opacity: tie ? 1 : 0 }}
+          transition={SPRING.smooth}
+        >
+          exact tie — A wins by stable order
+        </motion.text>
       </svg>
     </WidgetShell>
   );

@@ -106,7 +106,13 @@ export function Stepper({ value, total, onChange, playable = true, playInterval 
               setPlaying((p) => !p);
             }
           }}
-          aria-label={playing ? "Pause auto-play — Space" : "Play auto-play — Space"}
+          aria-label={
+            playing
+              ? "Pause auto-play — Space"
+              : atEnd
+                ? "Replay from start — Space"
+                : "Play auto-play — Space"
+          }
           className={btnClass}
           style={{ color: playing ? "var(--color-accent)" : undefined }}
           {...PRESS}
