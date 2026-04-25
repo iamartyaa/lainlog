@@ -10,9 +10,20 @@ Arguments:
 - **Required**: a post slug or path (e.g. `the-function-that-remembered` or `app/posts/the-function-that-remembered/`).
 - **Optional**: a short brief of what the user thinks is off. If absent, fire the full Phase F audit.
 
+## Orchestrator mode (when invoked under `/orchestrate`)
+
+If your prompt declares `ORCHESTRATOR_STATE_DIR` and `TASK_ID`, you are running as an `article-polisher` agent under the orchestrator. **Every user-facing checkpoint below marshals via the mailbox** at `<ORCHESTRATOR_STATE_DIR>/tasks/<TASK_ID>.json` instead of speaking to the user directly. See `.claude/agents/article-polisher.md` for the full marshalling protocol — read it before Phase 0. Outside orchestrator mode (no `ORCHESTRATOR_STATE_DIR` in your prompt), behave exactly as the canonical pipeline below describes.
+
+Checkpoint marshalling (orchestrator mode only):
+- At each Checkpoint, write the proposal/summary into `pending_user_input.prompt`, set `request_id` (a fresh ULID), `asked_at`, leave `response: null`, flip `status` to `awaiting-user`, `phase` to the current letter.
+- Poll your task JSON every 15 seconds for non-null `pending_user_input.response`. When found: clear `pending_user_input` to `null`, flip status back to `running`, parse the response, continue.
+- Voice-altering changes mid-iteration also marshal via the mailbox per `article-polisher.md`'s "voice-change diff surfacing" protocol — surface each as it arises, don't batch.
+- Max wait 30 minutes per mailbox prompt; on timeout flip `status` to `failed` with `errors: ["awaiting-user-timeout @ Checkpoint <N>"]`.
+- Use `DEV_PORT` (not 3000) for `pnpm dev`.
+
 ## Hard rules (inviolable)
 
-1. **Never skip the user checkpoints** (Checkpoint 0, 2, 3 below). Gate on each.
+1. **Never skip the user checkpoints** (Checkpoint 0, 2, 3 below). Gate on each (or marshal via mailbox in orchestrator mode).
 2. **Never commit or push without explicit "yes push it"** at the closing checkpoint.
 3. **Never silently rewrite voice.** Every tone-altering change is a decision the user confirms. Prose restructuring surfaces as a diff, not a fait accompli.
 4. **Never implement a DESIGN.md-banned pattern** even if a review skill suggests it. Reject with the ban cited.

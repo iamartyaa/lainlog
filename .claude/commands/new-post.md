@@ -9,9 +9,19 @@ You (Claude) are about to author a new bytesize post on the topic: **$ARGUMENTS*
 
 This command encodes a 9-phase workflow that fires every time the author wants a new post. Read the whole file before acting. The workflow is bounded by four user checkpoints — gate hard at each of them.
 
+## Orchestrator mode (when invoked under `/orchestrate`)
+
+If your prompt declares `ORCHESTRATOR_STATE_DIR` and `TASK_ID`, you are running as a `post-author` agent under the orchestrator. **Every user-facing checkpoint below marshals via the mailbox** at `<ORCHESTRATOR_STATE_DIR>/tasks/<TASK_ID>.json` instead of speaking to the user directly. See `.claude/agents/post-author.md` for the full marshalling protocol — read it before Phase A. Outside orchestrator mode (no `ORCHESTRATOR_STATE_DIR` in your prompt), behave exactly as the canonical pipeline below describes.
+
+Checkpoint marshalling (orchestrator mode only):
+- At each Checkpoint, write the proposal/summary into `pending_user_input.prompt`, set `request_id` (a fresh ULID), `asked_at`, leave `response: null`, flip `status` to `awaiting-user`, `phase` to the current letter.
+- Poll your task JSON every 15 seconds for non-null `pending_user_input.response`. When found: clear `pending_user_input` to `null`, flip status back to `running`, parse the response, continue.
+- Max wait 30 minutes; on timeout flip `status` to `failed` with `errors: ["awaiting-user-timeout @ Checkpoint <N>"]`.
+- Use `DEV_PORT` (not 3000) for `pnpm dev`.
+
 ## Hard rules (inviolable)
 
-1. **Never skip Checkpoints 1–4.** Surface them as explicit user-facing decisions.
+1. **Never skip Checkpoints 1–4.** Surface them as explicit user-facing decisions (or mailbox transactions in orchestrator mode).
 2. **Never commit or push without explicit "yes, push it" at Checkpoint 4.** No implicit commits.
 3. **Never skip Phase H (correctness validation).** A failing check blocks Checkpoint 4.
 4. **Never implement a `DESIGN.md`-banned pattern** even if a design skill suggests it. The bans are authoritative. Reject with reasoning written to the review file.

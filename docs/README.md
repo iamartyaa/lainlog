@@ -18,6 +18,7 @@ The canonical reference set for authoring, reviewing, and shipping bytesize post
 
 - **[`../.claude/commands/new-post.md`](../.claude/commands/new-post.md)** — `/new-post`: the full nine-phase authoring pipeline for a fresh article.
 - **[`../.claude/commands/improve-an-article.md`](../.claude/commands/improve-an-article.md)** — `/improve-an-article`: iterate on an existing post using the accumulated playbook and Phase F/G discipline.
+- **[`../.claude/commands/orchestrate.md`](../.claude/commands/orchestrate.md)** — `/orchestrate`: long-running orchestrator. Dispatches multiple agents (`post-author`, `article-polisher`, `bug-fixer`, `feature-builder`, `brainstormer`) across worktrees so you can run several tasks in parallel and talk to the orchestrator any time. See `.claude/agents/` for each role's protocol.
 
 ## When to reach for which doc
 
