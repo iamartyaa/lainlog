@@ -24,7 +24,7 @@ export type PostMeta = {
 export const POSTS: PostMeta[] = [
   {
     slug: "the-webpage-that-reads-the-agent",
-    title: "The webpage that reads the agent",
+    title: "AI agent traps & prompt injection on the open web",
     date: "2026-04-24",
     hook: "you don't break the model — you break the page it reads. six ways the open web learned to trap an AI agent.",
     readingMinutes: 18,
@@ -32,7 +32,7 @@ export const POSTS: PostMeta[] = [
   },
   {
     slug: "the-function-that-remembered",
-    title: "The function that remembered",
+    title: "JavaScript closures, var vs let, and the loop bug",
     date: "2026-04-19",
     hook: "how a function outlives the scope it was born in — and why half of your JS bugs start there.",
     readingMinutes: 10,
@@ -40,7 +40,7 @@ export const POSTS: PostMeta[] = [
   },
   {
     slug: "the-browser-stopped-asking",
-    title: "The browser stopped asking",
+    title: "WebSockets, SSE, and long-polling: how real-time web works",
     date: "2026-04-20",
     hook: "real-time apps didn't teach the server to speak first — they taught the browser to stop hanging up.",
     readingMinutes: 9,
@@ -48,7 +48,7 @@ export const POSTS: PostMeta[] = [
   },
   {
     slug: "why-fetch-fails-only-in-browser",
-    title: "Why `fetch` works in curl but the browser blocks it",
+    title: "Why fetch fails in browser but works in curl (CORS)",
     date: "2026-04-20",
     hook: "the server did answer — your browser is just holding the response back from your JavaScript.",
     readingMinutes: 9,
@@ -56,7 +56,7 @@ export const POSTS: PostMeta[] = [
   },
   {
     slug: "how-gmail-knows-your-email-is-taken",
-    title: "How Gmail knows your email is taken, instantly",
+    title: "How instant email-availability checks work",
     date: "2026-04-19",
     hook: "the pipeline that tells you 'already taken' before your finger lifts.",
     readingMinutes: 12,
