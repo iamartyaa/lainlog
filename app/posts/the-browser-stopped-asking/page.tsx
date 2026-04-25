@@ -13,7 +13,7 @@ import {
   Term,
 } from "@/components/prose";
 import { CodeBlock } from "@/components/code";
-import { TextHighlighter, VerticalCutReveal } from "@/components/fancy";
+import { TextHighlighter } from "@/components/fancy";
 import { PipeCompare, UpgradeHandshake, ReconnectGap, CostMatrix } from "./widgets";
 import { metadata } from "./metadata";
 
@@ -471,7 +471,6 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=`}
           closes.
         </P>
         <p
-          className="font-serif italic"
           style={{
             fontSize: "1.125em",
             marginBlockStart: "1.5em",
@@ -479,14 +478,10 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=`}
             lineHeight: 1.55,
           }}
         >
-          <VerticalCutReveal
-            className="font-serif italic"
-            transition={{ type: "spring", duration: 0.9, bounce: 0 }}
-            useInViewOptions={{ once: true, initial: false, amount: 0.6 }}
-            staggerDuration={0.025}
-          >
-            {"Every “real-time” web app on your laptop right now is variations on a browser that refuses to finish its sentence."}
-          </VerticalCutReveal>
+          <Em>
+            Every &ldquo;real-time&rdquo; web app on your laptop right now is
+            variations on a browser that refuses to finish its sentence.
+          </Em>
         </p>
         <p
           className="font-sans"
