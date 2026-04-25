@@ -255,20 +255,34 @@ Every widget wraps in `<WidgetShell>`. Consistent header/canvas/controls/caption
 <WidgetShell
   title="hostile page · scan"                 // Plex Sans muted
   measurements="3 injections · hidden"        // Plex Mono tabular-nums, right
-  captionTone="prominent"                     // "muted" (default) or "prominent"
+  captionTone="prominent"                     // "prominent" by default for teaching captions
   caption={<>teacher-voice explanation with <HL>highlighted verb cue</HL>.</>}
-  controls={<button>▸ scan</button>}
+  controls={<WidgetNav value={step} total={N} onChange={setStep} />}
 >
   <svg viewBox="0 0 360 360">…</svg>          {/* canvas */}
 </WidgetShell>
 ```
 
 - **Title** — the widget's name. Keep to 1–4 words. Avoid jargon not introduced in prose.
-- **Measurements** — always Plex Mono tabular-nums. Digits not word-numbers (`3 layers · 6 stages`, not `three layers · six stages`).
+- **Measurements** — always Plex Mono tabular-nums. Digits not word-numbers (`3 layers · 6 stages`, not `three layers · six stages`). **Never** put `step n/N` here — `WidgetNav` owns the step counter so duplicating it confuses the reader's eye.
 - **Caption tone**:
-  - `muted` (default, pre-existing posts) — Plex Sans small, muted colour. Sidenote voice.
-  - `prominent` (introduced in the agent-traps post) — Plex Serif body, full contrast, leading terracotta diamond marker. Teacher voice. Use this when the caption carries the teaching moment. Also embed a `TextHighlighter` on the key phrase for visual pull.
-- **Controls** — below the canvas, left-aligned. Minimum 44×44 tap targets. Button glyphs (`▸` play, `↻` reset, `❚❚` pause) are a tactile shorthand, not decoration — use them consistently across widgets.
+  - `prominent` is the **default** whenever the caption is a complete sentence the reader will read for the teaching. Plex Serif body, full contrast, leading terracotta diamond marker. Teacher voice. Embed a `TextHighlighter` on the key verb cue for visual pull.
+  - `muted` is for sub-sentence sidenotes only — measurement labels, "tap to step" verb cues without supporting prose, parenthetical remarks. Plex Sans small, muted colour.
+  - The shape test: if the caption explains *what state the widget is in right now*, it's prominent. If the caption labels *what to do*, it's muted.
+- **Controls** — below the canvas, centred (the controls slot is `flex flex-wrap items-center justify-center mx-auto`). Minimum 44×44 tap targets. Step controls use `<WidgetNav>` exclusively (see §4.5).
+- **One verb per widget shell**: a single widget's controls slot should ask for one decision from the reader — step through, scrub a value, toggle a mode. When you find yourself stacking a stepper + a mode toggle + a side-action button, split the widget. The earned exception is `RequestClassifier` (the post's primary teaching beat is *the five-dial decision space*); document any other carve-out you propose.
+
+### 4.5 `WidgetNav` — the canonical step-controls primitive
+
+`components/viz/WidgetNav.tsx` (since the widget-overhaul PR). One morphing-pill nav bar that absorbs prev / play / next + the single step counter for the whole widget. Replaces the legacy `<Stepper>`, which is now a thin shim.
+
+- **When to reach for it**: any widget whose teaching is a *sequence of steps*. If the reader's question is "what comes next?", the answer is `<WidgetNav>`.
+- **Frame stability**: the bar's height is invariant across state. The indicator pill animates `transform` (translate + scale), not `width`/`height`, so the surrounding caption and canvas never reflow.
+- **Goo filter**: scoped per-instance via `useId()` — every nav has its own `<filter>` with a unique id. No document-root coordination required. Reduced motion drops the filter and teleports the pill.
+- **Auto-play discipline**: the IntersectionObserver pauses autoplay when the nav scrolls off-screen — battery-life requirement on mobile when many widgets share a page. Reduced-motion users get a 1800 ms cadence instead of the default 900 ms so each step reads as an instant rather than a flicker-reel.
+- **Accessibility**: `aria-current="step"` on the active button; the counter `aria-live` toggles to `off` while autoplay is running so screen readers don't get flooded; `counterNoun` overrides the announced noun (`"tick"` instead of `"step"` for `RenderLoom`).
+- **Props you'll actually pass**: `value`, `total`, `onChange`, optionally `playable={false}` (for non-autoplay widgets), `playInterval` (custom cadence), `counterNoun` (when "step" reads wrong), `ariaLabel`.
+- **Stepper deprecation**: `<Stepper>` is preserved as a shim that forwards to `WidgetNav` for one release, so external imports survive. Migrate your callsite to `<WidgetNav>` directly when you touch the widget.
 
 ## 5. Anti-patterns (from actual review feedback)
 
