@@ -387,20 +387,23 @@ html[data-theme-transitioning] {
 .bs-loopvar-narrow,
 .bs-looplet-narrow,
 .bs-tetherscope-narrow,
-.bs-renderloom-narrow {
+.bs-renderbroken-narrow,
+.bs-renderfixed-narrow {
   display: none;
 }
 @container widget (max-width: 560px) {
   .bs-loopvar-wide,
   .bs-looplet-wide,
   .bs-tetherscope-wide,
-  .bs-renderloom-wide {
+  .bs-renderbroken-wide,
+  .bs-renderfixed-wide {
     display: none;
   }
   .bs-loopvar-narrow,
   .bs-looplet-narrow,
   .bs-tetherscope-narrow,
-  .bs-renderloom-narrow {
+  .bs-renderbroken-narrow,
+  .bs-renderfixed-narrow {
     display: block;
   }
 }

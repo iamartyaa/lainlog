@@ -19,7 +19,8 @@ import {
   LoopVar,
   LoopLet,
   TetherScope,
-  RenderLoom,
+  RenderBroken,
+  RenderFixed,
   PredictReveal,
 } from "./widgets";
 import { metadata, subtitle } from "./metadata";
@@ -253,14 +254,20 @@ const add10 = makeAdder(10);`}
         </P>
       </div>
 
-      <RenderLoom />
+      <RenderBroken />
 
       <div>
         <P>
-          Flip the toggle to <Code>c =&gt; c + 1</Code>. The callback no longer reads anything
-          from the enclosing render — it just asks React for the current count at call time.
-          No tether to a stale frame. No frame to go stale.
+          The interval keeps ticking; the screen never moves past one. Flip the callback to the
+          updater form — <Code>c =&gt; c + 1</Code> — and the topology changes. The callback no
+          longer reads anything from the enclosing render. No tether to a stale frame; no frame
+          to go stale.
         </P>
+      </div>
+
+      <RenderFixed />
+
+      <div>
         <Callout tone="note">
           A stale closure isn&apos;t a bug in the closure. It&apos;s a tether to a scope the
           world has moved past. The question is never &ldquo;is this a closure?&rdquo; — almost
