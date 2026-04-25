@@ -132,7 +132,10 @@ export function CacheWalk({
   const WIDTH = 360;
   const PAD = 14;
   const ENTRY_Y = 18;
-  const ENTRY_H = 32;
+  // 44-px band so the in-canvas chip row meets the 44×44 touch-target rule
+  // on step 0 and the entry strip on steps 1+ shares the same band — keeps
+  // the canvas frame-stable across step transitions.
+  const ENTRY_H = 44;
   const NEAR_Y = ENTRY_Y + ENTRY_H + 18;
   const NEAR_H = 50;
   const DIST_Y = NEAR_Y + NEAR_H + 14;
@@ -305,7 +308,7 @@ export function CacheWalk({
                       style={{
                         flex: "1 1 0",
                         height: "100%",
-                        minHeight: 32,
+                        minHeight: 44,
                         padding: "0 var(--spacing-2xs)",
                         borderRadius: "var(--radius-sm)",
                         border: `1px solid ${active ? "var(--color-accent)" : "var(--color-rule)"}`,
