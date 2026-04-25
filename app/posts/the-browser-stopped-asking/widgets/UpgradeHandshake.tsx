@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { PRESS, SPRING, TIMING } from "@/lib/motion";
-import { Stepper } from "@/components/viz/Stepper";
+import { WidgetNav } from "@/components/viz/WidgetNav";
 import { TextHighlighter } from "@/components/fancy";
 import { WidgetShell } from "./WidgetShell";
 
@@ -88,11 +88,12 @@ export function UpgradeHandshake() {
   return (
     <WidgetShell
       title="how HTTP ends mid-socket"
-      measurements={`step ${step + 1}/3 · ${timingLabel}`}
+      measurements={timingLabel}
       caption={CAPTIONS[step]}
+      captionTone="prominent"
       controls={
-        <div className="flex flex-wrap items-center gap-[var(--spacing-md)]">
-          <Stepper value={step} total={3} onChange={setStep} />
+        <div className="flex flex-wrap items-center justify-center gap-[var(--spacing-md)] w-full">
+          <WidgetNav value={step} total={3} onChange={setStep} />
           <motion.button
             type="button"
             onClick={reroll}
@@ -112,10 +113,10 @@ export function UpgradeHandshake() {
       }
     >
       <div className="bs-uh-narrow">
-        <HandshakeCanvasNarrow step={step} computed={computed} />
+        <MemoHandshakeCanvasNarrow step={step} computed={computed} />
       </div>
       <div className="bs-uh-wide">
-        <HandshakeCanvas step={step} computed={computed} />
+        <MemoHandshakeCanvas step={step} computed={computed} />
       </div>
     </WidgetShell>
   );
@@ -146,6 +147,9 @@ const CAPTIONS: React.ReactNode[] = [
 ];
 
 /* -------------------------------------------------------------------------- */
+
+const MemoHandshakeCanvas = memo(HandshakeCanvas);
+const MemoHandshakeCanvasNarrow = memo(HandshakeCanvasNarrow);
 
 function HandshakeCanvas({ step, computed }: { step: number; computed: Computed }) {
   const WIDTH = 820;
