@@ -48,3 +48,7 @@ next-env.d.ts
 # Local-only; survives session exits but never lives in commits or PRs.
 /.orchestrator/
 
+# orchestrator persistent worktrees — one per in-flight task. Created via
+# `git worktree add`, removed at task merge/cancel. Local-only.
+/.claude/worktrees/
+

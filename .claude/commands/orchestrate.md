@@ -13,6 +13,18 @@ If `$ARGUMENTS` is non-empty, treat it as the first user instruction and process
 
 ---
 
+## Environment caveats (why the dispatch model looks the way it does)
+
+Three constraints in this Claude Code environment shape every decision below:
+
+1. **No project-level subagent registration.** `.claude/agents/<role>.md` files are NOT auto-registered as `subagent_type` values. Calling `Agent({ subagent_type: "article-polisher" })` fails with "Agent type not found". The only built-ins are `general-purpose`, `Explore`, `Plan`, `claude-code-guide`, `statusline-setup`. **So**: dispatch via `subagent_type: "general-purpose"` with the role-file path embedded in the prompt.
+2. **No `SendMessage` tool to resume an agent.** Once a background agent returns its summary, it's done. There is no way to feed a new message into the same agent process. **So**: each "resume" is a fresh `Agent` call. The orchestrator drives multi-phase work by dispatching a new agent per phase, not by waking the same one.
+3. **`isolation: "worktree"` auto-prunes worktrees.** The runtime cleans up the worktree after the agent's turn ends, even when the agent wrote files. **So**: do NOT use `isolation: "worktree"`. The orchestrator pre-creates a *persistent* worktree via `git worktree add` and dispatches without isolation, pointing the agent at the persistent path. Worktree survives across all dispatches; orchestrator owns its lifecycle (created at task start, removed at merge/cancel).
+
+These three together mean: each task = persistent worktree + sequence of fresh general-purpose agent calls + on-disk mailbox JSON as the bridge between user and agents.
+
+---
+
 ## Hard rules
 
 1. **You never write to a worktree.** Only the dispatched agent owns its worktree.
@@ -124,35 +136,70 @@ If `$ARGUMENTS` is non-empty, treat it as the first user instruction and process
    - Append `slug` to `reserved_slugs`.
    - Append `dev_port` to `active_ports` (if any).
 
-6. **Dispatch (unless queued)** via the `Agent` tool:
+6. **Pre-create the persistent worktree** (skip for `brainstormer` — no worktree needed):
+   ```
+   WORKTREE_PATH=$MAIN_REPO/.claude/worktrees/<TASK_ID>
+   git -C $MAIN_REPO worktree add $WORKTREE_PATH -b <branch> origin/main
+   ```
+   - The path is deterministic from `TASK_ID` so the orchestrator can always find it.
+   - `-b <branch>` creates the agent's branch (e.g. `posts/<slug>-polish`) starting at `origin/main`.
+   - Capture `WORKTREE_PATH` into the task JSON's `worktree` field BEFORE dispatch.
+   - `.claude/worktrees/` is gitignored under `.orchestrator/`-adjacent rules; if not, add it to `.gitignore`.
+
+7. **Dispatch (unless queued)** via the `Agent` tool. **Always `subagent_type: "general-purpose"`** — there is no project-level role registration in this env. The role file is loaded by the agent on its first turn:
    ```
    Agent({
-     subagent_type: "<type>",
-     description: "<short>",
-     isolation: "worktree",        // omit for brainstormer (no worktree)
+     subagent_type: "general-purpose",
+     description: "<role>: <short title>",
      run_in_background: true,
-     prompt: `<the user's task description>
+     // NO isolation field — worktree is already persistent on disk.
+     prompt: `You are dispatched as a "<role>" agent under the bytesize orchestrator.
 
+STEP 1 — load your role contract. Read $MAIN_REPO/.claude/agents/<role>.md end to end. That file IS your contract — its hard rules, status updates, mailbox protocol, and per-checkpoint shim all apply. For post-author / article-polisher, also read the canonical pipeline at $MAIN_REPO/.claude/commands/<new-post|improve-an-article>.md.
+
+STEP 2 — environment:
 ORCHESTRATOR_STATE_DIR=<abs path to .orchestrator/>
 TASK_ID=<the ULID>
 DEV_PORT=<n or "">
-BRANCH=<the computed branch or "">
-SLUG_RESERVED=<slug or "">
+BRANCH=<the computed branch>
+WORKTREE_PATH=<abs path to persistent worktree>
+SLUG_RESERVED=<slug>
+RESUME_FROM=<phase letter or "" for fresh start>
 
-You are running under the orchestrator. Read your agent file at .claude/agents/<type>.md for the full protocol. All user interaction goes through the mailbox at $ORCHESTRATOR_STATE_DIR/tasks/$TASK_ID.json.`
+STEP 3 — work in the persistent worktree. Your first action: cd "$WORKTREE_PATH" && git status (verify branch is correct). Do NOT create a new worktree; do NOT use isolation. The path is yours to read/write directly.
+
+STEP 4 — single-turn execution. The Claude Code runtime gives you ONE turn to complete one phase of the pipeline. When you reach the next user-facing checkpoint (or finish a phase that needs orchestrator coordination), you MUST: (a) write the mailbox prompt into $ORCHESTRATOR_STATE_DIR/tasks/$TASK_ID.json (status: awaiting-user, pending_user_input filled), (b) RETURN your summary, (c) exit. Do NOT poll. The orchestrator will spawn a fresh agent for the next phase after the user responds.
+
+STEP 5 — task brief: <verbatim user instruction>
+
+Begin: read your role file, then either start fresh or resume from RESUME_FROM phase.`
    })
    ```
-   The `Agent` tool returns immediately because `run_in_background: true`. Capture the agent task ID it returns into `agent_notes` so future cancellations can use `TaskStop`.
+   The `Agent` tool returns its `agentId` immediately. Capture it into `agent_handle` in the task JSON for current-session `TaskStop`. (Cross-session cancellation falls back to "force-clean" — see below.)
 
-7. **Confirm to user**:
+8. **Confirm to user**:
    ```
-   Dispatched t-<id> (<type>): <title>. Branch: <branch>. Port: <port>. Worktree: pending agent setup.
+   Dispatched t-<id> (<role>): <title>. Branch: <branch>. Port: <port>. Worktree: <abs path>.
    ```
 
    If queued instead:
    ```
-   Queued t-<id> (<type>): <title>. Will dispatch when a slot frees (currently 3/3 active).
+   Queued t-<id> (<role>): <title>. Will dispatch when a slot frees (currently 3/3 active).
    ```
+
+### Resume protocol — how to drive multi-phase work
+
+When an agent writes to mailbox and exits, the next user response unblocks the next phase. To dispatch the continuation:
+
+1. User says `approve t-<id> <extra>` (or `reply to t-<id>: <text>` for bespoke prompts).
+2. Orchestrator writes `pending_user_input.response` into the task JSON (this is the only mailbox field the orchestrator writes).
+3. Orchestrator immediately dispatches a **fresh general-purpose agent** with the same shape as step 7 above, but with two key changes:
+   - The prompt explicitly notes this is a resume — `RESUME_FROM=<phase>` is set to the phase the agent was in when it exited.
+   - The role-file directive becomes "read your role contract, then read the latest mailbox response in your task JSON, clear it (set `pending_user_input` back to `null`), and continue from RESUME_FROM."
+4. Worktree path is the same (persistent). Branch is whatever the previous turn left it on; the new agent picks up where the last one stopped.
+5. Agent runs the next phase, writes the next mailbox prompt, exits. Loop until the agent reaches PR-open (`ready-for-review`) or terminal failure.
+
+**Key invariant**: the orchestrator never lets the worktree go stale — every `approve`/`reply` is paired with a fresh dispatch in the same orchestrator turn. If you write the response without dispatching the next agent, the task hangs forever.
 
 ### Status query
 
@@ -177,8 +224,11 @@ Pattern: `approve t-<id> [<extra>]`.
    - `approve t-002 with slug 'prefetch-races'` → response = `"approve with slug 'prefetch-races'"`
    - `approve t-002 1` → response = `"approve 1"`
    - `approve t-002 minor` → response = `"approve minor"`
-3. Write the task JSON: set `pending_user_input.response` and `pending_user_input.responded_at`. Do NOT clear the mailbox object — the agent does that on resume.
-4. Confirm: `Approved t-<id>. Agent will pick this up within 15 seconds.`
+3. Write the task JSON: set `pending_user_input.response` and `pending_user_input.responded_at`. Do NOT clear the mailbox object — the next agent will read it and clear it on its first turn.
+4. **Immediately dispatch a fresh general-purpose agent** to continue the task — see "Resume protocol" above. The new dispatch reuses the persistent worktree at `task.worktree`, sets `RESUME_FROM=<task.phase>`, and tells the agent to read the mailbox response, clear it, and proceed.
+5. Confirm: `Approved t-<id>. Resume agent dispatched (handle <new-agentId>).`
+
+**Hanging tasks**: if you only write the response without dispatching the resume agent, the task hangs forever. Always pair them in the same orchestrator turn.
 
 ### Cancel
 
