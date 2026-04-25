@@ -27,6 +27,16 @@ export type PostMeta = {
 
 export const POSTS: PostMeta[] = [
   {
+    slug: "the-line-that-waits-its-turn",
+    title:
+      "How the JavaScript event loop, microtasks, and the call stack work",
+    date: "2026-04-25",
+    hook:
+      "why setTimeout(0) is never zero, why await feels seamless, and why one runaway Promise can stall a tab.",
+    readingMinutes: 15,
+    tags: ["javascript", "language-internals", "async"],
+  },
+  {
     slug: "the-webpage-that-reads-the-agent",
     title: "AI agent traps & prompt injection on the open web",
     date: "2026-04-24",
