@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "motion/react";
-import { Stepper } from "@/components/viz/Stepper";
+import { WidgetNav } from "@/components/viz/WidgetNav";
 import { PRESS, SPRING } from "@/lib/motion";
 import { WidgetShell } from "./WidgetShell";
 
@@ -95,12 +95,12 @@ export function RequestJourney({
   return (
     <WidgetShell
       title="request journey · the browser is the gatekeeper"
-      measurements={`step ${step + 1}/${STEPS.length} · allow-origin ${allow ? "sent" : "missing"}`}
+      measurements={`allow-origin ${allow ? "sent" : "missing"}`}
       captionTone="prominent"
       caption={current.caption(allow)}
       controls={
-        <div className="flex items-center gap-[var(--spacing-md)] flex-wrap">
-          <Stepper value={step} total={STEPS.length} onChange={setStep} />
+        <div className="flex items-center justify-center gap-[var(--spacing-md)] flex-wrap w-full">
+          <WidgetNav value={step} total={STEPS.length} onChange={setStep} />
           <motion.button
             type="button"
             onClick={() => setAllow((v) => !v)}
