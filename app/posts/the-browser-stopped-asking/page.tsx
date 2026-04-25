@@ -20,7 +20,8 @@ import {
   Polling,
   LongPoll,
   WebSocketStream,
-  UpgradeHandshake,
+  HandshakeSteps,
+  KeyDerivation,
   ReconnectGap,
   CostMatrix,
 } from "./widgets";
@@ -312,9 +313,25 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=`}
         </P>
       </div>
 
-      <UpgradeHandshake />
+      <HandshakeSteps />
 
       <div>
+        <P>
+          The widget walks the spec sample. Now compute it on your own
+          machine — the next widget runs that derivation in <Em>your
+          browser</Em> against a fresh random key.
+        </P>
+      </div>
+
+      <KeyDerivation />
+
+      <div>
+        <P>
+          The widget runs the computation through your browser&apos;s Web
+          Crypto API, so the <Code>Sec-WebSocket-Accept</Code>{" "}you see is the
+          real SHA-1 your machine just computed. Nothing in the reveal is
+          faked.
+        </P>
         <P>
           What you just watched was a SHA-1 over your random key with one very
           strange suffix glued on. That suffix is a literal string, written into
@@ -352,9 +369,7 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=`}
           know exactly what string to glue on{" "}
           <A href="https://www.rfc-editor.org/rfc/rfc6455#section-1.3">
             (RFC 6455 §1.3)
-          </A>. The widget runs the computation through your browser&apos;s Web
-          Crypto API, so the <Code>Sec-WebSocket-Accept</Code>{" "}you see is the
-          real SHA-1 your machine just computed. Nothing in the reveal is faked.
+          </A>.
         </P>
         <P>
           After that reply is written and read, the same TCP socket is{" "}
