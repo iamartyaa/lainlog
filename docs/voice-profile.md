@@ -117,11 +117,13 @@ Framework posts reward ending on the inversion stated plainly, often borrowing t
 
 Don't recap the sections. The dot-line ornament + the closing `<HL>` carry it.
 
-### `<TextHighlighter>` (HL) as a pacing device — required on every post
+### `<TextHighlighter>` (HL) as a pacing device — default on every post, applied with judgment
 
-Used for the single load-bearing phrase of its paragraph — 1–2 per section, target ~10–17 across the post. Binds to `var(--color-accent)` at 28% via `color-mix`. Never a second colour, never a second direction. See [`interactive-components.md §2`](./interactive-components.md) for trigger discipline.
+Every post lands an `HL` helper in `page.tsx` (identical signature across the catalogue — copy from `app/posts/the-webpage-that-reads-the-agent/page.tsx:28–52`) and uses TextHighlighter on a small handful of load-bearing phrases. Binds to `var(--color-accent)` at 28% via `color-mix`. Never a second colour, never a second direction. See [`interactive-components.md §2`](./interactive-components.md) for trigger discipline.
 
-**Enforcement rule**: every new post and every polish pass lands an `HL` helper in `page.tsx` (identical signature across the catalogue — copy from `app/posts/the-webpage-that-reads-the-agent/page.tsx:28–52`) and wraps 10–17 load-bearing phrases. A post without TextHighlighter is a post that hasn't gone through Phase E. Candidates: the inversion in the lede, the one-line thesis, mechanism first-appearances, section-closing punches. Never wrap connective tissue; never wrap two adjacent phrases; never wrap the same phrase twice.
+**Default cadence**: ~5 highlights for a 12–15-min post. The original target of "10–17" was carpet-bombing in practice — readers stop noticing the wash by the eighth one. Reserve highlights for: the inversion in the lede, mechanism first-appearances, section payoffs, and the closer's payload (when not handled by `VerticalCutReveal`). Never wrap connective tissue; never wrap two adjacent phrases; never wrap the same phrase twice.
+
+**Apply judgment, not a quota**: if a section's payoff is already carried by its widget, don't double up by also highlighting a sentence about it. Less is more — every highlight should feel like the reader noticed something the author wanted them to notice. Carpet-bombing the post desensitises readers to the device; restraint preserves its weight.
 
 ### The "every defence is already bypassed" rhythm
 

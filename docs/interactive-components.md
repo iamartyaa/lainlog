@@ -25,7 +25,7 @@ Every widget we've shipped collapses to one of seven shapes. Pick the shape that
 
 ## 2. External primitives we've integrated
 
-Five live under [`components/fancy/`](../components/fancy/). First four landed in the AI-agent-traps post; `ScrambleIn` landed in the gmail polish pass. Keep this folder small and deliberate — every new primitive is overhead.
+Four ship in articles (`TextHighlighter`, `MediaBetweenText`, `VerticalCutReveal`, `DragElements`). One — `ScrambleIn` — is installed but doesn't yet have a real article home; it landed during the gmail polish pass on a `NormalisationMap` that turned out not to need it (the rewritten widget shows transformations explicitly, which teaches more than a scramble dramatising "something happened"). The primitive stays in the folder waiting for a post that's genuinely *about* decoding. Keep this folder small and deliberate — every new primitive is overhead, and a primitive in search of a use is the worst kind of overhead.
 
 ### `TextHighlighter` (✅ ubiquitous)
 
@@ -83,11 +83,13 @@ Character-level reveal: each letter slides up from a clipped baseline, staggered
 - **Budget**: one use per post, absolute max. Two is decoration.
 - **Caveat**: the staggered reveal *is* the meaning — save it for sentences whose *pacing* carries the argument. In fetch-polish it landed *"CORS does not block the request. [beat] It blocks the response."* — request-vs-response is exactly what the character-stagger dramatises.
 
-### `ScrambleIn` (✅ decode-moment)
+### `ScrambleIn` (🔸 installed, awaiting the right article)
 
-Progressive character reveal with a brief scrambled tail — text assembles left-to-right while the trailing 2 characters flicker through a random alphabet until settling. Shipped in the gmail polish pass (PR for #posts/how-gmail-knows-your-email-is-taken-polish) on `NormalisationMap`'s canonical chip — every time the reader picks a new typed row, the canonical form re-scrambles and settles.
+Progressive character reveal with a brief scrambled tail — text assembles left-to-right while the trailing 2 characters flicker through a random alphabet until settling.
 
-- **Use case**: a stable token that is *decoded* in place. Canonical forms (normalisation), de-obfuscated strings (steganography), hash outputs, post-decryption reveals. Not a generic "typewriter" replacement.
+It was first slotted into the gmail post's normalisation widget. That widget was then rewritten as `NormalisePipeline` (transformations shown one stage at a time), which teaches the mechanism explicitly and obviates the scramble. Lesson: ScrambleIn dramatises "something is happening" without teaching what; reach for it only when *decoding* is itself the subject — never as a generic typewriter alternative.
+
+- **Use case**: a stable token that is *decoded* in place. Canonical forms via opaque hashing (not staged transformations), de-obfuscated strings (steganography), post-decryption reveals where the cipher operation isn't itself worth showing. Not a generic "typewriter" replacement.
 - **Trigger**: re-key on the upstream source value (e.g. `key={\`sc-${step}\`}`) so the component re-mounts on each change; `autoStart={true}` then scrambles on mount. For hand-controlled replays, use the `ref.start()` imperative.
 - **Reduced motion**: local `useReducedMotion()` guard renders `text` directly — no intervals, no scrambled tail. Screen readers get the full value via `.sr-only` regardless.
 - **Cadence**: `scrambleSpeed={60}` matches the §9 60 ms stagger grid. Defaults to 60. Do not go below 40 — characters blur together.
@@ -113,7 +115,7 @@ Every rating is against bytesize's editorial-calm voice (DESIGN.md §1: *precise
 | **Text Highlighter** | ✅ shipped | Ubiquitous pacing device. See §2.1. |
 | **Typewriter** | 🔸 candidate | Progressive reveal of code or a definition. Tempo teaches. Use with `once: true` and avoid cursor-blink decoration that violates §9. |
 | **Vertical Cut Reveal** | ✅ shipped | One-shot climax-sentence reveal. Shipped for the thesis in the fetch-polish post (PR #27). See §2 for use. |
-| **Scramble In** | ✅ shipped | Decode-moment reveal. Landed in the gmail polish pass on `NormalisationMap`'s canonical chip — the chip re-scrambles each time the reader picks a new typed row, teaching "the server rewrote this." See §2. |
+| **Scramble In** | 🔸 installed | Tried in the gmail polish but ejected when the better widget made it unnecessary. Stays in `components/fancy/` waiting for a post about *decoding*. See §2. |
 | **Basic Number Ticker** | 🔸 candidate | Animated stat reveal on scroll. The agent-traps post stacks numbers (15–29%, 80%+, 23.6% → 11.2%); on a future post where numbers are the argument, animate them in. |
 | **Underline Animation** | 🔸 candidate | Subtler emphasis than `TextHighlighter`. Could carry link-hover states in prose. |
 | **Underline To Background** | 🔸 candidate | Essentially what `TextHighlighter` does in `ltr` direction. Install only if we decide to switch vocabulary — two components for one job is overkill. |
