@@ -208,6 +208,7 @@ export function SignupRace({
     <WidgetShell
       title="signup race · a / b"
       measurements={`winner: ${aWins ? "A" : "B"}${tie ? " · tie" : ""}`}
+      captionTone="prominent"
       caption={
         <>
           {aWins ? "A" : "B"} commits. {aWins ? "B" : "A"}'s INSERT on{" "}

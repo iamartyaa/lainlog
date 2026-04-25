@@ -147,8 +147,10 @@ Every custom widget follows this skeleton. This is what "uniform UI" means.
 ```
 
 - **Canvas** has no visible border. If a background is needed, `--color-surface` at 40%.
-- **Measurement labels**: top-right of header, Plex Mono tabular-nums, `--text-small`, separated by `·`.
-- **Step buttons**: Plex Sans `--text-ui`, weight 500, `8px 16px` padding, `--radius-sm`, hover text → `--color-accent`.
+- **Measurement labels**: top-right of header, Plex Mono tabular-nums, `--text-small`, separated by `·`. **Never duplicate the step counter here** — `WidgetNav` renders the only `n / N` indicator anywhere on the widget.
+- **Step controls**: `<WidgetNav>` (`components/viz/WidgetNav.tsx`) exclusively. The legacy `<Stepper>` exists only as a shim that forwards to `WidgetNav` for one release; new code reaches for `WidgetNav` directly.
+- **Controls slot**: centred via `WidgetShell`'s `flex flex-wrap items-center justify-center mx-auto px-[--spacing-md]` — every widget's controls row is mobile-first centred with horizontal margin that holds at 360 px.
+- **One-verb-per-shell**: a widget's controls slot asks for one decision (step, scrub, toggle). Stacking a stepper + a mode toggle + a side-action button is the classic "two widgets in a trench coat" anti-pattern — split it. The earned exception is `RequestClassifier`, which is fundamentally about a five-dial decision space.
 - **Sliders**: native `<input type="range">` styled — thumb visual is 14 px terracotta square. **Hit target is 44 × 44 px** via transparent `padding` + `background-clip: content-box` on the thumb pseudo-element; the visible square stays 14 px while the draggable region grows to meet the WCAG 44-px minimum.
 - **Focus rings**: 2px solid `--color-accent`, 2px offset. Never removed.
 - **"State set" color**: always `--color-accent`. Readers learn `terracotta = the algorithm is doing something here.`

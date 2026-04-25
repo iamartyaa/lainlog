@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { PRESS, SPRING, TIMING } from "@/lib/motion";
 import { Scrubber } from "@/components/viz/Scrubber";
@@ -255,9 +255,12 @@ export function PipeCompare() {
     };
   }, [playing, reducedMotion]);
 
-  const polling = simPolling(nowMs);
-  const longpoll = simLongPoll(nowMs);
-  const websocket = simWebSocket(nowMs);
+  // Memoise the three simulations so they only recompute when nowMs actually
+  // ticks — avoids re-allocating message arrays on parent re-renders that
+  // don't change time. (R6.)
+  const polling = useMemo(() => simPolling(nowMs), [nowMs]);
+  const longpoll = useMemo(() => simLongPoll(nowMs), [nowMs]);
+  const websocket = useMemo(() => simWebSocket(nowMs), [nowMs]);
 
   const play = useTapPulse<HTMLButtonElement>();
   const togglePlay = () => {
@@ -274,6 +277,7 @@ export function PipeCompare() {
     <WidgetShell
       title="three protocols · one 10-second window"
       measurements={`t = ${(nowMs / 1000).toFixed(1)}s of ${DURATION_MS / 1000}s`}
+      captionTone="prominent"
       caption={
         <>
           <TextHighlighter
@@ -320,9 +324,11 @@ export function PipeCompare() {
         </div>
       }
     >
-      {/* Both layouts render; CSS container query picks which is visible. */}
+      {/* Both layouts render; CSS container query picks which is visible.
+          Each canvas is React.memo'd so memoised sims (above) keep the hidden
+          variant from re-rendering when nowMs hasn't actually advanced. (R6.) */}
       <div className="bs-pc-narrow">
-        <PipeCanvasNarrow
+        <MemoPipeCanvasNarrow
           nowMs={nowMs}
           polling={polling}
           longpoll={longpoll}
@@ -330,7 +336,7 @@ export function PipeCompare() {
         />
       </div>
       <div className="bs-pc-wide">
-        <PipeCanvas
+        <MemoPipeCanvas
           nowMs={nowMs}
           polling={polling}
           longpoll={longpoll}
@@ -351,6 +357,9 @@ type RowConfig = {
   sim: Sim;
   protocol: "polling" | "longpoll" | "websocket";
 };
+
+const MemoPipeCanvas = memo(PipeCanvas);
+const MemoPipeCanvasNarrow = memo(PipeCanvasNarrow);
 
 function PipeCanvas({
   nowMs,

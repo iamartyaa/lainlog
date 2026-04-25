@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { SPRING } from "@/lib/motion";
 import { Scrubber } from "@/components/viz/Scrubber";
@@ -49,11 +49,17 @@ export function ReconnectGap() {
   const [dropMs, setDropMs] = useState(2200);
   const dropEnd = Math.min(dropAt + dropMs, DURATION_MS);
 
-  const classified: ClassifiedEvent[] = EVENT_TIMES_MS.map((t, idx) => ({
-    id: idx + 1,
-    t,
-    ...classify(t, dropAt, dropEnd),
-  }));
+  // Memoise so the classified array is stable when neither dial moved — both
+  // canvases (memoised below) can short-circuit re-renders. (R6.)
+  const classified: ClassifiedEvent[] = useMemo(
+    () =>
+      EVENT_TIMES_MS.map((t, idx) => ({
+        id: idx + 1,
+        t,
+        ...classify(t, dropAt, dropEnd),
+      })),
+    [dropAt, dropEnd],
+  );
 
   const wsLost = classified.filter((e) => e.ws.kind === "lost").length;
   const sseDelivered = classified.filter((e) => e.sse.kind !== "lost").length;
@@ -65,6 +71,7 @@ export function ReconnectGap() {
     <WidgetShell
       title="WebSocket forgets, SSE remembers"
       measurements={`delivered: WS ${classified.length - wsLost}/${classified.length} · SSE ${sseDelivered}/${classified.length}`}
+      captionTone="prominent"
       caption={
         <>
           <TextHighlighter
@@ -104,9 +111,11 @@ export function ReconnectGap() {
         </div>
       }
     >
-      {/* Both SVGs render; CSS container query picks which is visible. */}
+      {/* Both SVGs render; CSS container query picks which is visible. Each
+          canvas is React.memo'd so the hidden variant short-circuits when
+          props haven't changed. (R6.) */}
       <div className="bs-rg-narrow">
-        <NarrowCanvas
+        <MemoNarrowCanvas
           classified={classified}
           dropAt={dropAt}
           dropEnd={dropEnd}
@@ -114,7 +123,7 @@ export function ReconnectGap() {
         />
       </div>
       <div className="bs-rg-wide">
-        <WideCanvas
+        <MemoWideCanvas
           classified={classified}
           dropAt={dropAt}
           dropEnd={dropEnd}
@@ -128,6 +137,9 @@ export function ReconnectGap() {
 /* -------------------------------------------------------------------------- */
 /*                               Wide (desktop)                               */
 /* -------------------------------------------------------------------------- */
+
+const MemoWideCanvas = memo(WideCanvas);
+const MemoNarrowCanvas = memo(NarrowCanvas);
 
 function WideCanvas({
   classified,

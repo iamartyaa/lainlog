@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { motion } from "motion/react";
-import { Stepper } from "@/components/viz/Stepper";
+import { WidgetNav } from "@/components/viz/WidgetNav";
 import { PRESS, SPRING } from "@/lib/motion";
 import { WidgetShell } from "./WidgetShell";
 
@@ -194,14 +194,16 @@ export function CacheTier({ initialScenario = "hot" }: Props) {
     );
   };
 
+  const handleStep = useCallback((next: number) => setStep(next), []);
+
   return (
     <WidgetShell
       title="cache tier · where the answer comes from"
-      measurements={`step ${clamped + 1}/${steps.length}`}
       caption={steps[clamped].caption}
+      captionTone="prominent"
       controls={
-        <div className="flex flex-col gap-[var(--spacing-sm)]">
-          <Stepper value={clamped} total={steps.length} onChange={setStep} />
+        <div className="flex flex-col items-center gap-[var(--spacing-sm)] w-full">
+          <WidgetNav value={clamped} total={steps.length} onChange={handleStep} />
           <div
             className="flex flex-col gap-[var(--spacing-2xs)] font-sans"
             style={{ fontSize: "var(--text-ui)" }}

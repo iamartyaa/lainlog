@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Stepper } from "@/components/viz/Stepper";
+import { WidgetNav } from "@/components/viz/WidgetNav";
 import { SvgDefs } from "@/components/viz/SvgDefs";
 import { Arrow } from "@/components/viz/Arrow";
 import { SPRING } from "@/lib/motion";
@@ -100,9 +100,9 @@ export function TetherScope() {
   return (
     <WidgetShell
       title="TetherScope"
-      measurements={`step ${step + 1}/${STEPS.length}`}
       caption={s.caption}
-      controls={<Stepper value={step} total={STEPS.length} onChange={setStep} playInterval={1500} />}
+      captionTone="prominent"
+      controls={<WidgetNav value={step} total={STEPS.length} onChange={setStep} playInterval={1500} />}
     >
       <div className="bs-tetherscope-wide">
       <svg
@@ -414,7 +414,7 @@ export function TetherScope() {
       </svg>
       </div>
       <div className="bs-tetherscope-narrow">
-        <NarrowTetherScope step={step} s={s} />
+        <MemoNarrowTetherScope step={step} s={s} />
       </div>
     </WidgetShell>
   );
@@ -432,6 +432,8 @@ export function TetherScope() {
  * to this frame" — stays identical; the orientation flips so each element
  * can render at native size on 360 w.
  */
+const MemoNarrowTetherScope = memo(NarrowTetherScope);
+
 function NarrowTetherScope({ step, s }: { step: number; s: Step }) {
   const W = 360;
   const CODE_X = 16;

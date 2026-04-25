@@ -107,7 +107,13 @@ export function WidgetShell({
           </AnimatePresence>
         </div>
 
-        {controls ? <div className="pt-[var(--spacing-sm)]">{controls}</div> : null}
+        {controls ? (
+          <div
+            className="pt-[var(--spacing-sm)] flex flex-wrap items-center justify-center gap-[var(--spacing-sm)] mx-auto px-[var(--spacing-md)]"
+          >
+            {controls}
+          </div>
+        ) : null}
 
         {caption ? (
           captionTone === "prominent" ? (

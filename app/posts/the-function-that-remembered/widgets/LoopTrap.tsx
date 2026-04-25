@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Stepper } from "@/components/viz/Stepper";
+import { WidgetNav } from "@/components/viz/WidgetNav";
 import { SvgDefs } from "@/components/viz/SvgDefs";
 import { Arrow } from "@/components/viz/Arrow";
 import { SPRING } from "@/lib/motion";
@@ -69,8 +69,9 @@ export function LoopTrap() {
       title="LoopTrap"
       measurements={`${mode} · ${N} callbacks · ${mode === "var" ? "1 cell" : `${N} cells`}`}
       caption={captionFor(mode, step)}
+      captionTone="prominent"
       controls={
-        <div className="flex flex-wrap items-center gap-[var(--spacing-md)]">
+        <div className="flex flex-wrap items-center justify-center gap-[var(--spacing-md)] w-full">
           <ModeToggle
             mode={mode}
             onChange={(m) => {
@@ -78,7 +79,7 @@ export function LoopTrap() {
               setStep(0);
             }}
           />
-          <Stepper value={step} total={TOTAL_STEPS} onChange={setStep} playInterval={1100} />
+          <WidgetNav value={step} total={TOTAL_STEPS} onChange={setStep} playInterval={1100} />
         </div>
       }
     >

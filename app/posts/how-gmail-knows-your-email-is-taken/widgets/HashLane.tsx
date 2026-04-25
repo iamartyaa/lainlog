@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { Arrow } from "@/components/viz/Arrow";
-import { Stepper } from "@/components/viz/Stepper";
+import { WidgetNav } from "@/components/viz/WidgetNav";
 import { SvgDefs } from "@/components/viz/SvgDefs";
 import type { BlockState } from "@/components/viz/Block";
 import { SPRING, SVG_SONAR } from "@/lib/motion";
@@ -107,7 +107,7 @@ export function HashLane({ m = 16, script = DEFAULT_SCRIPT, initialStep = 0 }: P
   const arrowKey = `${step}-${current.kind}-${current.key}`;
 
   const setCount = bits.filter((b) => b === "set").length;
-  const measurements = `m = ${m} · set = ${setCount} · step = ${step + 1}/${script.length}`;
+  const measurements = `m = ${m} · set = ${setCount}`;
 
   const queryAnswer = (() => {
     if (!isQuery) return null;
@@ -121,7 +121,8 @@ export function HashLane({ m = 16, script = DEFAULT_SCRIPT, initialStep = 0 }: P
       title={`bloom · ${current.kind} "${current.key}"`}
       measurements={measurements}
       caption={current.caption}
-      controls={<Stepper value={step} total={script.length} onChange={setStep} />}
+      captionTone="prominent"
+      controls={<WidgetNav value={step} total={script.length} onChange={setStep} />}
     >
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
