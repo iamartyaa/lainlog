@@ -135,16 +135,6 @@ export default function WhyFetchFailsOnlyInBrowser() {
       <RequestJourney />
 
       <div>
-        <P>
-          Walk that back slowly. The fetch left the browser. The request reached
-          the server. The server ran its handler — the same code it runs for any
-          other client. It returned <Code>200 OK</Code> with a real body. The
-          response arrived in the browser. Only then,{" "}
-          <HL>after the whole round trip</HL>, did the browser look at the
-          response headers, fail to find an invitation for your page&apos;s origin,
-          and throw the body away.
-        </P>
-
         <Dots />
 
         <p
@@ -196,18 +186,9 @@ export default function WhyFetchFailsOnlyInBrowser() {
         <Dots />
         <H2>Some requests never leave the browser.</H2>
         <P>
-          The &ldquo;server runs, browser redacts&rdquo; rule holds for <Em>simple</Em>{" "}
-          requests — roughly, what an HTML form could have sent without JS: a{" "}
-          <Code>GET</Code>, or a plain <Code>POST</Code> with one of three
-          old content types (<Code>text/plain</Code>,{" "}
-          <Code>application/x-www-form-urlencoded</Code>, or{" "}
-          <Code>multipart/form-data</Code>) and no custom headers. For anything
-          else, the browser sends a second, silent request first — an{" "}
-          <Code>OPTIONS</Code>, asking permission. If permission is denied, the
-          real request is never sent.
-        </P>
-        <P>
-          Flip the controls below and watch the verdict change.
+          Some requests get this treatment. Others trigger a second request
+          first — an <Code>OPTIONS</Code>, asking permission, before the real
+          one is allowed to leave. The widget classifies which is which.
         </P>
       </div>
 
@@ -215,25 +196,14 @@ export default function WhyFetchFailsOnlyInBrowser() {
 
       <div>
         <P>
-          The <Em>preflight</Em>{" "}carries <Code>Origin</Code>, the method the real
-          request will use, and any non-safelisted headers it plans to send. The
-          server answers with a matching <Code>Access-Control-Allow-Methods</Code>{" "}
-          and <Code>Access-Control-Allow-Headers</Code>, and <Em>only then</Em>{" "}does
-          the browser let the real request go. If any of those don&apos;t line up,
-          the real <Code>POST</Code>, <Code>DELETE</Code>, or <Code>PATCH</Code> never
-          reaches your backend. This is{" "}
-          <HL>the one case where CORS genuinely blocks the wire, not just the read</HL>
-          .
-        </P>
-        <P>
-          Switching a request from <Code>text/plain</Code> to{" "}
-          <Code>application/json</Code>, or adding an{" "}
-          <Code>Authorization</Code> header, doesn&apos;t just change whether JS
-          can read the reply — it changes whether the <Code>POST</Code> arrives
-          at all. Every modern JSON API preflights every call. Browsers cache the{" "}
-          <Code>OPTIONS</Code> result briefly via{" "}
+          The <Em>preflight</Em>{" "}asks the server, in advance, whether the real
+          request is allowed: its method, its custom headers. If the answer
+          doesn&apos;t match, the real <Code>POST</Code> or <Code>DELETE</Code>{" "}
+          never leaves the browser.{" "}
+          <HL>This is the one case where CORS blocks the wire, not just the read.</HL>{" "}
+          Browsers cache the <Code>OPTIONS</Code> result briefly via{" "}
           <Code>Access-Control-Max-Age</Code> so the handshake doesn&apos;t
-          repeat every time.
+          repeat on every call.
         </P>
 
         {/* §4.5 — credentials (folded in) */}
@@ -297,8 +267,7 @@ await fetch('https://api.other.com/me', {
         </Callout>
         <P>
           The browser isn&apos;t being rude. It&apos;s doing the thing that keeps
-          every other site you&apos;re logged into — your bank, your email, your
-          account settings — from being read by whatever tab you just opened.{" "}
+          every other tab from reading what you&apos;re logged into.{" "}
           <HL>The <Code>TypeError</Code> is that protection, showing up for you too.</HL>
         </P>
         <p
