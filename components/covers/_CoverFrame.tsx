@@ -44,7 +44,7 @@ type Props = {
  * - Owns sizing (64×64 base, 80×80 from lg) so per-post covers don't repeat it.
  * - Owns the `view-transition-name: cover-<slug>` pairing so home → post morphs work.
  * - Owns the inView gate via motion/react `useInView`; off-screen → static end-state.
- * - Provides a `<motion.svg viewBox="0 0 100 100">` child; per-post covers fill it.
+ * - Provides a `<motion.svg viewBox="0 0 200 200">` child; per-post covers fill it.
  *
  * Frame-stability hard rule R6: the wrapper dimensions never animate. Per-post
  * covers must animate transform/opacity/pathLength only.
@@ -77,7 +77,7 @@ export function CoverFrame({ slug, size, ariaLabel, children }: Props) {
     >
       <CoverContext.Provider value={{ inView }}>
         <motion.svg
-          viewBox="0 0 100 100"
+          viewBox="0 0 200 200"
           width="100%"
           height="100%"
           preserveAspectRatio="xMidYMid meet"
