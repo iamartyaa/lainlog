@@ -12,6 +12,8 @@ import {
   HeroTile,
   Term,
 } from "@/components/prose";
+import { PostBackLink } from "@/components/nav/PostBackLink";
+import { PostNavCards } from "@/components/nav/PostNavCards";
 import { CodeBlock } from "@/components/code";
 import {
   LoopTrap,
@@ -27,7 +29,8 @@ export default function TheFunctionThatRemembered() {
   return (
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
-        <div className="mb-[var(--spacing-md)] hidden md:flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
+        <PostBackLink />
+        <div className="mt-[var(--spacing-md)] mb-[var(--spacing-md)] hidden md:flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
           <HeroTile slug="the-function-that-remembered" />
         </div>
         <H1 style={{ fontSize: "clamp(2.5rem, 2rem + 3.5vw, 4rem)" }}>
@@ -316,6 +319,7 @@ setInterval(replaceThing, 1000);`}
           you need.
         </P>
       </div>
+      <PostNavCards slug="the-function-that-remembered" />
     </Prose>
   );
 }

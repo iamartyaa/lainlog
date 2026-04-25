@@ -13,6 +13,8 @@ import {
   HeroTile,
   Term,
 } from "@/components/prose";
+import { PostBackLink } from "@/components/nav/PostBackLink";
+import { PostNavCards } from "@/components/nav/PostNavCards";
 import { CodeBlock } from "@/components/code";
 import { TextHighlighter, VerticalCutReveal } from "@/components/fancy";
 import { OriginMatrix, RequestJourney, RequestClassifier } from "./widgets";
@@ -43,7 +45,8 @@ export default function WhyFetchFailsOnlyInBrowser() {
   return (
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
-        <div className="mb-[var(--spacing-md)] hidden md:flex">
+        <PostBackLink />
+        <div className="mt-[var(--spacing-md)] mb-[var(--spacing-md)] hidden md:flex">
           <HeroTile slug="why-fetch-fails-only-in-browser" />
         </div>
         <H1>Why fetch fails in browser but works in curl (CORS)</H1>
@@ -259,6 +262,7 @@ export default function WhyFetchFailsOnlyInBrowser() {
           ·
         </p>
       </div>
+      <PostNavCards slug="why-fetch-fails-only-in-browser" />
     </Prose>
   );
 }

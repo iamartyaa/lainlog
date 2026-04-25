@@ -12,6 +12,8 @@ import {
   HeroTile,
   Term,
 } from "@/components/prose";
+import { PostBackLink } from "@/components/nav/PostBackLink";
+import { PostNavCards } from "@/components/nav/PostNavCards";
 import { CodeBlock } from "@/components/code";
 import { TextHighlighter } from "@/components/fancy";
 import { PipeCompare, UpgradeHandshake, ReconnectGap, CostMatrix } from "./widgets";
@@ -49,7 +51,8 @@ export default function TheBrowserStoppedAsking() {
   return (
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
-        <div className="mb-[var(--spacing-md)] hidden md:flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
+        <PostBackLink />
+        <div className="mt-[var(--spacing-md)] mb-[var(--spacing-md)] hidden md:flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
           <HeroTile slug="the-browser-stopped-asking" />
         </div>
         <H1>WebSockets, SSE, and long-polling: how real-time web works</H1>
@@ -520,6 +523,7 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=`}
           ·
         </p>
       </div>
+      <PostNavCards slug="the-browser-stopped-asking" />
     </Prose>
   );
 }
