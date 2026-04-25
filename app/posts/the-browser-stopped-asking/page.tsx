@@ -14,7 +14,7 @@ import {
   Term,
 } from "@/components/prose";
 import { CodeBlock } from "@/components/code";
-import { TextHighlighter } from "@/components/fancy";
+import { TextHighlighter, VerticalCutReveal } from "@/components/fancy";
 import { PipeCompare, UpgradeHandshake, ReconnectGap } from "./widgets";
 import { metadata } from "./metadata";
 
@@ -76,8 +76,8 @@ export default function TheBrowserStoppedAsking() {
         </P>
         <P>
           The moment is so mundane we forget that the web wasn&apos;t born able to do
-          this. Rewind: <Em>what had to change about the web for Jordan&apos;s cursor
-          to appear on your screen?</Em>
+          this. Rewind: <HL>what had to change about the web for Jordan&apos;s cursor
+          to appear on your screen?</HL>
         </P>
       </div>
 
@@ -122,7 +122,7 @@ Content-Length: 1432
 
       <div>
         <P>
-          The web&apos;s cell wall is that the client always speaks first. Everything
+          The web&apos;s cell wall is that <HL>the client always speaks first</HL>. Everything
           that follows — every mechanism that makes Jordan&apos;s cursor appear on
           your screen — is a way to <Em>live inside that wall</Em>. None of them let
           the server initiate. They all turn the browser into something else: a
@@ -469,8 +469,8 @@ const socket = io("https://…", {
         </P>
 
         <P>
-          None of this kills the idea. It just means <Em>real-time is a system,
-          not a primitive.</Em> The socket is the easy part.
+          None of this kills the idea. It just means <HL>real-time is a system,
+          not a primitive</HL>. The socket is the easy part.
         </P>
       </div>
 
@@ -489,12 +489,13 @@ const socket = io("https://…", {
         </P>
         <P>
           What they share is the move at the center of every one of them. The
-          server never learned to speak first. The browser just stopped hanging up.
+          server never learned to speak first. <HL>The browser just stopped hanging up.</HL>
           A request goes out; it doesn&apos;t come back until it has something to
           say; it opens another the moment it does; or the socket simply never
           closes.
         </P>
         <p
+          className="font-serif italic"
           style={{
             fontSize: "1.125em",
             marginBlockStart: "1.5em",
@@ -502,10 +503,14 @@ const socket = io("https://…", {
             lineHeight: 1.55,
           }}
         >
-          <Em>
-            Every &ldquo;real-time&rdquo; web app on your laptop right now is
-            variations on a browser that refuses to finish its sentence.
-          </Em>
+          <VerticalCutReveal
+            className="font-serif italic"
+            transition={{ type: "spring", duration: 0.9, bounce: 0 }}
+            useInViewOptions={{ once: true, initial: false, amount: 0.6 }}
+            staggerDuration={0.025}
+          >
+            {"Every “real-time” web app on your laptop right now is variations on a browser that refuses to finish its sentence."}
+          </VerticalCutReveal>
         </p>
         <p
           className="font-sans"
@@ -517,6 +522,19 @@ const socket = io("https://…", {
         >
           The title lied slightly: the browser didn&apos;t stop asking. It stopped
           ending the question.
+        </p>
+        <p
+          aria-hidden
+          className="font-mono text-center select-none"
+          style={{
+            marginBlock: "var(--spacing-xl)",
+            color: "var(--color-accent)",
+            opacity: 0.8,
+            fontSize: "var(--text-body)",
+            letterSpacing: "0.2em",
+          }}
+        >
+          ·
         </p>
       </div>
     </Prose>
