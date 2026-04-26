@@ -52,15 +52,24 @@ export function AboutColumn({ readerCount }: AboutColumnProps) {
         {/* Mobile-only inline WanderingEyes — sits to the right of the
             heading. Sized just below the heading's visual block (heading
             font is clamp(3rem, …, 4.5rem); cap-height ~70%, so h-9 ≈ 36 px
-            sits a touch smaller than the ~38 px mobile letter block). */}
+            sits a touch smaller than the ~38 px mobile letter block).
+            Color CSS variables passed via inline style (not arbitrary
+            classes) so they win the cascade unconditionally — the
+            upstream WanderingEyes' base className sets fallback defaults
+            using `currentColor`, which would otherwise inherit the
+            parent's muted text color in some contexts. */}
         <div className="block lg:hidden shrink-0">
           <WanderingEyes
             aria-label=""
             aria-hidden
             role="presentation"
-            className="h-9 w-[81px] [--eye-color:#ffffff] [--pupil-color:#000000] [--eye-outline-color:#000000] [--eye-outline-width:1px]"
+            className="h-9 w-[81px]"
             style={{
               "--duration": "8s",
+              "--eye-color": "#ffffff",
+              "--pupil-color": "#000000",
+              "--eye-outline-color": "#000000",
+              "--eye-outline-width": "1px",
             } as React.CSSProperties}
           />
         </div>
@@ -96,17 +105,26 @@ export function AboutColumn({ readerCount }: AboutColumnProps) {
           {/* Same WanderingEyes ornament as the mobile heading-row
               instance, in the SAME size (h-9 / 81×36 px per 9:4) so
               outline thickness and animation travel-distance per
-              second match exactly between breakpoints. Wrapper div
-              owns the responsive show/hide so exactly one ornament
-              paints per breakpoint. */}
+              second match exactly between breakpoints. Color CSS
+              variables passed via inline style (not arbitrary
+              classes) so they win the cascade unconditionally — the
+              meta-row's parent sets `color: var(--color-text-muted)`,
+              which makes `currentColor` muted; without inline-style
+              overrides, the upstream's default
+              `color-mix(currentColor 16% transparent)` for --eye-color
+              would render as a faded muted disc on this instance. */}
           <div className="hidden lg:block">
             <WanderingEyes
               aria-label=""
               aria-hidden
               role="presentation"
-              className="h-9 w-[81px] [--eye-color:#ffffff] [--pupil-color:#000000] [--eye-outline-color:#000000] [--eye-outline-width:1px]"
+              className="h-9 w-[81px]"
               style={{
                 "--duration": "8s",
+                "--eye-color": "#ffffff",
+                "--pupil-color": "#000000",
+                "--eye-outline-color": "#000000",
+                "--eye-outline-width": "1px",
               } as React.CSSProperties}
             />
           </div>
