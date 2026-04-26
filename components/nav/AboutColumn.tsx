@@ -1,9 +1,5 @@
-"use client";
-
-import { motion } from "motion/react";
-import { SPRING } from "@/lib/motion";
-import { useFirstVisit } from "@/lib/hooks/use-first-visit";
 import { ReaderCount } from "@/components/nav/ReaderCount";
+import { WanderingEyes } from "@/components/loading-ui/wandering-eyes";
 import { SITE_ABOUT, SITE_NAME } from "@/lib/site";
 
 const COPYRIGHT_START = 2026;
@@ -11,68 +7,44 @@ const COPYRIGHT_NOW = new Date().getFullYear();
 
 /**
  * AboutColumn — the left pane of the home page. Big serif wordmark carries
- * the brand; an about paragraph sets the tone; the bottom row holds the
- * small meta (reader count + copyright). Sticky on md+ so it stays visible
- * while the post list scrolls.
+ * the brand; an about paragraph sets the tone; a small WanderingEyes ornament
+ * adds a single delight beat between copy blocks; the bottom row holds the
+ * meta (reader count + copyright). Sticky on md+ so it stays visible while
+ * the post list scrolls.
  *
- * Two entry choreographies keyed on session state:
- *   - First visit: wordmark settles with a transform-only scale+y (LCP-safe,
- *     no opacity animation on the biggest text), paragraph reveals via a
- *     left-to-right mask-position sweep, meta row fades in last.
- *   - Return visit: a short stagger across the children.
- * Reduced-motion users collapse to the final state via MotionConfigProvider.
+ * No entrance animation — the column renders to its final state on mount.
+ * Hover affordances on the rest of the page (post rows, header link) are
+ * untouched; this file just stops choreographing the wordmark/paragraph/meta
+ * fade-in. The WanderingEyes ornament owns its own ambient cadence (paused
+ * under prefers-reduced-motion).
  */
 type AboutColumnProps = {
   readerCount: number | null;
 };
 
 export function AboutColumn({ readerCount }: AboutColumnProps) {
-  const { ready, firstVisit } = useFirstVisit();
   const years =
     COPYRIGHT_NOW === COPYRIGHT_START
       ? `${COPYRIGHT_START}`
       : `${COPYRIGHT_START} – ${COPYRIGHT_NOW}`;
 
-  // Before the hook resolves we render the static tree (no animation).
-  // Once ready, variants choose which choreography plays.
-  const variant = !ready ? "static" : firstVisit ? "hero" : "return";
-
   return (
     <aside className="md:sticky md:top-[var(--spacing-lg)] self-start flex flex-col min-h-0 md:min-h-[480px]">
-      {/* Giant serif wordmark — brand moment. Transform-only animation on
-          first visit so the LCP candidate paints immediately. */}
-      <motion.h1
+      {/* Giant serif wordmark — brand moment. */}
+      <h1
         className="font-serif font-semibold"
         style={{
           fontSize: "clamp(3rem, 2.2rem + 3vw, 4.5rem)",
           lineHeight: 0.95,
           letterSpacing: "-0.03em",
           color: "var(--color-text)",
-          transformOrigin: "left bottom",
-        }}
-        initial={false}
-        animate={variant}
-        variants={{
-          static: { y: 0, scale: 1, opacity: 1 },
-          hero: {
-            y: [8, 0],
-            scale: [0.94, 1],
-            opacity: 1,
-            transition: { ...SPRING.dramatic, duration: 0.6 },
-          },
-          return: {
-            y: [6, 0],
-            scale: 1,
-            opacity: [0, 1],
-            transition: { ...SPRING.smooth, delay: 0 },
-          },
         }}
       >
         {SITE_NAME}
-      </motion.h1>
+      </h1>
 
-      {/* Tagline + about — left-to-right mask-reveal on first visit. */}
-      <motion.p
+      {/* Tagline + about. */}
+      <p
         className="mt-[var(--spacing-lg)] font-serif"
         style={{
           fontSize: "var(--text-body)",
@@ -80,48 +52,40 @@ export function AboutColumn({ readerCount }: AboutColumnProps) {
           color: "var(--color-text-muted)",
           maxWidth: "26ch",
         }}
-        initial={false}
-        animate={variant}
-        variants={{
-          static: { opacity: 1, clipPath: "inset(0 0% 0 0)" },
-          hero: {
-            opacity: 1,
-            clipPath: ["inset(0 100% 0 0)", "inset(0 0% 0 0)"],
-            transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.4 },
-          },
-          return: {
-            opacity: [0, 1],
-            clipPath: "inset(0 0% 0 0)",
-            transition: { ...SPRING.smooth, delay: 0.06 },
-          },
-        }}
       >
         {SITE_ABOUT}
-      </motion.p>
+      </p>
+
+      {/* Single delight beat: WanderingEyes between subtitle and meta row.
+          Sized small (h-9 mobile / h-12 lg+) per the 9:4 aspect ratio so
+          it stays an ornament rather than a hero. The eye disc inherits
+          --color-text-muted, the pupil takes --color-accent (terracotta) —
+          matches the brand without raising volume. 4.5s cadence sits in
+          the editorial-calm register from svg-cover-playbook §14. */}
+      <div className="mt-[var(--spacing-lg)] flex items-center">
+        <WanderingEyes
+          aria-label=""
+          aria-hidden
+          role="presentation"
+          className="h-9 w-[81px] lg:h-12 lg:w-[108px] [--eye-color:var(--color-text-muted)] [--pupil-color:var(--color-accent)]"
+          style={{
+            // CSS custom property consumed by the upstream component to
+            // pace both keyframe loops (move + blink).
+            "--duration": "4.5s",
+          } as React.CSSProperties}
+        />
+      </div>
 
       {/* Bottom-left meta row — reader count + copyright */}
-      <motion.div
+      <div
         className="mt-auto pt-[var(--spacing-2xl)] flex items-center gap-[var(--spacing-lg)] font-mono"
         style={{ fontSize: "var(--text-small)", color: "var(--color-text-muted)" }}
-        initial={false}
-        animate={variant}
-        variants={{
-          static: { opacity: 1 },
-          hero: {
-            opacity: [0, 1],
-            transition: { duration: 0.3, delay: 1.0 },
-          },
-          return: {
-            opacity: [0, 1],
-            transition: { ...SPRING.smooth, delay: 0.12 },
-          },
-        }}
       >
         <ReaderCount count={readerCount} />
         <span className="tabular-nums" aria-label={`copyright ${years}`}>
           © {years}
         </span>
-      </motion.div>
+      </div>
     </aside>
   );
 }

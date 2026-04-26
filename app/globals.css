@@ -89,16 +89,6 @@
 --------------------------------------------------------------------------- */
 
 :root,
-[data-theme="dark"] {
-  --color-bg: var(--color-ink-100);
-  --color-surface: var(--color-ink-90);
-  --color-text: var(--color-ink-0);
-  --color-text-muted: var(--color-ink-40);
-  --color-accent: var(--color-terra-60);
-  --color-accent-pressed: var(--color-terra-50);
-  --color-rule: color-mix(in oklab, var(--color-text) 10%, transparent);
-}
-
 [data-theme="light"] {
   --color-bg: var(--color-ink-0);
   --color-surface: var(--color-ink-5);
@@ -107,6 +97,16 @@
   --color-accent: var(--color-terra-40);
   --color-accent-pressed: var(--color-terra-50);
   --color-rule: color-mix(in oklab, var(--color-text) 12%, transparent);
+}
+
+[data-theme="dark"] {
+  --color-bg: var(--color-ink-100);
+  --color-surface: var(--color-ink-90);
+  --color-text: var(--color-ink-0);
+  --color-text-muted: var(--color-ink-40);
+  --color-accent: var(--color-terra-60);
+  --color-accent-pressed: var(--color-terra-50);
+  --color-rule: color-mix(in oklab, var(--color-text) 10%, transparent);
 }
 
 html {

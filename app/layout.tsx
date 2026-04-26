@@ -84,7 +84,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-serif">
         <ThemeProvider
           attribute="data-theme"
-          defaultTheme="dark"
+          defaultTheme="light"
           enableSystem
         >
           <MotionConfigProvider>
