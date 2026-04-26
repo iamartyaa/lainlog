@@ -8,9 +8,9 @@
  *
  * Choreography (one ~10 s loop):
  *
- *   1. quick left-right-left-right     (~2 s)  — playful scan
- *   2. settle on reader (forward)      (~1 s)
- *   3. squint, fully closed            (~1.6 s) — held at min
+ *   1. look left, look right, settle   (~2.4 s) — one playful scan
+ *   2. rest at the reader (forward)    (~1 s)
+ *   3. squint to half-closed, hold     (~1.5 s)
  *   4. POP: pupil enlarge + eye grows + drop downward, all at once,
  *      quick (~0.4 s)                          — the "look here!" beat
  *   5. hold gaze on the reader-count   (~1.3 s)
@@ -56,6 +56,7 @@ export function ScriptedGazeEyes({
         height="100%"
         aria-hidden
         preserveAspectRatio="xMidYMid meet"
+        style={{ overflow: "visible" }}
       >
         {/* Left eye group — squint scales from the eye's own center. */}
         <g
@@ -92,32 +93,32 @@ export function ScriptedGazeEyes({
           animation: scripted-gaze-shape var(--gaze-duration) infinite cubic-bezier(0.45, 0, 0.55, 1);
         }
 
-        /* Pupil — translation + scale (default 1; 1.5 during the POP) */
+        /* Pupil — single L→R→center scan, then squint hold, then POP+drop */
         @keyframes scripted-gaze-pupil {
           0%   { transform: translate(0, 0) scale(1); }    /* rest */
-          4%   { transform: translate(-8px, 0) scale(1); } /* left  */
-          9%   { transform: translate(8px, 0) scale(1); }  /* right */
-          14%  { transform: translate(-8px, 0) scale(1); } /* left  */
-          19%  { transform: translate(8px, 0) scale(1); }  /* right */
-          24%  { transform: translate(0, 0) scale(1); }    /* settle on reader */
-          34%  { transform: translate(0, 0) scale(1); }    /* hold ~1 s */
-          44%  { transform: translate(0, 0) scale(1); }    /* fully squinted (pupil holds) */
-          58%  { transform: translate(0, 0) scale(1); }    /* still squinted */
-          62%  { transform: translate(0, 12px) scale(1.5); } /* POP: enlarge + drop */
-          75%  { transform: translate(0, 12px) scale(1.5); } /* hold down */
-          85%  { transform: translate(0, 0) scale(1); }    /* ease back */
+          8%   { transform: translate(-8px, 0) scale(1); } /* look left */
+          16%  { transform: translate(-8px, 0) scale(1); } /* hold left */
+          24%  { transform: translate(8px, 0) scale(1); }  /* look right */
+          32%  { transform: translate(8px, 0) scale(1); }  /* hold right */
+          40%  { transform: translate(0, 0) scale(1); }    /* settle on reader */
+          50%  { transform: translate(0, 0) scale(1); }    /* rest ~1 s */
+          58%  { transform: translate(0, 0) scale(1); }    /* squinting (pupil holds) */
+          70%  { transform: translate(0, 0) scale(1); }    /* still squinted */
+          74%  { transform: translate(0, 8px) scale(1.45); } /* POP: enlarge + drop */
+          85%  { transform: translate(0, 8px) scale(1.45); } /* hold down */
+          93%  { transform: translate(0, 0) scale(1); }    /* ease back */
           100% { transform: translate(0, 0) scale(1); }    /* rest */
         }
 
-        /* Eye shape — squint via scaleY; small scale-up during the POP */
+        /* Eye shape — half-squint scaleY 0.5 hold; small scale-up during POP */
         @keyframes scripted-gaze-shape {
-          0%, 34%   { transform: scaleY(1); }
-          38%       { transform: scaleY(0.7); }                    /* easing into squint */
-          44%       { transform: scaleY(0.18); }                   /* fully squinted */
-          58%       { transform: scaleY(0.18); }                   /* held closed */
-          62%       { transform: scaleY(1.05) scale(1.15); }       /* POP: snap open + grow */
-          75%       { transform: scaleY(1.05) scale(1.15); }       /* hold enlarged */
-          85%       { transform: scaleY(1) scale(1); }             /* return */
+          0%, 50%   { transform: scaleY(1); }
+          54%       { transform: scaleY(0.75); }                   /* easing into squint */
+          58%       { transform: scaleY(0.5); }                    /* half-squinted */
+          70%       { transform: scaleY(0.5); }                    /* held half-closed */
+          74%       { transform: scaleY(1) scale(1.10); }          /* POP: snap open + small grow */
+          85%       { transform: scaleY(1) scale(1.10); }          /* hold enlarged */
+          93%       { transform: scaleY(1) scale(1); }             /* return */
           100%      { transform: scaleY(1) scale(1); }
         }
 

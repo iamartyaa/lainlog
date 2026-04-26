@@ -94,13 +94,20 @@ export function AboutColumn({ readerCount }: AboutColumnProps) {
             identical to before this change. On lg+ the eyes appear
             centered above ReaderCount with a small gap. */}
         <div className="flex flex-col items-center gap-[var(--spacing-sm)]">
-          <ScriptedGazeEyes
-            aria-label=""
-            aria-hidden
-            role="presentation"
-            className="hidden lg:block h-14 w-[126px] [--eye-color:#ffffff] [--pupil-color:#000000] [--eye-outline-color:#000000] [--eye-outline-width:1px]"
-            duration="10s"
-          />
+          {/* Wrapper div owns the responsive show/hide so the eyes only
+              render on lg+. (Passing `hidden lg:block` directly to
+              ScriptedGazeEyes mixes with the component's internal
+              `inline-block` and the cascade can land either way; a
+              wrapper avoids that ambiguity.) */}
+          <div className="hidden lg:block">
+            <ScriptedGazeEyes
+              aria-label=""
+              aria-hidden
+              role="presentation"
+              className="h-14 w-[126px] [--eye-color:#ffffff] [--pupil-color:#000000] [--eye-outline-color:#000000] [--eye-outline-width:1px]"
+              duration="10s"
+            />
+          </div>
           <ReaderCount count={readerCount} />
         </div>
         <span className="tabular-nums" aria-label={`copyright ${years}`}>
