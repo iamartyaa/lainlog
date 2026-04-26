@@ -75,8 +75,8 @@ const GAIN_MULTIPLIER: Record<SoundName, number> = {
   Slide: 0.5, // was 1.0 — Run-click cue, halved
   "Toggle-On": 0.55, // was 0.85 — segmented controls + theme toggle
   Swoosh: 0.65, // was 1.1 — once-per-page verdict reveal, still earns lift
-  "Page-Enter": 0.35, // was 0.55 — soft "settling" door-close, not a chime
-  "Page-Exit": 0.3, // was 0.5 — quietest of the pair
+  "Page-Enter": 0.4, // v3: low-bass tap @ 110→90 Hz, finger-on-soft-surface
+  "Page-Exit": 0.35, // v3: lower mirror @ 95→80 Hz, slightly quieter still
 };
 
 /**

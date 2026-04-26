@@ -105,18 +105,22 @@ export const slide: SoundDefinition = {
 
 // Page-Enter / Page-Exit: redesigned 2026-04-26 from 700→900 / 900→700 Hz
 // "notification chime" sweeps to a soft musical-fourth pair sitting in a
-// warm 220→260 Hz register. Slower attack + longer decay so the pair reads
-// as ambient "settling into a room" rather than a synthetic ping.
+// Page-Enter / Page-Exit redesigned 2026-04-26 (v3) per user feedback:
+// "a simple tap sound with high bass and low pitch." Low fundamental
+// (~100 Hz) with a tiny pitch droop (finger-tap-on-soft-surface
+// character), instant attack, ~110 ms decay, no sustain. The small
+// 110→90 / 95→80 inflection gives the pair a subtle directional cue
+// without sounding like distinct alerts.
 export const pageEnter: SoundDefinition = {
-  source: { type: "sine", frequency: { start: 220, end: 260 } },
-  envelope: { attack: 0.03, decay: 0.2, sustain: 0, release: 0.06 },
-  gain: 0.04,
+  source: { type: "sine", frequency: { start: 110, end: 90 } },
+  envelope: { attack: 0.001, decay: 0.11, sustain: 0, release: 0.04 },
+  gain: 0.06,
 };
 
 export const pageExit: SoundDefinition = {
-  source: { type: "sine", frequency: { start: 260, end: 220 } },
-  envelope: { attack: 0.03, decay: 0.2, sustain: 0, release: 0.06 },
-  gain: 0.035,
+  source: { type: "sine", frequency: { start: 95, end: 80 } },
+  envelope: { attack: 0.001, decay: 0.11, sustain: 0, release: 0.04 },
+  gain: 0.055,
 };
 
 export const _patch: SoundPatch = {
