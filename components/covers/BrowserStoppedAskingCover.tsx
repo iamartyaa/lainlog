@@ -4,212 +4,276 @@ import { motion, useReducedMotion } from "motion/react";
 import { useCoverInView } from "./_CoverFrame";
 
 /**
- * BrowserStoppedAskingCover — long-poll / SSE / WebSocket: the connection that won't hang up.
+ * BrowserStoppedAskingCover — v7 metaphor revamp.
  *
- * v4 concept (one sentence):
- *   Client and server are joined by a thick terracotta beam; packets shuttle
- *   back and forth in steady rhythm while both endpoints breathe — the
- *   connection stays open.
+ * One sentence:
+ *   A split-pane contrast — the left side reconnects in sawtooth blips
+ *   (polling: connect, ask, drop), the right side draws one continuous
+ *   line that two packets travel along (persistence: stay open) — the
+ *   contrast IS the metaphor.
  *
- * Composition (~10 elements, all readable at 64px):
- *  1. Client tile (rounded-rect, left)
- *  2. Client cursor dot
- *  3. Server tile (rounded-rect, right)
- *  4. Server stack lines (3 short horizontals)
- *  5. Connecting beam (thick rounded line, terracotta)
- *  6-7. 2 packet dots traveling along the beam in opposite phases
- *  8-9. 2 endpoint pulse-rings (one per endpoint, breathing)
- *  10. Forward arrowhead chevron at midpoint (subtle direction cue)
+ * Why this metaphor (v7):
+ *   v4 used a single thick beam with packets shuttling. That conflated
+ *   polling with WebSockets into a single image and made the contrast
+ *   invisible. v7 puts polling and persistence side-by-side so the
+ *   article's hook ("the browser stopped hanging up") is the visual
+ *   contrast itself.
  *
- * Motion (DESIGN.md §9):
- *  - 4s continuous loop. Packet A: left→right; Packet B: right→left, offset.
- *  - Endpoint pulse-rings breathe in sync with packet arrival.
- *  - Beam shimmers via low-amplitude opacity oscillation.
+ * Composition (10 elements):
+ *  1.  Vertical divider (chrome — splits the panes).
+ *  2.  Left endpoint stub (small chrome dot, top-left).
+ *  3.  Left endpoint stub (small chrome dot, bottom-left).
+ *  4-6. Three sawtooth "blip" connectors on the left — short vertical
+ *      strokes that animate connect → disconnect on a stagger.
+ *  7.  Right endpoint dot (top of the continuous line, terracotta).
+ *  8.  Right endpoint dot (bottom of the continuous line, terracotta —
+ *      sparkles when each packet arrives, the delight beat).
+ *  9.  Right continuous line (hero — pathLength draws once, then holds).
+ *  10. Right packet (single terracotta dot travelling continuously
+ *      along the line — implies the second packet by symmetry; one
+ *      mover keeps the composition quiet).
  *
- * Frame-stability R6: only x / cx / scale / opacity animate. Tokens-only.
+ * Motion (playbook §3, §4, §14 — refined kinetic register):
+ *  - 6s continuous loop. The two halves run in parallel with the right
+ *    half as the calm hero and the left half as the restless support.
+ *  - Left side (3 cycles per loop, 2s each):
+ *      sawtooth blip strokes draw via pathLength then snap to 0;
+ *      staggered 0.2s apart so the eye reads "constant reconnect."
+ *  - Right side (1 cycle per loop):
+ *      continuous line pathLength 0 → 1 in the first 30%, then holds
+ *      sustained; one packet dot travels top → bottom over the loop.
+ *      Each time the packet hits the bottom endpoint, that endpoint
+ *      gets a faint opacity sparkle (delight beat).
+ *  - Hover amplifies via whileHover on the wrapping motion.g.
  *
- * Reduced-motion end-state: beam fully drawn, packets sit at midpoint,
- * endpoint rings at rest scale.
+ * Frame-stability R6: only transform / opacity / pathLength animate.
+ *
+ * Reduced-motion end-state: right line fully drawn, packet at midpoint,
+ * left side mid-disconnection (one blip half-drawn).
  */
 export function BrowserStoppedAskingCover() {
   const inView = useCoverInView();
   const reduced = useReducedMotion();
   const animate = inView && !reduced;
 
-  // Beam endpoints — load-bearing geometry shared by packets and rings.
-  const beamY = 100;
-  const leftX = 56;
-  const rightX = 144;
+  // Pane geometry.
+  const dividerX = 100;
+  const topY = 40;
+  const bottomY = 160;
+
+  // Left pane: polling — 3 blip Xs at distinct vertical positions.
+  const leftBlipX = 60;
+  const blipYs = [60, 100, 140];
+
+  // Right pane: continuous line endpoints.
+  const rightX = 140;
 
   return (
-    <g>
-      {/* ─── Endpoint A: client tile (left) ─────────────────────── */}
-      <rect
-        x={20}
-        y={76}
-        width={48}
-        height={48}
-        rx={8}
-        fill="var(--color-surface)"
-        stroke="var(--color-text)"
-        strokeWidth={2.4}
+    <motion.g initial="idle" whileHover="hover">
+      {/* ─── Vertical divider (chrome) ──────────────────────────── */}
+      <line
+        x1={dividerX}
+        y1={28}
+        x2={dividerX}
+        y2={172}
+        stroke="var(--color-text-muted)"
+        strokeWidth={1.0}
+        strokeDasharray="2 4"
+        opacity={0.32}
         vectorEffect="non-scaling-stroke"
-      />
-      {/* Client cursor dot — small detail */}
-      <circle cx={32} cy={88} r={2} fill="var(--color-text-muted)" opacity={0.7} />
-      <rect x={28} y={104} width={32} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.5} />
-      <rect x={28} y={110} width={20} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.5} />
-
-      {/* ─── Endpoint B: server tile (right) ────────────────────── */}
-      <rect
-        x={132}
-        y={76}
-        width={48}
-        height={48}
-        rx={8}
-        fill="var(--color-surface)"
-        stroke="var(--color-text)"
-        strokeWidth={2.4}
-        vectorEffect="non-scaling-stroke"
-      />
-      {/* Server stack lines */}
-      <line x1={142} y1={88} x2={170} y2={88} stroke="var(--color-text-muted)" strokeWidth={1.6} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-      <line x1={142} y1={100} x2={170} y2={100} stroke="var(--color-text-muted)" strokeWidth={1.6} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-      <line x1={142} y1={112} x2={170} y2={112} stroke="var(--color-text-muted)" strokeWidth={1.6} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-
-      {/* ─── Endpoint pulse rings (breathing, behind tiles visually but drawn after for layering) ── */}
-      <motion.circle
-        cx={leftX - 12}
-        cy={beamY}
-        r={28}
-        fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth={2}
-        vectorEffect="non-scaling-stroke"
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={
-          animate
-            ? { opacity: [0, 0.5, 0], scale: [0.8, 1.25, 1.4] }
-            : { opacity: 0.25, scale: 1 }
-        }
-        transition={
-          animate
-            ? { duration: 2, repeat: Infinity, ease: [0.4, 0, 0.2, 1] }
-            : undefined
-        }
-        style={{ transformOrigin: `${leftX - 12}px ${beamY}px`, transformBox: "fill-box" as const }}
-      />
-      <motion.circle
-        cx={rightX + 12}
-        cy={beamY}
-        r={28}
-        fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth={2}
-        vectorEffect="non-scaling-stroke"
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={
-          animate
-            ? { opacity: [0, 0.5, 0], scale: [0.8, 1.25, 1.4] }
-            : { opacity: 0.25, scale: 1 }
-        }
-        transition={
-          animate
-            ? { duration: 2, delay: 1, repeat: Infinity, ease: [0.4, 0, 0.2, 1] }
-            : undefined
-        }
-        style={{ transformOrigin: `${rightX + 12}px ${beamY}px`, transformBox: "fill-box" as const }}
       />
 
-      {/* ─── Connecting beam (the hero gesture) ─────────────────── */}
+      {/* ─── Left endpoint stubs (chrome dots) ──────────────────── */}
+      <circle cx={30} cy={topY} r={3} fill="none" stroke="var(--color-text-muted)" strokeWidth={1.2} vectorEffect="non-scaling-stroke" opacity={0.55} />
+      <circle cx={30} cy={bottomY} r={3} fill="none" stroke="var(--color-text-muted)" strokeWidth={1.2} vectorEffect="non-scaling-stroke" opacity={0.55} />
+      {/* Left long axis — chrome rail the blips connect to */}
+      <line
+        x1={30}
+        y1={topY}
+        x2={30}
+        y2={bottomY}
+        stroke="var(--color-text-muted)"
+        strokeWidth={1.0}
+        opacity={0.4}
+        vectorEffect="non-scaling-stroke"
+      />
+
+      {/* ─── Left blips (polling sawtooth — 3 reconnects per loop) ─ */}
+      {blipYs.map((blipY, i) => (
+        <motion.line
+          key={`blip-${i}`}
+          x1={30}
+          y1={blipY}
+          x2={leftBlipX}
+          y2={blipY}
+          stroke="var(--color-accent)"
+          strokeWidth={1.4}
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+          initial={{ pathLength: 0, opacity: 0 }}
+          animate={
+            animate
+              ? {
+                  pathLength: [0, 1, 1, 0, 0],
+                  opacity: [0, 0.85, 0.85, 0.2, 0],
+                }
+              : i === 1
+                ? { pathLength: 0.55, opacity: 0.65 }
+                : { pathLength: 0, opacity: 0 }
+          }
+          transition={
+            animate
+              ? {
+                  duration: 2,
+                  delay: i * 0.18,
+                  repeat: Infinity,
+                  ease: [0.4, 0, 0.2, 1],
+                  times: [0, 0.3, 0.6, 0.85, 1],
+                }
+              : undefined
+          }
+        />
+      ))}
+
+      {/* Left blip endpoints (small dots that pulse with the blip) */}
+      {blipYs.map((blipY, i) => (
+        <motion.circle
+          key={`blip-end-${i}`}
+          cx={leftBlipX}
+          cy={blipY}
+          r={1.8}
+          fill="var(--color-accent)"
+          initial={{ opacity: 0 }}
+          animate={
+            animate
+              ? { opacity: [0, 0.85, 0.85, 0.15, 0] }
+              : i === 1
+                ? { opacity: 0.5 }
+                : { opacity: 0 }
+          }
+          transition={
+            animate
+              ? {
+                  duration: 2,
+                  delay: i * 0.18,
+                  repeat: Infinity,
+                  ease: [0.4, 0, 0.2, 1],
+                  times: [0, 0.3, 0.6, 0.85, 1],
+                }
+              : undefined
+          }
+        />
+      ))}
+
+      {/* ─── Right pane: continuous line (hero) ─────────────────── */}
       <motion.line
-        x1={leftX}
-        y1={beamY}
+        x1={rightX}
+        y1={topY}
         x2={rightX}
-        y2={beamY}
+        y2={bottomY}
         stroke="var(--color-accent)"
-        strokeWidth={5}
+        strokeWidth={2.0}
         strokeLinecap="round"
         vectorEffect="non-scaling-stroke"
-        initial={{ opacity: 0.85 }}
-        animate={animate ? { opacity: [0.7, 1, 0.7] } : { opacity: 0.9 }}
-        transition={
-          animate
-            ? { duration: 2, repeat: Infinity, ease: [0.4, 0, 0.2, 1] }
-            : undefined
-        }
-      />
-
-      {/* ─── Packet A: client → server (large, visible) ─────────── */}
-      <motion.circle
-        cy={beamY}
-        r={5}
-        fill="var(--color-text)"
-        stroke="var(--color-accent)"
-        strokeWidth={2.5}
-        vectorEffect="non-scaling-stroke"
-        initial={{ cx: leftX, opacity: 0 }}
+        initial={{ pathLength: 0, opacity: 0.9 }}
         animate={
           animate
-            ? { cx: [leftX, rightX], opacity: [0, 1, 1, 0] }
-            : { cx: 100, opacity: 1 }
+            ? { pathLength: [0, 1, 1, 1], opacity: [0.85, 0.95, 0.95, 0.95] }
+            : { pathLength: 1, opacity: 0.95 }
         }
         transition={
           animate
             ? {
-                duration: 2,
+                duration: 6,
                 repeat: Infinity,
                 ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.1, 0.85, 1],
+                times: [0, 0.3, 0.95, 1],
               }
             : undefined
         }
       />
 
-      {/* ─── Packet B: server → client (offset by half cycle) ──── */}
+      {/* ─── Right top endpoint ─────────────────────────────────── */}
+      <circle
+        cx={rightX}
+        cy={topY}
+        r={3.5}
+        fill="var(--color-accent)"
+        opacity={0.95}
+      />
+
+      {/* ─── Right bottom endpoint (sparkles on packet arrival) ─── */}
       <motion.circle
-        cy={beamY}
-        r={5}
-        fill="var(--color-text)"
-        stroke="var(--color-accent)"
-        strokeWidth={2.5}
-        vectorEffect="non-scaling-stroke"
-        initial={{ cx: rightX, opacity: 0 }}
+        cx={rightX}
+        cy={bottomY}
+        r={3.5}
+        fill="var(--color-accent)"
+        initial={{ opacity: 0.7 }}
         animate={
           animate
-            ? { cx: [rightX, leftX], opacity: [0, 1, 1, 0] }
-            : { cx: 100, opacity: 0 }
+            ? { opacity: [0.7, 0.7, 1, 0.7, 0.7] }
+            : { opacity: 0.95 }
         }
         transition={
           animate
             ? {
-                duration: 2,
-                delay: 1,
+                duration: 6,
                 repeat: Infinity,
-                ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.1, 0.85, 1],
+                ease: "easeInOut",
+                times: [0, 0.78, 0.86, 0.94, 1],
               }
             : undefined
         }
       />
-    </g>
+
+      {/* ─── Right packet (continuous traveller) ────────────────── */}
+      <motion.circle
+        cx={rightX}
+        r={2.4}
+        fill="var(--color-text)"
+        stroke="var(--color-accent)"
+        strokeWidth={1.6}
+        vectorEffect="non-scaling-stroke"
+        initial={{ cy: topY + 4, opacity: 0 }}
+        animate={
+          animate
+            ? {
+                cy: [topY + 4, bottomY - 4, bottomY - 4],
+                opacity: [0, 1, 0],
+              }
+            : { cy: 100, opacity: 1 }
+        }
+        transition={
+          animate
+            ? {
+                duration: 6,
+                repeat: Infinity,
+                ease: [0.4, 0, 0.2, 1],
+                times: [0.32, 0.86, 0.96],
+              }
+            : undefined
+        }
+      />
+    </motion.g>
   );
 }
 
 /**
  * BrowserStoppedAskingCoverStatic — Satori-safe pure-JSX export.
- * Reduced-motion end-state: beam fully drawn, two packets sit at midpoint,
- * endpoint pulse-rings at rest scale.
+ * Reduced-motion end-state: right continuous line fully drawn, packet
+ * at midpoint, left side at the in-between frame (middle blip
+ * half-drawn) so the contrast still reads from the still.
  */
 export function BrowserStoppedAskingCoverStatic() {
   const ACCENT = "#d97341";
   const TEXT = "#f8f5f0";
   const MUTED = "#7a7570";
-  const SURFACE = "#1a1714";
 
-  const beamY = 100;
-  const leftX = 56;
-  const rightX = 144;
+  const dividerX = 100;
+  const topY = 40;
+  const bottomY = 160;
+  const leftBlipX = 60;
+  const rightX = 140;
 
   return (
     <svg
@@ -218,28 +282,28 @@ export function BrowserStoppedAskingCoverStatic() {
       width="100%"
       height="100%"
     >
-      {/* Client tile */}
-      <rect x={20} y={76} width={48} height={48} rx={8} fill={SURFACE} stroke={TEXT} strokeWidth={2.4} />
-      <circle cx={32} cy={88} r={2} fill={MUTED} opacity={0.7} />
-      <rect x={28} y={104} width={32} height={2} rx={1} fill={MUTED} opacity={0.5} />
-      <rect x={28} y={110} width={20} height={2} rx={1} fill={MUTED} opacity={0.5} />
+      {/* Vertical divider */}
+      <line x1={dividerX} y1={28} x2={dividerX} y2={172} stroke={MUTED} strokeWidth={1.0} strokeDasharray="2 4" opacity={0.32} />
 
-      {/* Server tile */}
-      <rect x={132} y={76} width={48} height={48} rx={8} fill={SURFACE} stroke={TEXT} strokeWidth={2.4} />
-      <line x1={142} y1={88} x2={170} y2={88} stroke={MUTED} strokeWidth={1.6} strokeLinecap="round" />
-      <line x1={142} y1={100} x2={170} y2={100} stroke={MUTED} strokeWidth={1.6} strokeLinecap="round" />
-      <line x1={142} y1={112} x2={170} y2={112} stroke={MUTED} strokeWidth={1.6} strokeLinecap="round" />
+      {/* Left chrome stubs + rail */}
+      <circle cx={30} cy={topY} r={3} fill="none" stroke={MUTED} strokeWidth={1.2} opacity={0.55} />
+      <circle cx={30} cy={bottomY} r={3} fill="none" stroke={MUTED} strokeWidth={1.2} opacity={0.55} />
+      <line x1={30} y1={topY} x2={30} y2={bottomY} stroke={MUTED} strokeWidth={1.0} opacity={0.4} />
 
-      {/* Endpoint pulse rings (at rest) */}
-      <circle cx={leftX - 12} cy={beamY} r={28} fill="none" stroke={ACCENT} strokeWidth={2} opacity={0.25} />
-      <circle cx={rightX + 12} cy={beamY} r={28} fill="none" stroke={ACCENT} strokeWidth={2} opacity={0.25} />
+      {/* Left blips: top blip drawn, middle blip half-drawn (in-between), bottom blip absent */}
+      <line x1={30} y1={60} x2={leftBlipX} y2={60} stroke={ACCENT} strokeWidth={1.4} strokeLinecap="round" opacity={0.7} />
+      <circle cx={leftBlipX} cy={60} r={1.8} fill={ACCENT} opacity={0.7} />
+      <line x1={30} y1={100} x2={47} y2={100} stroke={ACCENT} strokeWidth={1.4} strokeLinecap="round" opacity={0.5} />
 
-      {/* Beam */}
-      <line x1={leftX} y1={beamY} x2={rightX} y2={beamY} stroke={ACCENT} strokeWidth={5} strokeLinecap="round" opacity={0.9} />
+      {/* Right continuous line — hero */}
+      <line x1={rightX} y1={topY} x2={rightX} y2={bottomY} stroke={ACCENT} strokeWidth={2.0} strokeLinecap="round" opacity={0.95} />
 
-      {/* Packets at midpoint — show one going each direction, both visible */}
-      <circle cx={88} cy={beamY} r={5} fill={TEXT} stroke={ACCENT} strokeWidth={2.5} />
-      <circle cx={112} cy={beamY} r={5} fill={TEXT} stroke={ACCENT} strokeWidth={2.5} />
+      {/* Right endpoints */}
+      <circle cx={rightX} cy={topY} r={3.5} fill={ACCENT} opacity={0.95} />
+      <circle cx={rightX} cy={bottomY} r={3.5} fill={ACCENT} opacity={0.95} />
+
+      {/* Right packet at midpoint */}
+      <circle cx={rightX} cy={100} r={2.4} fill={TEXT} stroke={ACCENT} strokeWidth={1.6} />
     </svg>
   );
 }
