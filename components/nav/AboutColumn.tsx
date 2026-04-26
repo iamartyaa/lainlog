@@ -80,43 +80,32 @@ export function AboutColumn({ readerCount }: AboutColumnProps) {
         {SITE_ABOUT}
       </p>
 
-      {/* Bottom-pinned group: desktop scripted-gaze eyes + meta row. The
-          wrapper's `mt-auto` pushes the pair to the bottom of the aside
-          flex-col so the eyes sit just above the reader-count matrix
-          rather than floating in vertical center. The eyes get
-          `pb-[var(--spacing-md)]` for a tight ~16 px gap above the meta
-          row, and the meta row keeps its prior `pt-[var(--spacing-2xl)]`
-          so spacing between subtitle and meta remains identical when
-          the eyes are hidden (mobile / reduced-motion mount state). */}
-      <div className="mt-auto">
-        {/* Desktop-only ScriptedGazeEyes — runs an 8-phase directed
-            sequence (right → left → forward → squint → enlarge → down →
-            hold → return) that pulls the reader's eye toward the
-            ReaderCount matrix below. Sized h-14 / 126×56 px per 9:4.
-            White eye disc with a 1 px black outline (so it reads on
-            the near-white light theme) and a solid black pupil. 14 s
-            loop sits in the editorial-calm register from
-            svg-cover-playbook §14. */}
-        <div className="hidden lg:flex justify-center pb-[var(--spacing-md)]">
+      {/* Bottom-pinned meta row. The wrapper's `mt-auto` keeps it pinned
+          to the bottom of the aside flex-col. Inside, the desktop eyes
+          sit directly ABOVE the ReaderCount via a flex-col group, so
+          the gaze drop-down beat lands on the actual reader-count
+          number. Copyright sits to the right at the same baseline. */}
+      <div
+        className="mt-auto pt-[var(--spacing-2xl)] flex items-end gap-[var(--spacing-lg)] font-mono"
+        style={{ fontSize: "var(--text-small)", color: "var(--color-text-muted)" }}
+      >
+        {/* Eyes-over-reader column. On mobile the eyes div is hidden, so
+            the column collapses to just ReaderCount and the layout is
+            identical to before this change. On lg+ the eyes appear
+            centered above ReaderCount with a small gap. */}
+        <div className="flex flex-col items-center gap-[var(--spacing-sm)]">
           <ScriptedGazeEyes
             aria-label=""
             aria-hidden
             role="presentation"
-            className="h-14 w-[126px] [--eye-color:#ffffff] [--pupil-color:#000000] [--eye-outline-color:#000000] [--eye-outline-width:1px]"
-            duration="14s"
+            className="hidden lg:block h-14 w-[126px] [--eye-color:#ffffff] [--pupil-color:#000000] [--eye-outline-color:#000000] [--eye-outline-width:1px]"
+            duration="10s"
           />
-        </div>
-
-        {/* Bottom-left meta row — reader count + copyright */}
-        <div
-          className="pt-[var(--spacing-2xl)] flex items-center gap-[var(--spacing-lg)] font-mono"
-          style={{ fontSize: "var(--text-small)", color: "var(--color-text-muted)" }}
-        >
           <ReaderCount count={readerCount} />
-          <span className="tabular-nums" aria-label={`copyright ${years}`}>
-            © {years}
-          </span>
         </div>
+        <span className="tabular-nums" aria-label={`copyright ${years}`}>
+          © {years}
+        </span>
       </div>
     </aside>
   );

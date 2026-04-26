@@ -1,44 +1,39 @@
 "use client";
 
 /**
- * ScriptedGazeEyes — a purpose-built directed-gaze ornament for the
- * desktop AboutColumn slot. Unlike the vendored WanderingEyes (random
- * wandering + ambient blink), this component runs an 8-phase scripted
- * sequence that pulls the reader's eye toward the reader-count matrix
- * sitting just below it:
+ * ScriptedGazeEyes — playful directed-gaze ornament that pulls the
+ * reader's eye toward the reader-count below. Default shape is the
+ * googly-eye look (oversized r=9 pupil inside r=18 disc — ~50% ratio,
+ * tuned playful, not subtle).
  *
- *   1. look right        (1.6 s)
- *   2. look left         (1.6 s)
- *   3. look forward      (1.0 s)  — gaze settles on the reader
- *   4. squint            (1.0 s)  — recognition beat
- *   5. enlarge pupil     (1.2 s)  — "wait, *you*?"
- *   6. look down         (0.8 s)  — track toward reader-count
- *   7. hold on count     (4.0 s)  — rest on the matrix below
- *   8. return to forward (1.0 s)
+ * Choreography (one ~10 s loop):
  *
- * Total ≈ 12.2 s of motion inside a 14 s loop (the eased return adds
- * the remaining seconds of breathing room). Callers tune via the
- * `--gaze-duration` CSS custom property exposed through the `duration`
- * prop.
+ *   1. quick left-right-left-right     (~2 s)  — playful scan
+ *   2. settle on reader (forward)      (~1 s)
+ *   3. squint, fully closed            (~1.6 s) — held at min
+ *   4. POP: pupil enlarge + eye grows + drop downward, all at once,
+ *      quick (~0.4 s)                          — the "look here!" beat
+ *   5. hold gaze on the reader-count   (~1.3 s)
+ *   6. ease back to forward            (~1 s)
+ *   7. brief rest at center            (~1.5 s)
  *
- * Color contract matches WanderingEyes — reads `--eye-color`,
- * `--eye-outline-color`, `--eye-outline-width`, `--pupil-color` from
- * its container so theme switches don't bleed raw hex into this file.
+ * Reduced-motion: under `prefers-reduced-motion: reduce` both keyframe
+ * loops are paused; eyes mount in the look-forward state.
  *
- * Reduced-motion: under `prefers-reduced-motion: reduce` both
- * keyframe animations are paused, so the eyes mount in their
- * look-forward state with zero ambient cadence.
+ * Color contract: `--eye-color`, `--eye-outline-color`,
+ * `--eye-outline-width`, `--pupil-color` consumed from the surrounding
+ * cascade so theme switches don't bleed raw hex into this file.
  */
 import * as React from "react";
 import { cn } from "@/lib/utils/cn";
 
 type ScriptedGazeEyesProps = React.HTMLAttributes<HTMLSpanElement> & {
-  /** total loop duration. default '14s' */
+  /** total loop duration. default '10s' */
   duration?: string;
 };
 
 export function ScriptedGazeEyes({
-  duration = "14s",
+  duration = "10s",
   className,
   style,
   ...rest
@@ -68,7 +63,7 @@ export function ScriptedGazeEyes({
           style={{ transformOrigin: "20px 20px" }}
         >
           <ellipse cx="20" cy="20" rx="18" ry="18" />
-          <circle className="seg-pupil" cx="20" cy="20" r="6" />
+          <circle className="seg-pupil" cx="20" cy="20" r="9" />
         </g>
         {/* Right eye group */}
         <g
@@ -76,7 +71,7 @@ export function ScriptedGazeEyes({
           style={{ transformOrigin: "70px 20px" }}
         >
           <ellipse cx="70" cy="20" rx="18" ry="18" />
-          <circle className="seg-pupil" cx="70" cy="20" r="6" />
+          <circle className="seg-pupil" cx="70" cy="20" r="9" />
         </g>
       </svg>
 
@@ -90,35 +85,40 @@ export function ScriptedGazeEyes({
           fill: var(--pupil-color, #000);
           transform-box: fill-box;
           transform-origin: center;
-          animation: scripted-gaze-move var(--gaze-duration) infinite cubic-bezier(0.45, 0, 0.55, 1);
+          animation: scripted-gaze-pupil var(--gaze-duration) infinite cubic-bezier(0.45, 0, 0.55, 1);
         }
         .scripted-gaze-eyes svg .seg-eye {
           transform-box: fill-box;
-          animation: scripted-gaze-squint var(--gaze-duration) infinite cubic-bezier(0.45, 0, 0.55, 1);
+          animation: scripted-gaze-shape var(--gaze-duration) infinite cubic-bezier(0.45, 0, 0.55, 1);
         }
 
-        @keyframes scripted-gaze-move {
-          0%   { transform: translate(0,0) scale(1); }     /* start: center */
-          11%  { transform: translate(8px,0) scale(1); }   /* phase 1: right */
-          22%  { transform: translate(8px,0) scale(1); }   /* hold right */
-          33%  { transform: translate(-8px,0) scale(1); }  /* phase 2: left */
-          44%  { transform: translate(-8px,0) scale(1); }  /* hold left */
-          51%  { transform: translate(0,0) scale(1); }     /* phase 3: forward */
-          58%  { transform: translate(0,0) scale(1); }     /* phase 4: squint (pupil holds) */
-          67%  { transform: translate(0,0) scale(1.45); }  /* phase 5: enlarge */
-          72%  { transform: translate(0,0) scale(1.45); }  /* hold enlarged */
-          78%  { transform: translate(0,10px) scale(1); }  /* phase 6: down */
-          93%  { transform: translate(0,10px) scale(1); }  /* phase 7: hold down */
-          100% { transform: translate(0,0) scale(1); }     /* phase 8: return */
+        /* Pupil — translation + scale (default 1; 1.5 during the POP) */
+        @keyframes scripted-gaze-pupil {
+          0%   { transform: translate(0, 0) scale(1); }    /* rest */
+          4%   { transform: translate(-8px, 0) scale(1); } /* left  */
+          9%   { transform: translate(8px, 0) scale(1); }  /* right */
+          14%  { transform: translate(-8px, 0) scale(1); } /* left  */
+          19%  { transform: translate(8px, 0) scale(1); }  /* right */
+          24%  { transform: translate(0, 0) scale(1); }    /* settle on reader */
+          34%  { transform: translate(0, 0) scale(1); }    /* hold ~1 s */
+          44%  { transform: translate(0, 0) scale(1); }    /* fully squinted (pupil holds) */
+          58%  { transform: translate(0, 0) scale(1); }    /* still squinted */
+          62%  { transform: translate(0, 12px) scale(1.5); } /* POP: enlarge + drop */
+          75%  { transform: translate(0, 12px) scale(1.5); } /* hold down */
+          85%  { transform: translate(0, 0) scale(1); }    /* ease back */
+          100% { transform: translate(0, 0) scale(1); }    /* rest */
         }
 
-        @keyframes scripted-gaze-squint {
-          0%, 51%   { transform: scaleY(1); }
-          58%       { transform: scaleY(0.4); }   /* squint */
-          67%       { transform: scaleY(0.85); }  /* slight reopen with enlarged pupil */
-          72%       { transform: scaleY(0.85); }
-          78%       { transform: scaleY(1); }
-          100%      { transform: scaleY(1); }
+        /* Eye shape — squint via scaleY; small scale-up during the POP */
+        @keyframes scripted-gaze-shape {
+          0%, 34%   { transform: scaleY(1); }
+          38%       { transform: scaleY(0.7); }                    /* easing into squint */
+          44%       { transform: scaleY(0.18); }                   /* fully squinted */
+          58%       { transform: scaleY(0.18); }                   /* held closed */
+          62%       { transform: scaleY(1.05) scale(1.15); }       /* POP: snap open + grow */
+          75%       { transform: scaleY(1.05) scale(1.15); }       /* hold enlarged */
+          85%       { transform: scaleY(1) scale(1); }             /* return */
+          100%      { transform: scaleY(1) scale(1); }
         }
 
         @media (prefers-reduced-motion: reduce) {
