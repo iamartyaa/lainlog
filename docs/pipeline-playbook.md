@@ -6,19 +6,26 @@ Cross-reference: [`voice-profile.md`](./voice-profile.md), [`interactive-compone
 
 ---
 
-## 1. Pipeline overview — nine phases, four checkpoints
+## 1. Pipeline overview — ten phases, five checkpoints
 
 ```
-A  Intake                   → Checkpoint 1 (slug + title + pitch)
-B  Research                 → Checkpoint 2 (kernel + angle)
-C  Interactive design
-D  Pedagogy analysis        → Checkpoint 3 (outline)
-E  Draft
-F  Design review (skills)
-G  Iteration on action items
-H  Correctness validation
-I  PR + preview             → Checkpoint 4 (merge or revise)
+A    Intake                       → Checkpoint 1 (slug + title + pitch)
+B    Research                     → Checkpoint 2 (kernel + angle)
+C    Interactive design
+D    Pedagogy analysis            → Checkpoint 3 (outline)
+E    Draft
+F    Design review (skills)
+G    Iteration on action items
+H    Correctness validation
+H.5  Animated SVG cover authoring → Checkpoint 4.5 (cover concept lock)
+I    PR + preview                 → Checkpoint 4 (merge or revise)
 ```
+
+Phase H.5 is new (added 2026-04-26 after the two-flagship release). It runs after the article body validates and before the PR opens — the cover metaphor inherits a stable hook + mechanism + angle from the validated body. Authority for cover work is [`svg-cover-playbook.md`](./svg-cover-playbook.md); read it cover-to-cover before authoring. See §2 → Phase H.5 for the in-pipeline brief.
+
+### Length discipline (applies across the pipeline)
+
+**No max length per section.** Right-size each section to the concept's cognitive arc — sections may run long when the concept demands it. Per user direction: *"there shouldn't be any max length limit per section in any of my articles, I am ready to go above and beyond limits if it's necessary to introduce a concept better."* Total article word count remains a soft target (around 1500–2200 words for a 12–15-min read) but is **not a hard gate**; landing the concept is the gate. The `outline.md` file at Phase D may carry rough word estimates as a planning aid, but those estimates are advisory — landing the mechanism cleanly takes priority over hitting them. See [`voice-profile.md §12.7`](./voice-profile.md).
 
 Hard rules (never skip):
 - Gate the four checkpoints. Never proceed without explicit user approval.
@@ -61,7 +68,9 @@ Other orchestrator-mode constraints:
 
 ### Phase D — Pedagogy analysis
 - Read one reference post from each inspiration site (nan.fyi, ivov.dev/notes, blog.maximeheckel.com) to calibrate pacing.
-- Write `outline.md` — numbered sections with widget placement, word count estimate, and pedagogy reference per section.
+- Write `outline.md` — numbered sections with widget placement, a rough word estimate (advisory only — see Length discipline in §1), and pedagogy reference per section.
+- **For posts teaching a non-obvious order/output/mechanism**: the outline must include a §0 premise-quiz opener (a `<PredictTheStart>`-style W0 widget). See [`voice-profile.md §12.1`](./voice-profile.md). The opener's snippet/scenario should be referenced through the body so every later section reinforces it, and the closer (final section) should loop back to it.
+- For posts teaching a mechanism that's usually presented as multiple separate concepts: name the unifying mechanism in the outline, and plan a closer that says *"X, Y, Z — three names for one mechanism."* See [`voice-profile.md §12.3`](./voice-profile.md).
 - This is the last cheap edit point before code. User gets Checkpoint 3 here.
 
 ### Phase E — Draft
@@ -100,8 +109,49 @@ Other orchestrator-mode constraints:
   6. **SEO sweep** — title ≤ 70 chars (60 ideal), description ≤ 160 chars, `keywords[]` present (8–10 terms), `alternates.canonical` set, OG + Twitter mirror title + description, `openGraph.type === "article"`, `openGraph.publishedTime` set, visible H1 matches `VISIBLE_HEADING`, `subtitle` export matches `LYRICAL_TAGLINE`. See `voice-profile.md §11`.
 - Any failing check blocks Checkpoint 4 until resolved.
 
+### Phase H.5 — Animated SVG cover authoring
+
+Runs **after** Phase H validation passes on the article body and **before** the PR is opened in Phase I. The cover metaphor is shaped by the article's mechanism — author it after the body is stable, not before. (See §6 pitfall: *"Cover authored before the article validates."*)
+
+**Authority.** [`svg-cover-playbook.md`](./svg-cover-playbook.md) is the single source of truth for cover work. **Read it cover-to-cover before authoring.** It contains:
+- The 64-px-first rule (§1) — covers are read at thumbnail size first.
+- Element budget ≤ 14 (§2) — the v3 → v4 lesson.
+- Motion amplitude rules (§3) — what reads at a 4× downscale.
+- Continuous motion, not phase-stagger (§4).
+- The bold-vs-refined calibration (§14) — the *register* the cover should land in. Default to refined for chrome; the hero element gets the punctuation.
+- The 12-item author checklist (§10) — must tick all 12 before push.
+
+**What this phase produces.**
+1. `components/covers/<NameOf>Cover.tsx` — the per-post bespoke cover component (animated default; uses `motion/react`, hooks, CSS variables, `useId`, `whileHover`).
+2. A registry update in `components/covers/PostCover.tsx` — slug → component.
+3. **A sibling `<Name>CoverStatic` export** — pure JSX matching the cover's reduced-motion end-state — for the OG share-preview composition (`app/og/[slug]/route.tsx`). The static export must use **inline hex palette only** (no `motion.*`, no hooks, no `color-mix`, no CSS vars) because it renders inside Next's OG image route, where CSS variables don't resolve.
+
+Both exports are required. Static-export purity is verified in the validation step below.
+
+**Concept-lock gate (Checkpoint 4.5).** Before drawing any paths, surface a one-sentence concept + element list to the user for approval. The v3-failure / v4-success / v7-revamp cycle (`svg-cover-playbook.md §13`) showed that wrong metaphor + drawn paths = wasted PR. Lock the concept first. In orchestrator mode this is a mailbox prompt prefixed `cover-concept:`; out of orchestrator mode it's a direct ask.
+
+**Skill phasing** (per `svg-cover-playbook.md §9` and §14):
+- `/clarify` — concept-lock. Write the cover as one sentence ("a comet hits a CORS wall and bounces"); if you can't say it in one sentence, the cover is wrong.
+- Draft static SVG — JSX paths only, no motion yet. Aim for the §2 element budget.
+- `/animate` — motion design. Layer `motion.path` / `motion.g` with §3 amplitudes and §4 loop discipline.
+- `/delight` — ≤ 1 small joy beat per cover.
+- `/polish` — final pass: token compliance, alignment, off-by-one strokes.
+
+`/bolder` and `/overdrive` are **opt-in only**. Many covers don't want them. Default to refined; apply `/bolder` only when the static draft genuinely reads as safe and the metaphor is kinetic. See `svg-cover-playbook.md §14` for per-cover register guidance (kinetic / contemplative / pedagogical / reveal).
+
+**Validation gate** (must all pass before push):
+- `pnpm exec tsc --noEmit` green.
+- `pnpm build` green.
+- Static-export purity grep on `<Name>CoverStatic`: `grep -E "motion\\.|use[A-Z]|color-mix|var\\(--"` returns clean (no matches inside the static export). The OG route can't resolve CSS vars or call hooks.
+- 64-px AND hero-size mental sweep — the cover reads at both.
+- Reduced-motion end-state visible (the static frame must carry the metaphor on its own).
+- All 12 items in `svg-cover-playbook.md §10` ticked.
+
+**On failure.** If the cover doesn't read at 64 px, refactor against `svg-cover-playbook.md §11` (the diagnostic ladder). Don't tweak — refactor. v3 → v4 was a refactor, not tweaks; that's why it succeeded.
+
 ### Phase I — PR + preview
 - Stage only post-scoped files. **Never `git add -A`** — other in-progress work on the branch may not be yours.
+- Stage Phase H.5 cover artefacts: `components/covers/<NameOf>Cover.tsx` and the `components/covers/PostCover.tsx` registry update.
 - Research dir stays gitignored. Confirm with `git status` before committing.
 - Remove `app/_scratch/<slug>/` if present.
 - Commit on the feature branch. Push with `-u`. `gh pr create` with a full body: summary, widgets shipped, P0 action resolution table, test plan, cliffhanger.
@@ -144,6 +194,9 @@ Surface: `kernel.md` (1 aha + 5 facts + differentiation notes) and `questions.md
 
 ### Checkpoint 3 — Outline approval
 Surface: `outline.md` — section-by-section, widget placement, word targets. Last cheap edit point.
+
+### Checkpoint 4.5 — Cover concept approval (Phase H.5)
+Surface: a one-sentence cover concept + an element list (≤ 14) + the chosen register (kinetic / contemplative / pedagogical / reveal — see `svg-cover-playbook.md §14`). User approves or revises **before** any paths are drawn. The v3-failure / v4-success cycle showed concept-lock saves a wasted PR. In orchestrator mode this is a `cover-concept:` mailbox prompt.
 
 ### Checkpoint 4 — PR approval
 Surface: `validation.md`, a preview URL, and explicit asks for widget/theme/kb testing. Block on explicit "yes push it" before merge.
@@ -210,6 +263,8 @@ Each of the six design-review skills targets a specific quality axis. Run all si
 - **Simulating real performance hazards in teaching widgets** — state-machine simulation, not real recursion / timer-flooding / rAF consumption. See `interactive-components.md §5`.
 - **DragElements for sequenced/structured concepts** — use static layout + springs + `<AnimatePresence>` instead. Drag is for "you decide where these go" affordances only.
 - **Clanky scripted-stepper transitions** — use `<LayoutGroup>` + `layoutId` for shared elements that move (program-counter, active-frame indicator), `<AnimatePresence>` for items that enter/exit (queue chips, stack frames), and springs (not duration tweens) for transitions.
+- **Cover authored before the article validates.** The cover metaphor is shaped by the article's mechanism, not the other way around. Author the cover **after** the article body's Phase H validation passes — the cover then has a stable hook, mechanism, and angle to inherit from. Authoring earlier risks a metaphor mismatch when the article shifts during iteration. (Phase H.5 enforces this ordering.)
+- **Capping a section to a word target.** No max length per section. Right-size each section to the concept's cognitive arc. Per user direction: *"there shouldn't be any max length limit per section in any of my articles, I am ready to go above and beyond limits if it's necessary to introduce a concept better."* The signal of bloat is meandering, not word count. See [`voice-profile.md §12.7`](./voice-profile.md).
 
 ## 6.5 Redesign-vs-iterate signal
 
@@ -225,8 +280,9 @@ PR #46's CallStackECs went through it too: round-2 used `DragElements`, round-3 
 ## 7. Reference reading order for a new Claude session
 
 1. This file (`pipeline-playbook.md`) — the pipeline + lessons.
-2. [`voice-profile.md`](./voice-profile.md) — tone, prose rules, widget rules.
+2. [`voice-profile.md`](./voice-profile.md) — tone, prose rules, widget rules. **§12 captures the patterns from the two-flagship release** (event-loop + hoisting/TDZ) — read it before drafting.
 3. [`interactive-components.md`](./interactive-components.md) — widget shapes and primitive catalogue.
-4. [`../DESIGN.md`](../DESIGN.md) — the design system (tokens, motion, bans).
-5. A recent shipped post (e.g. `app/posts/the-webpage-that-reads-the-agent/page.tsx`) — how it all composes.
-6. The `/new-post` command at `.claude/commands/new-post.md` — the canonical workflow definition.
+4. [`svg-cover-playbook.md`](./svg-cover-playbook.md) — animated cover authoring (Phase H.5 authority).
+5. [`../DESIGN.md`](../DESIGN.md) — the design system (tokens, motion, bans).
+6. A recent shipped post pair — `app/posts/the-line-that-waits-its-turn/page.tsx` and `app/posts/how-javascript-reads-its-own-future/page.tsx` — the canonical exemplars for voice + structure as of 2026-04.
+7. The `/new-post` command at `.claude/commands/new-post.md` — the canonical workflow definition.

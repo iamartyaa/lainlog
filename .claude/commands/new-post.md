@@ -7,27 +7,30 @@ argument-hint: <topic>
 
 You (Claude) are about to author a new bytesize post on the topic: **$ARGUMENTS**.
 
-This command encodes a 9-phase workflow that fires every time the author wants a new post. Read the whole file before acting. The workflow is bounded by four user checkpoints — gate hard at each of them.
+This command encodes a 10-phase workflow (A → I, with H.5 between H and I) that fires every time the author wants a new post. Read the whole file before acting. The workflow is bounded by **five user checkpoints** — gate hard at each of them. (Phase H.5 adds Checkpoint 4.5 for cover concept approval.)
 
 ## Orchestrator mode (when invoked under `/orchestrate`)
 
 If your prompt declares `ORCHESTRATOR_STATE_DIR` and `TASK_ID`, you are running as a `post-author` agent under the orchestrator. **Every user-facing checkpoint below marshals via the mailbox** at `<ORCHESTRATOR_STATE_DIR>/tasks/<TASK_ID>.json` instead of speaking to the user directly. See `.claude/agents/post-author.md` for the full marshalling protocol — read it before Phase A. Outside orchestrator mode (no `ORCHESTRATOR_STATE_DIR` in your prompt), behave exactly as the canonical pipeline below describes.
 
 Checkpoint marshalling (orchestrator mode only):
-- At each Checkpoint, write the proposal/summary into `pending_user_input.prompt`, set `request_id` (a fresh ULID), `asked_at`, leave `response: null`, flip `status` to `awaiting-user`, `phase` to the current letter.
+- At each Checkpoint (1, 2, 3, 4.5, 4), write the proposal/summary into `pending_user_input.prompt`, set `request_id` (a fresh ULID), `asked_at`, leave `response: null`, flip `status` to `awaiting-user`, `phase` to the current letter (use `H.5` for Checkpoint 4.5).
+- For Checkpoint 4.5 (cover concept), prefix the mailbox prompt with `cover-concept:` so the orchestrator surfaces it correctly.
 - Poll your task JSON every 15 seconds for non-null `pending_user_input.response`. When found: clear `pending_user_input` to `null`, flip status back to `running`, parse the response, continue.
 - Max wait 30 minutes; on timeout flip `status` to `failed` with `errors: ["awaiting-user-timeout @ Checkpoint <N>"]`.
 - Use `DEV_PORT` (not 3000) for `pnpm dev`.
 
 ## Hard rules (inviolable)
 
-1. **Never skip Checkpoints 1–4.** Surface them as explicit user-facing decisions (or mailbox transactions in orchestrator mode).
+1. **Never skip Checkpoints 1, 2, 3, 4.5, 4.** Surface them as explicit user-facing decisions (or mailbox transactions in orchestrator mode).
 2. **Never commit or push without explicit "yes, push it" at Checkpoint 4.** No implicit commits.
-3. **Never skip Phase H (correctness validation).** A failing check blocks Checkpoint 4.
+3. **Never skip Phase H (correctness validation) or Phase H.5 (cover authoring).** A failing check at H blocks H.5 + Checkpoint 4. A failing check at H.5 blocks Checkpoint 4.
 4. **Never implement a `DESIGN.md`-banned pattern** even if a design skill suggests it. The bans are authoritative. Reject with reasoning written to the review file.
 5. **Always work on `posts/<slug>` branch.** Never commit directly to `main` during the workflow.
 6. **Always write phase artifacts to `research/<slug>/`** (gitignored) so the run is resumable.
 7. **Read `DESIGN.md`, `content/posts-manifest.ts`, and `components/prose/`, `components/viz/`, `lib/motion/`, `lib/shiki.ts` before drafting code.** These define the vocabulary the post must compose from.
+8. **Read `docs/svg-cover-playbook.md` cover-to-cover before Phase H.5.** It is the authority for animated cover work — element budget, motion amplitudes, register calibration, the 12-item author checklist.
+9. **No max length per section.** Per user direction: *"there shouldn't be any max length limit per section in any of my articles, I am ready to go above and beyond limits if it's necessary to introduce a concept better."* See `docs/voice-profile.md §12.7`. Total post is a soft band of ~1500–2200 words but the gate is "did the concept land," not the count.
 
 ## Bail-out rules
 
@@ -81,8 +84,10 @@ At any checkpoint, the user may give free-form feedback ("redo the outline, swap
    - `ivov.dev/notes/<closest>` — annotated-notes density.
    - `blog.maximeheckel.com/<closest>` — widget-centric teaching.
 2. Per reference, extract: opening-hook style, abstraction ladder (concrete→abstract or reverse), widget-to-prose ratio, first-revelation placement, code-to-diagram ratio, ending style.
-3. Synthesize `research/<slug>/outline.md` — numbered sections with: title, intent, widgets used, approximate word count, pedagogy reference.
-4. **Checkpoint 3** — user reviews the outline. Last cheap edit point before code. Do not proceed until approved.
+3. Synthesize `research/<slug>/outline.md` — numbered sections with: title, intent, widgets used, a *rough advisory* word estimate (no max — see Hard rule #9), pedagogy reference.
+4. **For posts teaching a non-obvious order/output/mechanism**, the outline must include a **§0 premise-quiz opener** (a `<PredictTheStart>`-style W0 widget — see [`docs/voice-profile.md §12.1`](../../docs/voice-profile.md) and [`docs/interactive-components.md §1`](../../docs/interactive-components.md)). The opener's snippet/scenario should be referenced through the body, and the closer should loop back to it. This is the canonical anchor pattern from the two-flagship release.
+5. For posts that unify concepts usually taught separately, plan a "many-views-of-one-mechanism" structure (`docs/voice-profile.md §12.3`): name the unifying mechanism in the outline; the closer says *"X, Y, Z — three names for one mechanism."*
+6. **Checkpoint 3** — user reviews the outline. Last cheap edit point before code. Do not proceed until approved.
 
 ## Phase E — Draft Generation (autonomous)
 
@@ -95,7 +100,7 @@ At any checkpoint, the user may give free-form feedback ("redo the outline, swap
 4. Add entry to `content/posts-manifest.ts` (newest-first via POSTS_NEWEST_FIRST helper).
 5. Run `pnpm exec tsc --noEmit` + `pnpm build`. Fix any errors before proceeding.
 6. Local smoke — ask user to start `pnpm dev` if server isn't running; click through the post, interact with every widget.
-7. If this is post #2 or later: read `docs/voice-profile.md` (or memory's voice profile) and draft against it.
+7. **Read `docs/voice-profile.md` and draft against it** — particularly §12 (the patterns from the two-flagship release: premise-quiz opener, mechanism-first reframe, many-views-of-one-mechanism structure, `<Aside>` for engine internals, `<Term>` for first-jargon, widget-prose ramp, no section length cap, closer-loops-to-opener). The two flagship posts (`app/posts/the-line-that-waits-its-turn/page.tsx` and `app/posts/how-javascript-reads-its-own-future/page.tsx`) are the canonical exemplars — read them end-to-end before writing your first paragraph.
 
 ## Phase F — Design Review via skill orchestration (autonomous)
 
@@ -126,11 +131,38 @@ All 5 checks run unattended; results aggregate to `research/<slug>/validation.md
 4. **Build + Lighthouse** — `pnpm build` must pass; Lighthouse on the post page targets ≥ 95 perf/a11y/SEO.
 5. **Reading-sanity** — read end-to-end at normal pace; note voice drift, undefined terms, flow-breaking widgets. Flag these; do not silently fix voice issues.
 
-Any failing check blocks Checkpoint 4.
+Any failing check blocks Phase H.5 + Checkpoint 4.
+
+## Phase H.5 — Animated SVG cover authoring (requires user input at Checkpoint 4.5)
+
+The article body is now stable. Author the animated cover. **Authority: [`docs/svg-cover-playbook.md`](../../docs/svg-cover-playbook.md). Read it cover-to-cover before drawing any paths.** It contains the 64-px-first rule (§1), the element budget ≤ 14 (§2), motion amplitudes (§3), the bold-vs-refined register calibration (§14), and the 12-item author checklist (§10).
+
+1. **Concept lock first (Checkpoint 4.5).** Before any path, surface a one-sentence concept + element list (≤ 14) + register choice (kinetic / contemplative / pedagogical / reveal — see playbook §14). User approves or revises. The v3-failure / v4-success cycle showed that wrong metaphor + drawn paths = wasted PR. **Do not draw before the concept is approved.** In orchestrator mode this is a `cover-concept:` mailbox prompt.
+2. **Skill phasing** (per playbook §9):
+   - `/clarify` — concept-lock (above).
+   - Draft static SVG (JSX paths, no motion). Aim for the §2 element budget.
+   - `/animate` — motion design. Layer `motion.path` / `motion.g` with §3 amplitudes and §4 continuous loop discipline.
+   - `/delight` — ≤ 1 small joy beat per cover.
+   - `/polish` — final pass: tokens, alignment, off-by-one strokes.
+   - `/bolder` and `/overdrive` are **opt-in only**. Default to refined (playbook §14); apply `/bolder` only when the static draft genuinely reads as safe and the metaphor is kinetic.
+3. **Both exports required.**
+   - **Animated default** — `components/covers/<NameOf>Cover.tsx` — uses `motion/react`, hooks, CSS variables, `useId()`, `whileHover`.
+   - **Sibling `<Name>CoverStatic`** — pure JSX matching the cover's reduced-motion end-state. **Inline hex palette only.** No `motion.*`, no hooks, no `color-mix`, no CSS vars. Required by the OG share-preview composition (`app/og/[slug]/route.tsx`); CSS vars don't resolve there.
+4. **Registry update** — add the slug → component mapping in `components/covers/PostCover.tsx`.
+5. **Validation gate** (must all pass):
+   - `pnpm exec tsc --noEmit` green.
+   - `pnpm build` green.
+   - Static-export purity: `grep -E "motion\\.|use[A-Z]|color-mix|var\\(--"` returns clean inside the `<Name>CoverStatic` block.
+   - 64-px AND hero-size mental sweep — cover reads at both.
+   - Reduced-motion end-state visible (the static frame must carry the metaphor).
+   - All 12 items in `docs/svg-cover-playbook.md §10` ticked.
+6. **On failure**, refactor against `docs/svg-cover-playbook.md §11` (the diagnostic ladder) — don't tweak.
+
+A failing Phase H.5 blocks Checkpoint 4 (PR approval) until resolved.
 
 ## Phase I — PR, preview, merge (requires user input at Checkpoint 4)
 
-1. Stage: `app/posts/<slug>/`, `content/posts-manifest.ts`, any graduated widgets, updates to `docs/voice-profile.md`. **Do not** stage `research/<slug>/`. Remove `app/_scratch/<slug>/` if present.
+1. Stage: `app/posts/<slug>/`, `content/posts-manifest.ts`, any graduated widgets, **the Phase H.5 cover artefacts** (`components/covers/<NameOf>Cover.tsx` + the `components/covers/PostCover.tsx` registry entry), updates to `docs/voice-profile.md`. **Do not** stage `research/<slug>/`. Remove `app/_scratch/<slug>/` if present.
 2. Commit on branch `posts/<slug>` with a descriptive message: what shipped (widget count, section count, reading minutes) + a cliffhanger for the next post.
 3. Push the branch. `gh pr create` with title = post title, body = summary covering:
    - widgets shipped + which primitives composed from
@@ -169,8 +201,9 @@ Two `/new-post` invocations with different slugs are supported — each has its 
 | F. Design review | 15–30 min |
 | G. Iteration | 15–60 min |
 | H. Validation | 15 min |
+| H.5 Animated cover | 30–60 min (concept-lock + draft + animate + polish) |
 | I. Commit & merge | 5 min active |
-| **Total** | **~2–4 hours per post**, across 1–3 sessions |
+| **Total** | **~2.5–5 hours per post**, across 1–3 sessions |
 
 ---
 
