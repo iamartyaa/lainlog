@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { PRESS, SPRING } from "@/lib/motion";
+import { playSound } from "@/lib/audio";
 import { WidgetShell } from "./WidgetShell";
 
 const SAMPLE = "johndoe@gmail.com";
@@ -63,6 +64,9 @@ export function TypingPause() {
   };
 
   const playSample = () => {
+    // Click on the user-press; the typed-keystroke animation that follows
+    // is autonomous and stays silent.
+    playSound("Click");
     stopAllTimers();
     setTyped("");
     setWaitMs(0);
@@ -87,6 +91,7 @@ export function TypingPause() {
   };
 
   const addKeystroke = () => {
+    playSound("Click");
     stopAllTimers();
     setPhase("typing");
     setWaitMs(0);
@@ -98,6 +103,7 @@ export function TypingPause() {
   };
 
   const reset = () => {
+    playSound("Click");
     stopAllTimers();
     setTyped("");
     setWaitMs(0);

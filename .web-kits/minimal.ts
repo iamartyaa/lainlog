@@ -7,8 +7,10 @@
 // TIER-1 ONLY. We physically removed every sound that's not in the lainlog
 // audio playbook (`docs/audio-playbook.md`) — Hover, Tap, Key-Press,
 // Toggle-Off, Notification, Info, Warning, Send, Delete, Undo, Tab-Switch,
-// Checkbox, Select, Deselect, Collapse, Expand, Page-Enter, Page-Exit.
-// Bundle weight = 8 SoundDefinition objects (~0.5 kB gz). The runtime
+// Checkbox, Select, Deselect, Collapse, Expand. Page-Enter / Page-Exit
+// were originally deferred (Tier-2) but are now Tier-1 — wired through
+// `<NavigationSounds />` mounted in `app/layout.tsx`.
+// Bundle weight = 10 SoundDefinition objects (~0.6 kB gz). The runtime
 // never decodes audio files; sounds are synthesised live via Web Audio.
 
 import type { SoundDefinition, SoundPatch } from "@web-kits/audio";
@@ -101,6 +103,21 @@ export const slide: SoundDefinition = {
   gain: 0.05,
 };
 
+// Page-Enter (single nav beat):
+//   v1 (700→900 Hz "chime"): rejected as too high-pitched.
+//   v2 (220→260 Hz musical fourth): rejected as too pingy.
+//   v3 (110→90 Hz tap, 0.06 gain): rejected — needed more amplitude.
+//   v4 (this): 110→90 Hz tap with patch-level gain bumped to 0.09 so the
+//   per-sound multiplier (now uniform 0.5 across the vocabulary) lands a
+//   tactile tap that matches widget Click / Pop loudness. Page-Exit retired
+//   in this revision — navigation now plays a single "dub" instead of the
+//   prior "dub-dub" pair.
+export const pageEnter: SoundDefinition = {
+  source: { type: "sine", frequency: { start: 110, end: 90 } },
+  envelope: { attack: 0.001, decay: 0.11, sustain: 0, release: 0.04 },
+  gain: 0.09,
+};
+
 export const _patch: SoundPatch = {
   name: "Minimal",
   author: "Raphael Salaja",
@@ -116,5 +133,6 @@ export const _patch: SoundPatch = {
     pop,
     swoosh,
     slide,
+    "page-enter": pageEnter,
   },
 };

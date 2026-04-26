@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { WidgetNav } from "@/components/viz/WidgetNav";
 import { PRESS, SPRING } from "@/lib/motion";
+import { playSound } from "@/lib/audio";
 import { WidgetShell } from "./WidgetShell";
 
 type LocalityId = "hot" | "warm" | "cold";
@@ -301,6 +302,7 @@ export function CacheWalk({
                       key={l.id}
                       type="button"
                       onClick={() => {
+                        if (l.id !== localityId) playSound("Toggle-On");
                         setLocalityId(l.id);
                       }}
                       aria-pressed={active}

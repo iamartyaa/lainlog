@@ -29,7 +29,17 @@
  */
 
 import { defineSound, type SoundDefinition } from "@web-kits/audio";
-import { click, copy, error, pop, slide, success, swoosh, toggleOn } from "@/.web-kits/minimal";
+import {
+  click,
+  copy,
+  error,
+  pageEnter,
+  pop,
+  slide,
+  success,
+  swoosh,
+  toggleOn,
+} from "@/.web-kits/minimal";
 
 export type SoundName =
   | "Copy"
@@ -39,26 +49,38 @@ export type SoundName =
   | "Pop"
   | "Slide"
   | "Toggle-On"
-  | "Swoosh";
+  | "Swoosh"
+  | "Page-Enter";
 
 /**
- * Per-sound gain multipliers applied AFTER the patch's own `gain`. Values
- * are best-guess subtle; the playbook says we'll dogfood and refine. The
- * upstream Minimal patch is already quiet (gains 0.05–0.12), so these
- * multipliers stay close to 1.0 for most — we're trimming the loud ones
- * (Pop, Click) and lifting Swoosh which is a once-per-page reveal.
+ * Per-sound gain multipliers applied AFTER the patch's own `gain`. Recalibrated
+ * 2026-04-26 (PR #64 v4) to a UNIFORM 0.5 across the vocabulary so every sound
+ * lands at the same target loudness. The patch-level `gain` values (in
+ * `.web-kits/minimal.ts`) carry the per-sound balancing — those were tuned by
+ * the upstream library author for equal perceived loudness across different
+ * fundamentals, so applying a single multiplier on top preserves that balance.
  *
- * If you change a value here, also update the table in audio-playbook.md.
+ * Earlier revisions had per-sound multipliers (Copy 0.55, Click 0.4, etc.) but
+ * user feedback wanted "all sounds equally loud, no exceptions." The 0.5
+ * baseline is the midpoint of the prior range and gives the navigation tap
+ * the amplitude bump it needed.
+ *
+ * Page-Exit was retired in this pass: navigation now plays a single Page-Enter
+ * "dub" rather than the previous Page-Exit + Page-Enter "dub-dub" pair.
+ *
+ * If you change this constant, also update §6 of `docs/audio-playbook.md`.
  */
+const UNIFORM_GAIN = 0.5;
 const GAIN_MULTIPLIER: Record<SoundName, number> = {
-  Copy: 0.9, // already quiet (0.07–0.08), just shave a hair
-  Success: 0.85, // C5+G5 chord — present but not celebratory
-  Error: 0.7, // low-300Hz pair reads heavy; soften it
-  Click: 0.7, // fires on every nav button — keep extra subtle
-  Pop: 0.75, // EC push fires repeatedly through a multi-step trace
-  Slide: 1.0, // already at 0.05; let it breathe
-  "Toggle-On": 0.85, // segmented controls
-  Swoosh: 1.1, // verdict reveal, once per page-load — earn the lift
+  Copy: UNIFORM_GAIN,
+  Success: UNIFORM_GAIN,
+  Error: UNIFORM_GAIN,
+  Click: UNIFORM_GAIN,
+  Pop: UNIFORM_GAIN,
+  Slide: UNIFORM_GAIN,
+  "Toggle-On": UNIFORM_GAIN,
+  Swoosh: UNIFORM_GAIN,
+  "Page-Enter": UNIFORM_GAIN,
 };
 
 /**
@@ -74,6 +96,7 @@ const PATCH_DEF: Record<SoundName, SoundDefinition> = {
   Slide: slide,
   "Toggle-On": toggleOn,
   Swoosh: swoosh,
+  "Page-Enter": pageEnter,
 };
 
 const THROTTLE_MS = 100;

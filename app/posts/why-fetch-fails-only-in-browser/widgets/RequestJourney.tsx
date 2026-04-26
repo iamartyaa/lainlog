@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { WidgetNav } from "@/components/viz/WidgetNav";
 import { PRESS, SPRING } from "@/lib/motion";
+import { playSound } from "@/lib/audio";
 import { WidgetShell } from "./WidgetShell";
 
 type Step = {
@@ -103,7 +104,10 @@ export function RequestJourney({
           <WidgetNav value={step} total={STEPS.length} onChange={setStep} />
           <motion.button
             type="button"
-            onClick={() => setAllow((v) => !v)}
+            onClick={() => {
+              playSound("Toggle-On");
+              setAllow((v) => !v);
+            }}
             aria-pressed={allow}
             aria-label="Toggle the Access-Control-Allow-Origin header"
             className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] min-h-[44px] inline-flex items-center font-mono transition-colors"

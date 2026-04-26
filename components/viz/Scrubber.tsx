@@ -1,6 +1,7 @@
 "use client";
 
 import type { ChangeEvent } from "react";
+import { playSound } from "@/lib/audio";
 
 type Props = {
   label?: string;
@@ -40,6 +41,28 @@ export function Scrubber({ label, value, min = 0, max, step = 1, onChange, forma
         step={step}
         value={value}
         onChange={handle}
+        // One Click on drag-start. Continuous "while dragging" sounds would
+        // be irritating and stack into a wall — the throttle would clamp
+        // them anyway, but we keep it explicit. Keyboard arrow nudges fire
+        // through `onChange`'s native repeat, but the audio throttle
+        // (100 ms) drops the duplicates.
+        onPointerDown={() => playSound("Click")}
+        onKeyDown={(e) => {
+          // Arrow keys / Home / End / PageUp / PageDown all change a slider.
+          // Cue the first keystroke; throttle handles the held-down case.
+          if (
+            e.key === "ArrowLeft" ||
+            e.key === "ArrowRight" ||
+            e.key === "ArrowUp" ||
+            e.key === "ArrowDown" ||
+            e.key === "Home" ||
+            e.key === "End" ||
+            e.key === "PageUp" ||
+            e.key === "PageDown"
+          ) {
+            playSound("Click");
+          }
+        }}
         className="bs-range flex-1"
         style={{
           ["--pct" as string]: `${pct}%`,

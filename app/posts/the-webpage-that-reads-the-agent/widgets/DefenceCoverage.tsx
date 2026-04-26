@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { WidgetShell } from "@/components/viz/WidgetShell";
 import { TextHighlighter } from "@/components/fancy";
 import { SPRING } from "@/lib/motion";
+import { playSound } from "@/lib/audio";
 
 const HL_COLOR =
   "color-mix(in oklab, var(--color-accent) 28%, transparent)";
@@ -118,7 +119,10 @@ export function DefenceCoverage() {
             <button
               key={l.key}
               type="button"
-              onClick={() => setActive(isActive ? null : l.key)}
+              onClick={() => {
+                playSound("Toggle-On");
+                setActive(isActive ? null : l.key);
+              }}
               aria-pressed={isActive}
               aria-label={`${l.label} defence layer — press to read coverage detail`}
               className="bs-dc-row"

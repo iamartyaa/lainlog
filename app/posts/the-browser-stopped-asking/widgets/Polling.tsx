@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { PRESS } from "@/lib/motion";
 import { TextHighlighter } from "@/components/fancy";
 import { useTapPulse } from "@/lib/hooks/use-tap-pulse";
+import { playSound } from "@/lib/audio";
 import { WidgetShell } from "./WidgetShell";
 import { ProtocolCanvas, StatLine, usePlayClock } from "./_pipe-canvas";
 import { DURATION_MS, simPolling } from "./_pipe-sim";
@@ -23,6 +24,7 @@ export function Polling() {
   const tap = useTapPulse<HTMLButtonElement>();
 
   const onClick = () => {
+    playSound("Click");
     tap.pulse();
     toggle();
   };

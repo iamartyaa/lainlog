@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { WidgetShell } from "@/components/viz/WidgetShell";
 import { TextHighlighter } from "@/components/fancy";
 import { SPRING } from "@/lib/motion";
+import { playSound } from "@/lib/audio";
 
 /**
  * A mocked-up product-review page. On press, a terracotta scanline sweeps
@@ -48,11 +49,14 @@ export function HostilePageScan() {
   const [scanning, setScanning] = useState(false);
 
   const startScan = () => {
+    // Click on press; the scanline sweep that follows is autonomous and stays silent.
+    playSound("Click");
     setScanKey((k) => k + 1);
     setScanning(true);
   };
 
   const reset = () => {
+    playSound("Click");
     setScanning(false);
     setScanKey(0);
   };

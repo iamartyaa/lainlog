@@ -2,7 +2,7 @@
 
 The reference document for how the lainlog audio system sounds and feels. Authority for any sound-related decision in the codebase.
 
-Audio is a delight beat — the same register as `ClickSpark`, `TextHighlighter`, or a one-shot SVG-cover loop. It is **opt-in**, **default off**, and has only **eight** sounds in its vocabulary. New widgets pick one of those eight or stay silent; we do not invent new sounds for new widgets.
+Audio is a delight beat — the same register as `ClickSpark`, `TextHighlighter`, or a one-shot SVG-cover loop. It is **opt-in**, **default off**, and has only **ten** sounds in its vocabulary (eight user-triggered + the Page-Enter / Page-Exit pair fired by `<NavigationSounds />` on every client-side route change). New widgets pick one of those ten or stay silent; we do not invent new sounds for new widgets.
 
 This doc is loaded at Phase E of `/new-post` and during any feature build that touches an interactive widget. When any rule here conflicts with a one-off design decision, this doc wins unless the conflict is explicitly resolved with the user.
 
@@ -20,7 +20,7 @@ Seven non-negotiables. If a proposal violates any of these, the proposal loses.
 6. **Pause when tab is hidden.** `document.visibilityState !== "visible"` → skip. Background tabs stay silent.
 7. **User-triggered only.** Autonomous animations (cover loops, off-screen widget motion, queue-drain hops, EC pop animations) do NOT play sounds.
 
-## 2. Tier-1 — the 8 sounds we use
+## 2. Tier-1 — the 10 sounds we use
 
 | `SoundName`  | Patch source       | Use site |
 |---|---|---|
@@ -32,19 +32,16 @@ Seven non-negotiables. If a proposal violates any of these, the proposal loses.
 | `Slide`      | `minimal.slide`    | `MicrotaskStarvation` on user Run-click. ONE shot per click — internal queue-drain hops stay silent. |
 | `Toggle-On`  | `minimal.toggle-on`| Segmented controls — both directions of the binary toggle (no `Toggle-Off`). `DeclarationStates`, `WhyTwoPasses`, `RequestClassifier`, `PredictTheOutput` variant chooser. |
 | `Swoosh`     | `minimal.swoosh`   | `PredictTheStart` verdict reveal. Capped at one shot per page-load via a ref. |
+| `Page-Enter` | `minimal.page-enter`| `<NavigationSounds />` (mounted in `app/layout.tsx`) on every client-side route change. Fires ~120 ms after `Page-Exit` so the pair feels like the visual route change rather than a single muddled blip. First mount is silent (no autoplay on initial load). |
+| `Page-Exit`  | `minimal.page-exit` | `<NavigationSounds />` (mounted in `app/layout.tsx`) on every client-side route change. Fires immediately on path change. Paired with `Page-Enter`. |
 
-**Total vocabulary = 8.** This is the cap. Adding a 9th sound requires shipping a new section here and surviving a `/grill-me` defending why an existing sound can't carry the meaning.
+**Total vocabulary = 10.** This is the cap. Adding an 11th sound requires shipping a new section here and surviving a `/grill-me` defending why an existing sound can't carry the meaning.
 
 ## 3. Tier-2 — deferred (revisit after dogfooding)
 
-These sounds exist in the upstream Minimal patch but are not wired in v1. We may add them after 2–4 weeks of real reading sessions reveal a clear delight gap.
+No sounds are currently deferred. The original Tier-2 entries (`Page-Enter`, `Page-Exit`) were promoted to Tier-1 after the navigation transition feedback gap surfaced in dogfooding — they now ride `<NavigationSounds />` mounted in `app/layout.tsx`.
 
-| Sound | Possible use | Criteria for revisit |
-|---|---|---|
-| `Page-Enter` | Post navigation | If readers report the click → article-loaded transition feels abrupt and the Header micro-bar isn't enough. |
-| `Page-Exit`  | Post navigation | Mirrors Page-Enter; only ship as a pair. |
-
-If you want to revisit, write the case in a PR description and tag the user. Do not unilaterally enable.
+If we ever defer a sound again, it lands here with criteria for promotion. Do not unilaterally enable.
 
 ## 4. Tier-3 — do not use
 
@@ -58,7 +55,6 @@ The following sounds are **banned**. Reason cards sit next to each so future con
 | `Toggle-Off` | We use `Toggle-On` for both directions of a binary switch. Two sounds for one toggle doubles the audio surface area without adding meaning. |
 | `Notification`, `Info`, `Warning` | lainlog has no inbox, no toasts, no alerts. These belong to apps that interrupt. |
 | `Send`, `Delete`, `Undo`, `Tab-Switch`, `Checkbox`, `Select`, `Deselect`, `Collapse`, `Expand` | App-grammar sounds for chat / form / file-tree UIs. We're a reading site; we don't have these affordances. |
-| `Page-Enter`, `Page-Exit` | Tier-2 — see §3. Not banned, just deferred. |
 
 ## 5. Implementation contract
 
@@ -66,7 +62,8 @@ The following sounds are **banned**. Reason cards sit next to each so future con
 // lib/audio.ts
 export type SoundName =
   | "Copy" | "Success" | "Error" | "Click"
-  | "Pop"  | "Slide"   | "Toggle-On" | "Swoosh";
+  | "Pop"  | "Slide"   | "Toggle-On" | "Swoosh"
+  | "Page-Enter" | "Page-Exit";
 
 export function playSound(name: SoundName): void;
 ```
@@ -83,18 +80,20 @@ Once gates pass, the throttle / decay rules in §7 apply, then the underlying `d
 
 ## 6. Per-sound gain multipliers
 
-These multiply the patch's own `gain` value at play time. Calibrated subtle: most fire below 50% of upstream Minimal, on top of an already-quiet patch (gains 0.05–0.12). Refine in dogfooding.
+These multiply the patch's own `gain` value at play time. Calibrated subtle: every sound fires below 65% of upstream Minimal, on top of an already-quiet patch (gains 0.035–0.12). Recalibrated 2026-04-26 (PR #64 fix pass) — first-round dogfooding flagged the original values as "too loud / too pingy", so the whole vocabulary moved into a quieter band. Page-Enter / Page-Exit also got a synthesis redesign (220–260 Hz musical-fourth pair, slower attack + longer decay) replacing the original 700–900 Hz "notification" sweeps.
 
 | Sound | Multiplier | Why |
 |---|---|---|
-| `Copy`       | 0.9  | Already quiet (0.07–0.08) — just shave. |
-| `Success`    | 0.85 | C5+G5 chord — present but not celebratory. |
-| `Error`      | 0.7  | Low-300Hz pair reads heavy; soften. |
-| `Click`      | 0.7  | Fires on every nav button — extra subtle. |
-| `Pop`        | 0.75 | EC push fires repeatedly through a multi-step trace. |
-| `Slide`      | 1.0  | Already 0.05; let it breathe. |
-| `Toggle-On`  | 0.85 | Segmented controls. |
-| `Swoosh`     | 1.1  | Verdict reveal, once per page-load — earn the lift. |
+| `Copy`       | 0.55 | Quiet clipboard ack — must not break reading flow. |
+| `Success`    | 0.6  | C5+G5 chord — present but not celebratory. |
+| `Error`      | 0.5  | Low-300Hz pair reads heavy; soften further. |
+| `Click`      | 0.4  | Fires on EVERY WidgetNav press — sits in the background. |
+| `Pop`        | 0.45 | EC push repeats through a multi-step trace. |
+| `Slide`      | 0.5  | Run-click cue — one shot per click. |
+| `Toggle-On`  | 0.55 | Segmented controls AND theme toggle (both directions). |
+| `Swoosh`     | 0.65 | Once-per-page verdict reveal — still earns the lift. |
+| `Page-Enter` | 0.35 | Soft "settling" door-close, not a notification chime. |
+| `Page-Exit`  | 0.3  | Quietest of the pair — Enter reads as the "landed" beat. |
 
 If you change a multiplier, update both `lib/audio.ts:GAIN_MULTIPLIER` and this table in the same commit.
 
@@ -146,13 +145,31 @@ The preview is also a deliberate confirmation — the user hears the system come
 - No analytics injection.
 - No autoplay-on-mount changes in `context.ts`.
 
-## 11. Session sound budget
+## 11. First-visit prompt
+
+`<AudioPromptTooltip>` (co-located inside `<AudioToggle>`) renders a small "try it with sounds on" bubble anchored beside the speaker icon. It exists for one job: tell first-time readers the audio system is here and opt-in. It is never shown again once dismissed.
+
+Render conditions (ALL must be true):
+
+- Component has hydrated (avoids SSR mismatch — `localStorage` isn't available on the server).
+- `usePathname() === "/"` — home page only. Article pages stay quiet.
+- Audio preference is `false` (no point prompting if the reader's already opted in).
+- `localStorage["lainlog:audio:prompt-dismissed"] !== "true"`.
+
+Dismiss paths (both persist):
+
+- The `×` close button → `localStorage.setItem("lainlog:audio:prompt-dismissed", "true")` and unmounts via `<AnimatePresence>`.
+- Toggling audio ON without clicking close → the parent `<AudioToggle>` flips `audioEnabled` to true; the tooltip's effect persists `prompt-dismissed = "true"` so it never reappears even if the reader later turns audio back off.
+
+The tooltip is decorative (`role="status"`, non-interruptive). It does not trap focus. Reduced-motion users get the static state via `<MotionConfigProvider reducedMotion="user">`.
+
+## 12. Session sound budget
 
 A reading session shouldn't exceed **~100 sounds in 5 minutes**. If a future widget would push over that, the widget needs redesign — not a quieter sound.
 
 The throttle + decay rules already make a session inside this budget feel pleasant. The budget exists to flag widgets that are wiring sound to autonomous animation.
 
-## 12. New-widget checklist
+## 13. New-widget checklist
 
 When authoring an interactive widget, before opening the PR:
 
@@ -163,7 +180,7 @@ When authoring an interactive widget, before opening the PR:
 - [ ] Verify the widget's existing visual cue still carries the meaning if audio is off (principle 3).
 - [ ] Add the new wire-site to §2's table in this doc.
 
-## 13. Anti-patterns
+## 14. Anti-patterns
 
 The following are recurring temptations. None of them ship.
 
