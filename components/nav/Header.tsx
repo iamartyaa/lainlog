@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "motion/react";
 import { PRESS } from "@/lib/motion";
+import { SITE_NAME } from "@/lib/site";
 import { ThemeToggle } from "./theme-toggle";
 
 const MotionLink = motion.create(Link);
@@ -15,7 +16,7 @@ export function Header() {
     >
       <MotionLink
         href="/"
-        aria-label="bytesize — home"
+        aria-label={`${SITE_NAME} — home`}
         className="group inline-flex items-center gap-[var(--spacing-2xs)] font-mono transition-colors hover:text-[color:var(--color-accent)]"
         style={{
           fontSize: "0.9375rem",
@@ -28,7 +29,7 @@ export function Header() {
           className="inline-block h-[12px] w-[12px] sm:h-[10px] sm:w-[10px] shrink-0 transition-transform group-hover:scale-110"
           style={{ background: "var(--color-accent)" }}
         />
-        <span>bytesize</span>
+        <span>{SITE_NAME}</span>
       </MotionLink>
 
       <nav className="flex items-center gap-[var(--spacing-md)]">

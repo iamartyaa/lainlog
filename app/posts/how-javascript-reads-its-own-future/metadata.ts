@@ -12,7 +12,7 @@ const HOOK =
 export const subtitle = LYRICAL_TAGLINE;
 
 export const metadata: Metadata = {
-  title: `${VISIBLE_HEADING} — bytesize`,
+  title: `${VISIBLE_HEADING} — lainlog`,
   description: HOOK,
   keywords: [
     "javascript hoisting",
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     canonical: `${SITE}/posts/${SLUG}`,
   },
   openGraph: {
-    title: `${VISIBLE_HEADING} — bytesize`,
+    title: `${VISIBLE_HEADING} — lainlog`,
     description: HOOK,
     url: `${SITE}/posts/${SLUG}`,
     type: "article",
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${VISIBLE_HEADING} — bytesize`,
+    title: `${VISIBLE_HEADING} — lainlog`,
     description: HOOK,
     images: [`${SITE}/og/${SLUG}`],
   },

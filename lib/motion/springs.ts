@@ -1,5 +1,5 @@
 /**
- * Named spring presets for consistent motion across bytesize.
+ * Named spring presets for consistent motion across lainlog.
  * Components reference these names; they never inline spring values.
  *
  * Tier 1 — Ambient     : gentle, page       — content appears calm
@@ -37,7 +37,7 @@ export const STAGGER = {
 export const TAP = { scale: 0.96 } as const;
 
 /**
- * PRESS — unified press/tap identity for buttons and links across bytesize.
+ * PRESS — unified press/tap identity for buttons and links across lainlog.
  * Spread onto any <motion.*> to get consistent depress + snappy settle.
  * Reduced-motion users collapse to opacity-only via MotionConfigProvider.
  */

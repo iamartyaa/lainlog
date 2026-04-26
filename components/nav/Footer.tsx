@@ -1,3 +1,5 @@
+import { SITE_NAME } from "@/lib/site";
+
 export function Footer() {
   return (
     <footer
@@ -10,7 +12,7 @@ export function Footer() {
     >
       <div className="mx-auto flex max-w-[65ch] items-center">
         <span>
-          bytesize · built by An Anonymous Engineer
+          {SITE_NAME} · built by An Anonymous Engineer
           <span aria-hidden className="ml-[0.25em] opacity-70">
             {"</>"}
           </span>

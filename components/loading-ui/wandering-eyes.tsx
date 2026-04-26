@@ -19,7 +19,7 @@
  *     transparent / 0 so existing callers are unaffected.
  *
  * Color contract: the component reads `--eye-color` and `--pupil-color`
- * from its container so it inherits the bytesize palette without any
+ * from its container so it inherits the lainlog palette without any
  * raw hex values bleeding into theme switches.
  */
 import { cn } from "@/lib/utils/cn";

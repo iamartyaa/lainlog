@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { POSTS } from "@/content/posts-manifest";
-import { SITE_NAME } from "@/lib/site";
+import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
 import { STATIC_COVERS } from "@/components/covers/static-registry";
 
 export const runtime = "edge";
@@ -160,9 +160,7 @@ export async function GET(_req: Request, ctx: RouteContext) {
 
   // Fallback: typographic-only design for unknown slugs (_default, /about, etc).
   const title = post?.title ?? SITE_NAME;
-  const hook =
-    post?.hook ??
-    "engineering essays with interactive widgets that show how the thing actually works.";
+  const hook = post?.hook ?? SITE_DESCRIPTION;
   const date = formatDate(post?.date);
 
   return new ImageResponse(

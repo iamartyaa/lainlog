@@ -6,7 +6,7 @@ export const runtime = "edge";
 
 const SIZE = { width: 960, height: 640 };
 
-// Palette base — dark bytesize theme, resolved to RGB (Satori supports a
+// Palette base — dark lainlog theme, resolved to RGB (Satori supports a
 // limited subset of CSS; no oklch or custom properties here).
 const BG = "#0e1114";
 const TEXT = "#f8f5f0";

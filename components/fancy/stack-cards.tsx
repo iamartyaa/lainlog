@@ -8,20 +8,20 @@
  * derived from depth — so the OUTER container size is invariant regardless
  * of how many cards are in the pile (R6 frame-stability win).
  *
- * Bytesize-specific overrides:
+ * lainlog-specific overrides:
  *   1. `disableDrag?: boolean` prop added — when `true`, the disabled-drag
  *      <CardRotate> variant is used unconditionally, ignoring the
- *      `mobileClickOnly` / `isMobile` branch. Bytesize uses Stack for
+ *      `mobileClickOnly` / `isMobile` branch. lainlog uses Stack for
  *      runtime-owned mechanics (call stacks, undo states) where the user
  *      shouldn't drag cards around.
  *   2. `useReducedMotion()` branch — under reduced motion, cards mount in
  *      their final stacked layout (no enter animations, no rotateZ random
  *      jitter, no spring transitions). DESIGN.md §9.
  *   3. No separate `.css` file — upstream uses a small Stack.css; we inline
- *      the equivalents as Tailwind classes / inline styles. The bytesize
+ *      the equivalents as Tailwind classes / inline styles. The lainlog
  *      project doesn't import per-component .css files.
  *   4. Default `cards = []` — upstream defaults to four Unsplash
- *      placeholder images; bytesize callers always supply their own
+ *      placeholder images; lainlog callers always supply their own
  *      content, and we don't want a network image dependency in the
  *      bundle.
  *   5. `"use client"` directive — required for the `useState` / `useEffect`
@@ -115,12 +115,12 @@ export interface StackProps {
   mobileClickOnly?: boolean;
   mobileBreakpoint?: number;
   /**
-   * Bytesize override: when `true`, drag is fully disabled regardless of
+   * lainlog override: when `true`, drag is fully disabled regardless of
    * `mobileClickOnly` / `isMobile`. The runtime owns push/pop order.
    */
   disableDrag?: boolean;
   /**
-   * Bytesize override: layout mode for the pile.
+   * lainlog override: layout mode for the pile.
    *   - `"messy"` (default): upstream behaviour. Cards rotate around
    *     `transformOrigin: 90% 90%`, scale down with depth — reads as a
    *     casually tossed pile. Good for "look at the top thing" mechanics
