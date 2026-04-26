@@ -107,6 +107,7 @@ Other orchestrator-mode constraints:
   4. Build + Lighthouse targets ≥ 95
   5. Reading-sanity — end-to-end read for voice drift, undefined terms, flow breaks
   6. **SEO sweep** — title ≤ 70 chars (60 ideal), description ≤ 160 chars, `keywords[]` present (8–10 terms), `alternates.canonical` set, OG + Twitter mirror title + description, `openGraph.type === "article"`, `openGraph.publishedTime` set, visible H1 matches `VISIBLE_HEADING`, `subtitle` export matches `LYRICAL_TAGLINE`. See `voice-profile.md §11`.
+  7. **Audio sweep** — only Tier-1 sounds play; default-off respected; `prefers-reduced-motion` honoured; tab-hidden silent; no autoplay-on-mount. See [`audio-playbook.md`](./audio-playbook.md).
 - Any failing check blocks Checkpoint 4 until resolved.
 
 ### Phase H.5 — Animated SVG cover authoring

@@ -12,6 +12,7 @@ import {
 import { motion, useReducedMotion } from "motion/react";
 import { PRESS, SPRING } from "@/lib/motion";
 import { useTapPulse } from "@/lib/hooks/use-tap-pulse";
+import { playSound } from "@/lib/audio";
 
 type WidgetNavProps = {
   /** 0-indexed current step. */
@@ -252,6 +253,7 @@ export function WidgetNav({
           }}
           type="button"
           onClick={() => {
+            playSound("Click");
             prevPulse.pulse();
             go(value - 1);
           }}
@@ -268,6 +270,9 @@ export function WidgetNav({
             ref={playBtnRef}
             type="button"
             onClick={() => {
+              // Click cue on every play/pause/replay press. Auto-advance
+              // between steps stays silent — that's autonomous animation.
+              playSound("Click");
               if (atEnd) {
                 go(0);
                 setPlaying(true);
@@ -298,6 +303,7 @@ export function WidgetNav({
           }}
           type="button"
           onClick={() => {
+            playSound("Click");
             nextPulse.pulse();
             go(value + 1);
           }}

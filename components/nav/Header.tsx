@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "motion/react";
 import { PRESS } from "@/lib/motion";
 import { SITE_NAME } from "@/lib/site";
+import { AudioToggle } from "./AudioToggle";
 import { ThemeToggle } from "./theme-toggle";
 
 const MotionLink = motion.create(Link);
@@ -33,6 +34,7 @@ export function Header() {
       </MotionLink>
 
       <nav className="flex items-center gap-[var(--spacing-md)]">
+        <AudioToggle />
         <ThemeToggle />
       </nav>
     </header>

@@ -4,6 +4,7 @@ import { useId, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { WidgetShell } from "@/components/viz/WidgetShell";
 import { PRESS, SPRING } from "@/lib/motion";
+import { playSound } from "@/lib/audio";
 
 /**
  * DeclarationStates — W2 of "how JavaScript reads its own future".
@@ -160,7 +161,10 @@ export function DeclarationStates({ initialKind = "var" }: Props) {
               <motion.button
                 key={s.id}
                 type="button"
-                onClick={() => setKindId(s.id)}
+                onClick={() => {
+                  if (s.id !== kindId) playSound("Toggle-On");
+                  setKindId(s.id);
+                }}
                 aria-pressed={active}
                 style={{
                   minHeight: 44,
