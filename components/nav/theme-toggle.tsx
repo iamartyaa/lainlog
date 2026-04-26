@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { PRESS } from "@/lib/motion";
+import { playSound } from "@/lib/audio";
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -20,6 +21,10 @@ export function ThemeToggle() {
   const next = resolvedTheme === "dark" ? "light" : "dark";
 
   const handleToggle = () => {
+    // Toggle-On for both directions of the theme switch — same sound for
+    // dark→light and light→dark, matching the segmented-control rule
+    // (no Toggle-Off in our vocabulary).
+    playSound("Toggle-On");
     // Set the attribute synchronously before flipping the theme, so the
     // accent-bridge keyframe in globals.css fires in the same frame as the
     // color-variable swap. A useEffect watching `resolvedTheme` would arrive

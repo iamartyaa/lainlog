@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { WidgetShell } from "@/components/viz/WidgetShell";
 import { TextHighlighter } from "@/components/fancy";
 import { SPRING } from "@/lib/motion";
+import { playSound } from "@/lib/audio";
 
 /**
  * A small network of agent nodes. One agent is seeded "infected"
@@ -99,16 +100,21 @@ export function InfectiousJailbreak() {
   }, [infected, neighbours, prefersReducedMotion, running]);
 
   const reset = () => {
+    // Click on the user-press; the propagation tick that follows is autonomous.
+    playSound("Click");
     if (tickRef.current !== null) window.clearTimeout(tickRef.current);
     setRunning(false);
     setInfected(new Set([0]));
   };
 
   const toggleRun = () => {
+    // Click on every play / pause / replay press. Don't double-fire when
+    // toggleRun delegates to reset().
     if (infected.size >= N) {
       reset();
       return;
     }
+    playSound("Click");
     setRunning((r) => !r);
   };
 

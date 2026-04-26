@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { WidgetShell } from "./WidgetShell";
+import { playSound } from "@/lib/audio";
 
 type Row = {
   url: string;
@@ -158,11 +159,15 @@ export function OriginMatrix() {
               key={`stack-${r.url}`}
               role="button"
               tabIndex={0}
-              onClick={() => setFocused(i)}
+              onClick={() => {
+                if (focused !== i) playSound("Toggle-On");
+                setFocused(i);
+              }}
               onFocus={() => setFocused(i)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
+                  if (focused !== i) playSound("Toggle-On");
                   setFocused(i);
                 }
               }}

@@ -80,20 +80,20 @@ Once gates pass, the throttle / decay rules in §7 apply, then the underlying `d
 
 ## 6. Per-sound gain multipliers
 
-These multiply the patch's own `gain` value at play time. Calibrated subtle: most fire below 50% of upstream Minimal, on top of an already-quiet patch (gains 0.05–0.12). Refine in dogfooding.
+These multiply the patch's own `gain` value at play time. Calibrated subtle: every sound fires below 65% of upstream Minimal, on top of an already-quiet patch (gains 0.035–0.12). Recalibrated 2026-04-26 (PR #64 fix pass) — first-round dogfooding flagged the original values as "too loud / too pingy", so the whole vocabulary moved into a quieter band. Page-Enter / Page-Exit also got a synthesis redesign (220–260 Hz musical-fourth pair, slower attack + longer decay) replacing the original 700–900 Hz "notification" sweeps.
 
 | Sound | Multiplier | Why |
 |---|---|---|
-| `Copy`       | 0.9  | Already quiet (0.07–0.08) — just shave. |
-| `Success`    | 0.85 | C5+G5 chord — present but not celebratory. |
-| `Error`      | 0.7  | Low-300Hz pair reads heavy; soften. |
-| `Click`      | 0.7  | Fires on every nav button — extra subtle. |
-| `Pop`        | 0.75 | EC push fires repeatedly through a multi-step trace. |
-| `Slide`      | 1.0  | Already 0.05; let it breathe. |
-| `Toggle-On`  | 0.85 | Segmented controls. |
-| `Swoosh`     | 1.1  | Verdict reveal, once per page-load — earn the lift. |
-| `Page-Enter` | 0.55 | Navigation arrival — ambient, paired with Exit. |
-| `Page-Exit`  | 0.5  | Navigation departure — quietest of the pair. |
+| `Copy`       | 0.55 | Quiet clipboard ack — must not break reading flow. |
+| `Success`    | 0.6  | C5+G5 chord — present but not celebratory. |
+| `Error`      | 0.5  | Low-300Hz pair reads heavy; soften further. |
+| `Click`      | 0.4  | Fires on EVERY WidgetNav press — sits in the background. |
+| `Pop`        | 0.45 | EC push repeats through a multi-step trace. |
+| `Slide`      | 0.5  | Run-click cue — one shot per click. |
+| `Toggle-On`  | 0.55 | Segmented controls AND theme toggle (both directions). |
+| `Swoosh`     | 0.65 | Once-per-page verdict reveal — still earns the lift. |
+| `Page-Enter` | 0.35 | Soft "settling" door-close, not a notification chime. |
+| `Page-Exit`  | 0.3  | Quietest of the pair — Enter reads as the "landed" beat. |
 
 If you change a multiplier, update both `lib/audio.ts:GAIN_MULTIPLIER` and this table in the same commit.
 

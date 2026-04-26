@@ -55,30 +55,28 @@ export type SoundName =
   | "Page-Exit";
 
 /**
- * Per-sound gain multipliers applied AFTER the patch's own `gain`. Values
- * are best-guess subtle; the playbook says we'll dogfood and refine. The
- * upstream Minimal patch is already quiet (gains 0.05–0.12), so these
- * multipliers stay close to 1.0 for most — we're trimming the loud ones
- * (Pop, Click) and lifting Swoosh which is a once-per-page reveal.
+ * Per-sound gain multipliers applied AFTER the patch's own `gain`. Recalibrated
+ * 2026-04-26 (PR #64 fix pass) — the whole vocabulary now sits ~30–50% lower
+ * than the original wiring, after first-round dogfooding flagged Click /
+ * Slide / Page-Enter / Page-Exit as "too loud / too pingy".
  *
- * Page-Enter / Page-Exit deliberately sit BELOW the others (0.55 / 0.5).
- * They fire on every client-side route change — pair-wise, ~120ms apart —
- * so they need to feel ambient, not punchy. The exit is the quieter of
- * the two so the enter reads as the "landed" beat.
+ * Page-Enter / Page-Exit also got a synthesis redesign in `.web-kits/minimal.ts`
+ * (220–260 Hz musical-fourth pair, slower attack + longer decay). The exit
+ * stays the quieter of the two so Enter still reads as the "landed" beat.
  *
- * If you change a value here, also update the table in audio-playbook.md.
+ * If you change a value here, also update §6 of `docs/audio-playbook.md`.
  */
 const GAIN_MULTIPLIER: Record<SoundName, number> = {
-  Copy: 0.9, // already quiet (0.07–0.08), just shave a hair
-  Success: 0.85, // C5+G5 chord — present but not celebratory
-  Error: 0.7, // low-300Hz pair reads heavy; soften it
-  Click: 0.7, // fires on every nav button — keep extra subtle
-  Pop: 0.75, // EC push fires repeatedly through a multi-step trace
-  Slide: 1.0, // already at 0.05; let it breathe
-  "Toggle-On": 0.85, // segmented controls
-  Swoosh: 1.1, // verdict reveal, once per page-load — earn the lift
-  "Page-Enter": 0.55, // navigation arrival — ambient, paired with Exit
-  "Page-Exit": 0.5, // navigation departure — quietest of the pair
+  Copy: 0.55, // was 0.9 — quieter clipboard ack
+  Success: 0.6, // was 0.85 — chord still present, less celebratory
+  Error: 0.5, // was 0.7 — heavy low-300Hz pair, soften further
+  Click: 0.4, // was 0.7 — fires on EVERY WidgetNav press, must sit in BG
+  Pop: 0.45, // was 0.75 — EC push repeats through multi-step traces
+  Slide: 0.5, // was 1.0 — Run-click cue, halved
+  "Toggle-On": 0.55, // was 0.85 — segmented controls + theme toggle
+  Swoosh: 0.65, // was 1.1 — once-per-page verdict reveal, still earns lift
+  "Page-Enter": 0.35, // was 0.55 — soft "settling" door-close, not a chime
+  "Page-Exit": 0.3, // was 0.5 — quietest of the pair
 };
 
 /**

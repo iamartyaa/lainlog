@@ -103,16 +103,20 @@ export const slide: SoundDefinition = {
   gain: 0.05,
 };
 
+// Page-Enter / Page-Exit: redesigned 2026-04-26 from 700→900 / 900→700 Hz
+// "notification chime" sweeps to a soft musical-fourth pair sitting in a
+// warm 220→260 Hz register. Slower attack + longer decay so the pair reads
+// as ambient "settling into a room" rather than a synthetic ping.
 export const pageEnter: SoundDefinition = {
-  source: { type: "sine", frequency: { start: 700, end: 900 } },
-  envelope: { attack: 0.003, decay: 0.04, sustain: 0, release: 0.015 },
-  gain: 0.05,
+  source: { type: "sine", frequency: { start: 220, end: 260 } },
+  envelope: { attack: 0.03, decay: 0.2, sustain: 0, release: 0.06 },
+  gain: 0.04,
 };
 
 export const pageExit: SoundDefinition = {
-  source: { type: "sine", frequency: { start: 900, end: 700 } },
-  envelope: { attack: 0, decay: 0.04, sustain: 0, release: 0.015 },
-  gain: 0.04,
+  source: { type: "sine", frequency: { start: 260, end: 220 } },
+  envelope: { attack: 0.03, decay: 0.2, sustain: 0, release: 0.06 },
+  gain: 0.035,
 };
 
 export const _patch: SoundPatch = {

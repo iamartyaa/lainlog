@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { WidgetShell } from "@/components/viz/WidgetShell";
 import { TextHighlighter } from "@/components/fancy";
 import { SPRING } from "@/lib/motion";
+import { playSound } from "@/lib/audio";
 
 const HL_COLOR =
   "color-mix(in oklab, var(--color-accent) 28%, transparent)";
@@ -72,7 +73,10 @@ export function ParseVsRender() {
               key={v}
               role="tab"
               aria-selected={view === v}
-              onClick={() => setView(v)}
+              onClick={() => {
+                if (view !== v) playSound("Toggle-On");
+                setView(v);
+              }}
               className="px-[var(--spacing-md)] py-[var(--spacing-2xs)] min-h-[44px] transition-colors"
               style={{
                 background:

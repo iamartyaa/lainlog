@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { SPRING } from "@/lib/motion";
+import { playSound } from "@/lib/audio";
 
 type Props = {
   answer: string;
@@ -48,7 +49,10 @@ export function PredictReveal({ answer, label = "reveal" }: Props) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              playSound("Click");
+              setOpen(true);
+            }}
             className="font-mono rounded-[var(--radius-sm)] transition-colors hover:text-[color:var(--color-accent)]"
             style={{
               fontSize: "var(--text-mono)",

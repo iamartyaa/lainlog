@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { PRESS, SPRING } from "@/lib/motion";
+import { playSound } from "@/lib/audio";
 import { WidgetShell } from "./WidgetShell";
 
 type InputId = "dotted" | "tagged" | "both";
@@ -65,7 +66,10 @@ export function NetflixSplit() {
               <motion.button
                 key={i.id}
                 type="button"
-                onClick={() => setPick(i.id)}
+                onClick={() => {
+                  if (i.id !== pick) playSound("Toggle-On");
+                  setPick(i.id);
+                }}
                 aria-pressed={active}
                 aria-label={`variant: ${i.typed}`}
                 className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] min-h-[44px] inline-flex items-center hover:text-[color:var(--color-accent)] ml-[var(--spacing-2xs)]"
