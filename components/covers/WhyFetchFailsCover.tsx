@@ -4,361 +4,299 @@ import { motion, useReducedMotion } from "motion/react";
 import { useCoverInView } from "./_CoverFrame";
 
 /**
- * WhyFetchFailsCover — fetch() comet meets the CORS wall.
+ * WhyFetchFailsCover — v7 metaphor revamp.
  *
  * One sentence:
- *   A terracotta comet streaks across the page, slams into a thick CORS wall
- *   labelled `ACAO`, the wall flexes outward, and three echo-rings emanate
- *   from the impact point as the comet rebounds dim.
+ *   Three horizontal tiers (server / browser / JavaScript) — a response
+ *   packet drops down into the browser tier successfully, then a thin
+ *   curtain seals the boundary between the browser and JS tiers, with a
+ *   muted ✕ glyph confirming the response is visible to the browser but
+ *   hidden from JavaScript.
  *
- * Composition (~13 load-bearing elements):
- *  1.  Browser silhouette (rounded-rect with chrome bar + 3 dots, right of wall)
- *  2.  Wall column (thicker rounded-rect, the load-bearing barrier)
- *  3.  ACAO label glyph (3 small terracotta tick-marks, on the wall)
- *  4.  ✕ reject mark on the wall
- *  5-8. 4-segment comet trail (head + 3 fading dots)
- *  9.  Comet head (rounded square, terracotta hero)
- *  10. Impact spark (small terracotta starburst at the moment of contact)
- *  11. Echo ring 1 (small, fastest)
- *  12. Echo ring 2 (mid)
- *  13. Echo ring 3 (large, slowest)
+ * Why this metaphor (v7):
+ *   Earlier v5/v6 used a comet-into-CORS-wall + bounce. That visualized
+ *   *rejection*, but the article's actual hook is that the server did
+ *   answer — your browser just isn't handing the response to JS. v7
+ *   surfaces that distinction: the response IS in the browser; it's the
+ *   browser → JS boundary that's curtained off.
  *
- * Motion (playbook §3, §4):
- *  - 5s continuous loop, no idle gap > 600ms.
- *  - Phase A (0–0.42): comet glides left→wall, ~95 viewBox-units of translateX
- *    (47% of viewBox — well above the §3 threshold). Trail dots follow with
- *    offsets so velocity is felt.
- *  - Phase B (0.42–0.55): wall flexes scaleX 1 → 1.7 → 1 — committed flex.
- *    Impact spark scales 0 → 1.4 → 0. Echo rings emanate (scale 0.4 → 3.6,
- *    pathLength full, opacity gates).
- *  - Phase C (0.55–0.78): comet retreats dim (opacity 0.35), trail follows.
- *  - Phase D (0.78–1): brief reset, no idle > 0.4s.
- *  - Hover amplifies idle motion via whileHover on the wrapping motion.g.
+ * Composition (~8 concept elements / 13 SVG primitives):
+ *  1.  Server tier rect (top) + chrome stub line.
+ *  2.  Browser tier rect (middle) + chrome dot.
+ *  3.  JS tier rect (bottom) + `{ }` glyph stubs.
+ *  4.  Vertical guide line (chrome) connecting the three tiers.
+ *  5.  Response packet: terracotta rounded-rect, hero element, drops
+ *      from the server into the browser tier.
+ *  6.  Curtain shadow: faint translucent line offset 1px below the
+ *      curtain — depth.
+ *  7.  Curtain hero: thin terracotta stroke drawn between browser and
+ *      JS tiers via pathLength — the boundary closing.
+ *  8.  ✕ glyph: muted-terracotta cross on the curtain (delight beat —
+ *      fades in last with a soft ease-in).
+ *
+ * Motion (playbook §3, §4, §14 — refined kinetic register):
+ *  - 6s continuous loop, no idle gap > 600ms.
+ *  - Phase A (0–0.30): response packet drops from server (y=44) to the
+ *    browser tier (y=98); opacity 0 → 1, gentle spring.
+ *  - Phase B (0.30–0.55): packet settles into the browser tier (small
+ *    opacity hold).
+ *  - Phase C (0.55–0.78): curtain pathLength 0 → 1 between the browser
+ *    and JS tiers; ✕ glyph fades in over the last 600ms.
+ *  - Phase D (0.78–1): hold then loop.
+ *  - Hover amplifies via whileHover on the wrapping motion.g — speeds the
+ *    loop and bumps opacity slightly. Same gesture, more committed.
  *
  * Frame-stability R6: only transform / opacity / pathLength animate.
  *
- * Reduced-motion end-state: comet at impact, 3 rings frozen mid-expansion,
- * wall flexed (scaleX 1.4), spark visible. The static frame conveys "rejected."
+ * Reduced-motion end-state: response packet at the browser tier, curtain
+ * fully drawn, ✕ visible — the article's thesis lands statically.
  */
 export function WhyFetchFailsCover() {
   const inView = useCoverInView();
   const reduced = useReducedMotion();
   const animate = inView && !reduced;
 
-  // Geometry — wall sits ~62% across the viewBox.
-  const wallX = 124;
-  const wallTop = 36;
-  const wallH = 128;
-  const wallW = 12;
-  const impactX = wallX - wallW / 2;
-  const beamY = 100;
+  // Tier vertical positions.
+  const serverY = 30;
+  const serverH = 30;
+  const browserY = 84;
+  const browserH = 32;
+  const jsY = 140;
+  const jsH = 30;
 
-  // Comet travel path — from far-left (x=18) to just before wall (impactX - 16).
-  const cometStart = 18;
-  const cometImpact = impactX - 16;
-  const cometRetreat = 36;
+  // Packet drop coordinates.
+  const packetX = 92;
+  const packetW = 16;
+  const packetH = 12;
+  const packetStartY = serverY + (serverH - packetH) / 2;
+  const packetEndY = browserY + (browserH - packetH) / 2;
 
-  // Hover variants: amplify the wall flex and ring scale.
-  const groupVariants = {
-    idle: {},
-    hover: {},
-  };
+  // Curtain Y — between browser bottom and JS top.
+  const curtainY = (browserY + browserH + jsY) / 2;
+  const curtainX1 = 36;
+  const curtainX2 = 164;
 
   return (
     <motion.g
       initial="idle"
       whileHover="hover"
-      variants={groupVariants}
+      variants={{
+        idle: { opacity: 1 },
+        hover: { opacity: 1 },
+      }}
     >
-      {/* ─── Browser silhouette (right of wall, static muted) ────── */}
-      <g opacity={0.55}>
-        <rect
-          x={140}
-          y={48}
-          width={50}
-          height={104}
-          rx={6}
-          fill="var(--color-surface)"
-          stroke="var(--color-text-muted)"
-          strokeWidth={1.8}
-          vectorEffect="non-scaling-stroke"
-        />
-        {/* Chrome bar */}
-        <line
-          x1={140}
-          y1={62}
-          x2={190}
-          y2={62}
-          stroke="var(--color-text-muted)"
-          strokeWidth={1.4}
-          vectorEffect="non-scaling-stroke"
-        />
-        {/* 3 chrome dots */}
-        <circle cx={146} cy={55} r={1.6} fill="var(--color-text-muted)" />
-        <circle cx={152} cy={55} r={1.6} fill="var(--color-text-muted)" opacity={0.8} />
-        <circle cx={158} cy={55} r={1.6} fill="var(--color-text-muted)" opacity={0.65} />
-        {/* Address-bar stub */}
-        <rect
-          x={146}
-          y={72}
-          width={38}
-          height={3.2}
-          rx={1.6}
-          fill="var(--color-text-muted)"
-          opacity={0.5}
-        />
-        {/* Page-content stubs */}
-        <rect x={146} y={86} width={32} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.45} />
-        <rect x={146} y={94} width={26} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.4} />
-        <rect x={146} y={102} width={34} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.4} />
-      </g>
-
-      {/* ─── The wall (hero gesture — thick, flexes hard on impact) ─ */}
-      <motion.g
-        variants={{
-          idle: { scaleX: [1, 1, 1.7, 1, 1] },
-          hover: { scaleX: [1, 1, 2, 1, 1] },
-        }}
-        animate={animate ? "idle" : undefined}
-        initial={false}
-        transition={
-          animate
-            ? {
-                duration: 5,
-                repeat: Infinity,
-                ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.4, 0.48, 0.62, 1],
-              }
-            : undefined
-        }
-        style={{ transformOrigin: `${wallX}px ${beamY}px`, transformBox: "fill-box" as const }}
-      >
-        {/* Wall body — terracotta-edged */}
-        <rect
-          x={wallX - wallW / 2}
-          y={wallTop}
-          width={wallW}
-          height={wallH}
-          rx={4}
-          fill="var(--color-text)"
-          stroke="var(--color-accent)"
-          strokeWidth={1.4}
-          vectorEffect="non-scaling-stroke"
-        />
-        {/* ACAO label — three small terracotta marks, top of wall */}
-        <line x1={wallX - 3} y1={48} x2={wallX + 3} y2={48} stroke="var(--color-accent)" strokeWidth={1.4} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        <line x1={wallX - 3} y1={54} x2={wallX + 3} y2={54} stroke="var(--color-accent)" strokeWidth={1.4} strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.75} />
-        <line x1={wallX - 3} y1={60} x2={wallX + 3} y2={60} stroke="var(--color-accent)" strokeWidth={1.4} strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.5} />
-
-        {/* ✕ reject mark — center of wall */}
-        <line x1={wallX - 6} y1={beamY - 6} x2={wallX + 6} y2={beamY + 6} stroke="var(--color-accent)" strokeWidth={2.6} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        <line x1={wallX - 6} y1={beamY + 6} x2={wallX + 6} y2={beamY - 6} stroke="var(--color-accent)" strokeWidth={2.6} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-
-        {/* Bottom dashes — bricks */}
-        <line x1={wallX - 3} y1={140} x2={wallX + 3} y2={140} stroke="var(--color-accent)" strokeWidth={1.2} strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.5} />
-        <line x1={wallX - 3} y1={148} x2={wallX + 3} y2={148} stroke="var(--color-accent)" strokeWidth={1.2} strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.4} />
-      </motion.g>
-
-      {/* ─── Echo ring 1 (small, fastest) ──────────────────────── */}
-      <motion.circle
-        cx={impactX}
-        cy={beamY}
-        r={6}
-        fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth={2.2}
+      {/* ─── Vertical guide line (chrome — connects the three tiers) ── */}
+      <line
+        x1={100}
+        y1={serverY + serverH}
+        x2={100}
+        y2={jsY}
+        stroke="var(--color-text-muted)"
+        strokeWidth={1.0}
+        strokeDasharray="2 3"
+        opacity={0.32}
         vectorEffect="non-scaling-stroke"
-        initial={{ opacity: 0, scale: 0.4 }}
-        animate={
-          animate
-            ? { opacity: [0, 0, 1, 0, 0], scale: [0.4, 0.4, 1.1, 2.4, 2.4] }
-            : { opacity: 0.7, scale: 1.6 }
-        }
-        transition={
-          animate
-            ? {
-                duration: 5,
-                repeat: Infinity,
-                ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.42, 0.5, 0.72, 1],
-              }
-            : undefined
-        }
-        style={{ transformOrigin: `${impactX}px ${beamY}px`, transformBox: "fill-box" as const }}
       />
-      {/* ─── Echo ring 2 (mid) ─────────────────────────────────── */}
-      <motion.circle
-        cx={impactX}
-        cy={beamY}
-        r={6}
-        fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth={1.8}
+
+      {/* ─── Server tier (top) ───────────────────────────────────── */}
+      <rect
+        x={32}
+        y={serverY}
+        width={136}
+        height={serverH}
+        rx={6}
+        fill="color-mix(in oklab, var(--color-accent) 6%, transparent)"
+        stroke="var(--color-text-muted)"
+        strokeWidth={1.2}
         vectorEffect="non-scaling-stroke"
-        initial={{ opacity: 0, scale: 0.4 }}
-        animate={
-          animate
-            ? { opacity: [0, 0, 0.85, 0, 0], scale: [0.4, 0.4, 1.6, 3, 3] }
-            : { opacity: 0.5, scale: 2.2 }
-        }
-        transition={
-          animate
-            ? {
-                duration: 5,
-                repeat: Infinity,
-                ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.44, 0.54, 0.78, 1],
-              }
-            : undefined
-        }
-        style={{ transformOrigin: `${impactX}px ${beamY}px`, transformBox: "fill-box" as const }}
       />
-      {/* ─── Echo ring 3 (large, slowest) ──────────────────────── */}
-      <motion.circle
-        cx={impactX}
-        cy={beamY}
-        r={6}
-        fill="none"
-        stroke="var(--color-accent)"
+      {/* Server stack stub (chrome motif) */}
+      <line x1={42} y1={serverY + 15} x2={70} y2={serverY + 15} stroke="var(--color-text-muted)" strokeWidth={1.2} strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.6} />
+
+      {/* ─── Browser tier (middle) ───────────────────────────────── */}
+      <rect
+        x={32}
+        y={browserY}
+        width={136}
+        height={browserH}
+        rx={6}
+        fill="color-mix(in oklab, var(--color-accent) 10%, transparent)"
+        stroke="var(--color-text-muted)"
         strokeWidth={1.4}
         vectorEffect="non-scaling-stroke"
-        initial={{ opacity: 0, scale: 0.4 }}
-        animate={
-          animate
-            ? { opacity: [0, 0, 0.6, 0, 0], scale: [0.4, 0.4, 2.2, 3.6, 3.6] }
-            : { opacity: 0.35, scale: 2.8 }
-        }
-        transition={
-          animate
-            ? {
-                duration: 5,
-                repeat: Infinity,
-                ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.46, 0.6, 0.84, 1],
-              }
-            : undefined
-        }
-        style={{ transformOrigin: `${impactX}px ${beamY}px`, transformBox: "fill-box" as const }}
+      />
+      {/* Chrome dot — anchors "this is the browser" */}
+      <circle cx={42} cy={browserY + 8} r={1.8} fill="var(--color-text-muted)" opacity={0.6} />
+
+      {/* ─── JS tier (bottom) — `{ }` glyph stubs ────────────────── */}
+      <rect
+        x={32}
+        y={jsY}
+        width={136}
+        height={jsH}
+        rx={6}
+        fill="color-mix(in oklab, var(--color-accent) 4%, transparent)"
+        stroke="var(--color-text-muted)"
+        strokeWidth={1.2}
+        vectorEffect="non-scaling-stroke"
+      />
+      {/* `{` glyph */}
+      <path
+        d={`M 78 ${jsY + 8} Q 72 ${jsY + 8}, 72 ${jsY + 14} L 72 ${jsY + 13} Q 72 ${jsY + 15}, 68 ${jsY + 15} Q 72 ${jsY + 15}, 72 ${jsY + 17} L 72 ${jsY + 16} Q 72 ${jsY + 22}, 78 ${jsY + 22}`}
+        fill="none"
+        stroke="var(--color-text-muted)"
+        strokeWidth={1.4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+        opacity={0.75}
+      />
+      {/* `}` glyph */}
+      <path
+        d={`M 122 ${jsY + 8} Q 128 ${jsY + 8}, 128 ${jsY + 14} L 128 ${jsY + 13} Q 128 ${jsY + 15}, 132 ${jsY + 15} Q 128 ${jsY + 15}, 128 ${jsY + 17} L 128 ${jsY + 16} Q 128 ${jsY + 22}, 122 ${jsY + 22}`}
+        fill="none"
+        stroke="var(--color-text-muted)"
+        strokeWidth={1.4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+        opacity={0.75}
       />
 
-      {/* ─── Impact spark (small starburst at moment of contact) ─── */}
-      <motion.g
-        initial={{ opacity: 0, scale: 0 }}
-        animate={
-          animate
-            ? { opacity: [0, 0, 1, 0, 0], scale: [0, 0, 1.4, 0, 0] }
-            : { opacity: 1, scale: 1 }
-        }
-        transition={
-          animate
-            ? {
-                duration: 5,
-                repeat: Infinity,
-                ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.4, 0.46, 0.56, 1],
-              }
-            : undefined
-        }
-        style={{ transformOrigin: `${impactX}px ${beamY}px`, transformBox: "fill-box" as const }}
-      >
-        <line x1={impactX - 8} y1={beamY} x2={impactX - 4} y2={beamY} stroke="var(--color-accent)" strokeWidth={2.2} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        <line x1={impactX} y1={beamY - 8} x2={impactX} y2={beamY - 4} stroke="var(--color-accent)" strokeWidth={2.2} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        <line x1={impactX} y1={beamY + 4} x2={impactX} y2={beamY + 8} stroke="var(--color-accent)" strokeWidth={2.2} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        <line x1={impactX - 6} y1={beamY - 6} x2={impactX - 3} y2={beamY - 3} stroke="var(--color-accent)" strokeWidth={1.6} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        <line x1={impactX - 6} y1={beamY + 6} x2={impactX - 3} y2={beamY + 3} stroke="var(--color-accent)" strokeWidth={1.6} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-      </motion.g>
-
-      {/* ─── Comet trail (3 fading dots behind the head) ────────── */}
-      {[0, 1, 2].map((i) => {
-        const offset = (i + 1) * 8;
-        return (
-          <motion.circle
-            key={`trail-${i}`}
-            cy={beamY}
-            r={3.2 - i * 0.6}
-            fill="var(--color-accent)"
-            initial={{ cx: cometStart - offset, opacity: 0 }}
-            animate={
-              animate
-                ? {
-                    cx: [
-                      cometStart - offset,
-                      cometImpact - offset,
-                      cometImpact - offset,
-                      cometRetreat - offset,
-                      cometRetreat - offset,
-                    ],
-                    opacity: [
-                      0,
-                      0.65 - i * 0.15,
-                      0.65 - i * 0.15,
-                      0.2 - i * 0.05,
-                      0,
-                    ],
-                  }
-                : { cx: cometImpact - offset, opacity: 0.65 - i * 0.15 }
-            }
-            transition={
-              animate
-                ? {
-                    duration: 5,
-                    repeat: Infinity,
-                    ease: [0.4, 0, 0.2, 1],
-                    times: [0, 0.4, 0.5, 0.7, 1],
-                  }
-                : undefined
-            }
-          />
-        );
-      })}
-
-      {/* ─── Comet head (the hero element) ─────────────────────── */}
+      {/* ─── Response packet (hero element — solid terracotta) ──── */}
       <motion.rect
-        width={18}
-        height={18}
-        rx={4.5}
-        y={beamY - 9}
+        x={packetX}
+        width={packetW}
+        height={packetH}
+        rx={2.5}
         fill="var(--color-accent)"
-        initial={{ x: cometStart, opacity: 1, scale: 1 }}
+        initial={{ y: packetStartY, opacity: 0 }}
         animate={
           animate
             ? {
-                x: [cometStart, cometImpact, cometImpact, cometRetreat, cometStart, cometStart],
-                opacity: [1, 1, 1, 0.4, 0, 1],
-                scale: [1, 1, 1.1, 0.7, 0.7, 1],
+                y: [packetStartY, packetEndY, packetEndY, packetEndY, packetStartY],
+                opacity: [0, 1, 1, 0.85, 0],
               }
-            : { x: cometImpact, opacity: 1, scale: 1.1 }
+            : { y: packetEndY, opacity: 1 }
         }
         transition={
           animate
             ? {
-                duration: 5,
+                duration: 6,
                 repeat: Infinity,
                 ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.42, 0.5, 0.7, 0.85, 1],
+                times: [0, 0.3, 0.78, 0.92, 1],
               }
             : undefined
         }
-        style={{ transformOrigin: "center", transformBox: "fill-box" as const }}
       />
+
+      {/* ─── Curtain (sealing the browser → JS boundary) ────────── */}
+      {/* Faint shadow stroke for depth */}
+      <motion.line
+        x1={curtainX1}
+        y1={curtainY + 1}
+        x2={curtainX2}
+        y2={curtainY + 1}
+        stroke="var(--color-accent)"
+        strokeWidth={1.0}
+        strokeLinecap="round"
+        opacity={0.18}
+        vectorEffect="non-scaling-stroke"
+        initial={{ pathLength: 0 }}
+        animate={animate ? { pathLength: [0, 0, 1, 1, 0] } : { pathLength: 1 }}
+        transition={
+          animate
+            ? {
+                duration: 6,
+                repeat: Infinity,
+                ease: [0.4, 0, 0.2, 1],
+                times: [0, 0.55, 0.78, 0.92, 1],
+              }
+            : undefined
+        }
+      />
+      {/* Hero curtain stroke */}
+      <motion.line
+        x1={curtainX1}
+        y1={curtainY}
+        x2={curtainX2}
+        y2={curtainY}
+        stroke="var(--color-accent)"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        vectorEffect="non-scaling-stroke"
+        initial={{ pathLength: 0, opacity: 0.85 }}
+        animate={
+          animate
+            ? { pathLength: [0, 0, 1, 1, 0], opacity: [0.85, 0.85, 0.95, 0.95, 0.85] }
+            : { pathLength: 1, opacity: 0.95 }
+        }
+        transition={
+          animate
+            ? {
+                duration: 6,
+                repeat: Infinity,
+                ease: [0.4, 0, 0.2, 1],
+                times: [0, 0.55, 0.78, 0.92, 1],
+              }
+            : undefined
+        }
+      />
+
+      {/* ─── ✕ glyph on the curtain (delight beat — soft fade-in last) ── */}
+      <motion.g
+        initial={{ opacity: 0 }}
+        animate={
+          animate
+            ? { opacity: [0, 0, 0, 0.85, 0] }
+            : { opacity: 0.85 }
+        }
+        transition={
+          animate
+            ? {
+                duration: 6,
+                repeat: Infinity,
+                ease: "easeInOut",
+                times: [0, 0.7, 0.78, 0.92, 1],
+              }
+            : undefined
+        }
+      >
+        <line x1={96} y1={curtainY - 4} x2={104} y2={curtainY + 4} stroke="var(--color-accent)" strokeWidth={1.6} strokeLinecap="round" opacity={0.7} vectorEffect="non-scaling-stroke" />
+        <line x1={96} y1={curtainY + 4} x2={104} y2={curtainY - 4} stroke="var(--color-accent)" strokeWidth={1.6} strokeLinecap="round" opacity={0.7} vectorEffect="non-scaling-stroke" />
+      </motion.g>
     </motion.g>
   );
 }
 
 /**
  * WhyFetchFailsCoverStatic — Satori-safe pure-JSX export.
- * Reduced-motion end-state: comet bounced back at far-left, wall solid,
- * ✕ visible, 2 echo-rings frozen at mid-expansion (the "impact moment").
+ * Reduced-motion end-state: response packet sits at the browser tier,
+ * curtain fully drawn between the browser and JS tiers, ✕ visible. The
+ * article's thesis lands from the still: the response is *in* the
+ * browser; the boundary to JS is sealed.
  */
 export function WhyFetchFailsCoverStatic() {
   const ACCENT = "#d97341";
-  const TEXT = "#f8f5f0";
   const MUTED = "#7a7570";
-  const SURFACE = "#1a1714";
+  const TIER_FILL_BROWSER = "#3b2620"; // ~10% terracotta over BG
+  const TIER_FILL_SERVER = "#23191b"; // ~4%
+  const TIER_FILL_JS = "#23191b";
 
-  const wallX = 122;
-  const impactX = 116;
-  const beamY = 100;
+  const serverY = 30;
+  const serverH = 30;
+  const browserY = 84;
+  const browserH = 32;
+  const jsY = 140;
+  const jsH = 30;
+  const packetX = 92;
+  const packetW = 16;
+  const packetH = 12;
+  const packetEndY = browserY + (browserH - packetH) / 2;
+  const curtainY = (browserY + browserH + jsY) / 2;
+  const curtainX1 = 36;
+  const curtainX2 = 164;
 
   return (
     <svg
@@ -367,30 +305,49 @@ export function WhyFetchFailsCoverStatic() {
       width="100%"
       height="100%"
     >
-      {/* Browser silhouette */}
-      <rect x={140} y={56} width={48} height={88} rx={5} fill={SURFACE} stroke={MUTED} strokeWidth={1.6} opacity={0.55} />
-      <line x1={140} y1={68} x2={188} y2={68} stroke={MUTED} strokeWidth={1.2} opacity={0.5} />
-      <circle cx={146} cy={62} r={1.6} fill={MUTED} opacity={0.55} />
-      <circle cx={152} cy={62} r={1.6} fill={MUTED} opacity={0.45} />
-      <circle cx={158} cy={62} r={1.6} fill={MUTED} opacity={0.4} />
+      {/* Vertical guide line */}
+      <line x1={100} y1={serverY + serverH} x2={100} y2={jsY} stroke={MUTED} strokeWidth={1.0} strokeDasharray="2 3" opacity={0.32} />
 
-      {/* Wall */}
-      <rect x={wallX - 4} y={36} width={8} height={128} rx={3} fill={TEXT} />
+      {/* Server tier */}
+      <rect x={32} y={serverY} width={136} height={serverH} rx={6} fill={TIER_FILL_SERVER} stroke={MUTED} strokeWidth={1.2} />
+      <line x1={42} y1={serverY + 15} x2={70} y2={serverY + 15} stroke={MUTED} strokeWidth={1.2} strokeLinecap="round" opacity={0.6} />
 
-      {/* ✕ on wall */}
-      <line x1={wallX - 6} y1={beamY - 6} x2={wallX + 6} y2={beamY + 6} stroke={ACCENT} strokeWidth={2.4} strokeLinecap="round" />
-      <line x1={wallX - 6} y1={beamY + 6} x2={wallX + 6} y2={beamY - 6} stroke={ACCENT} strokeWidth={2.4} strokeLinecap="round" />
+      {/* Browser tier */}
+      <rect x={32} y={browserY} width={136} height={browserH} rx={6} fill={TIER_FILL_BROWSER} stroke={MUTED} strokeWidth={1.4} />
+      <circle cx={42} cy={browserY + 8} r={1.8} fill={MUTED} opacity={0.6} />
 
-      {/* Echo rings — frozen mid-expansion */}
-      <circle cx={impactX} cy={beamY} r={12} fill="none" stroke={ACCENT} strokeWidth={2} opacity={0.7} />
-      <circle cx={impactX} cy={beamY} r={20} fill="none" stroke={ACCENT} strokeWidth={1.6} opacity={0.45} />
+      {/* JS tier */}
+      <rect x={32} y={jsY} width={136} height={jsH} rx={6} fill={TIER_FILL_JS} stroke={MUTED} strokeWidth={1.2} />
+      <path
+        d={`M 78 ${jsY + 8} Q 72 ${jsY + 8}, 72 ${jsY + 14} L 72 ${jsY + 13} Q 72 ${jsY + 15}, 68 ${jsY + 15} Q 72 ${jsY + 15}, 72 ${jsY + 17} L 72 ${jsY + 16} Q 72 ${jsY + 22}, 78 ${jsY + 22}`}
+        fill="none"
+        stroke={MUTED}
+        strokeWidth={1.4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity={0.75}
+      />
+      <path
+        d={`M 122 ${jsY + 8} Q 128 ${jsY + 8}, 128 ${jsY + 14} L 128 ${jsY + 13} Q 128 ${jsY + 15}, 132 ${jsY + 15} Q 128 ${jsY + 15}, 128 ${jsY + 17} L 128 ${jsY + 16} Q 128 ${jsY + 22}, 122 ${jsY + 22}`}
+        fill="none"
+        stroke={MUTED}
+        strokeWidth={1.4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity={0.75}
+      />
 
-      {/* Comet bounced back to far-left */}
-      <rect x={16} y={beamY - 8} width={16} height={16} rx={4} fill={ACCENT} />
-      {/* Trail dots leading from bounce */}
-      <circle cx={40} cy={beamY} r={2.5} fill={ACCENT} opacity={0.4} />
-      <circle cx={52} cy={beamY} r={2} fill={ACCENT} opacity={0.28} />
-      <circle cx={64} cy={beamY} r={1.5} fill={ACCENT} opacity={0.18} />
+      {/* Response packet — at browser tier */}
+      <rect x={packetX} y={packetEndY} width={packetW} height={packetH} rx={2.5} fill={ACCENT} />
+
+      {/* Curtain shadow */}
+      <line x1={curtainX1} y1={curtainY + 1} x2={curtainX2} y2={curtainY + 1} stroke={ACCENT} strokeWidth={1.0} strokeLinecap="round" opacity={0.18} />
+      {/* Curtain hero */}
+      <line x1={curtainX1} y1={curtainY} x2={curtainX2} y2={curtainY} stroke={ACCENT} strokeWidth={1.8} strokeLinecap="round" opacity={0.95} />
+
+      {/* ✕ glyph */}
+      <line x1={96} y1={curtainY - 4} x2={104} y2={curtainY + 4} stroke={ACCENT} strokeWidth={1.6} strokeLinecap="round" opacity={0.85} />
+      <line x1={96} y1={curtainY + 4} x2={104} y2={curtainY - 4} stroke={ACCENT} strokeWidth={1.6} strokeLinecap="round" opacity={0.85} />
     </svg>
   );
 }
