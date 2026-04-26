@@ -12,6 +12,7 @@ import {
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { WidgetShell } from "@/components/viz/WidgetShell";
 import { PRESS, SPRING } from "@/lib/motion";
+import { playSound } from "@/lib/audio";
 import { CALL_STACK_SNIPPET } from "./CallStackSnippet";
 
 /**
@@ -245,18 +246,43 @@ export function CallStackECs({ initialStep = 0, codeSlot }: Props) {
     return () => window.clearTimeout(id);
   }, [running, clamped]);
 
+  /**
+   * Pop sound on EC push — fires only when the stack grows. Pops (where
+   * the stack shrinks) are silent: pop animation is autonomous within
+   * a step transition. Per playbook, PUSH is the "stack growing" beat.
+   *
+   * The ref captures the last seen stack length so we don't double-fire
+   * under React strict-mode re-runs of the effect on initial mount.
+   */
+  const lastStackLenRef = useRef<number>(STEPS[initialStep].stack.length);
+  useEffect(() => {
+    const len = current.stack.length;
+    if (len > lastStackLenRef.current) {
+      playSound("Pop");
+    }
+    lastStackLenRef.current = len;
+  }, [current]);
+
   const onStep = useCallback(() => {
-    if (clamped < TOTAL - 1) setStep(clamped + 1);
+    if (clamped < TOTAL - 1) {
+      playSound("Click");
+      setStep(clamped + 1);
+    }
   }, [clamped]);
   const onBack = useCallback(() => {
+    if (clamped > 0) {
+      playSound("Click");
+    }
     if (running) setRunning(false);
     if (clamped > 0) setStep(clamped - 1);
   }, [clamped, running]);
   const onReset = useCallback(() => {
+    playSound("Click");
     setRunning(false);
     setStep(0);
   }, []);
   const onRunToggle = useCallback(() => {
+    playSound("Click");
     if (running) {
       setRunning(false);
       return;

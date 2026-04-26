@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { WidgetShell } from "@/components/viz/WidgetShell";
 import { PRESS, SPRING } from "@/lib/motion";
+import { playSound } from "@/lib/audio";
 
 /**
  * WhyTwoPasses — W4 of "how JavaScript reads its own future".
@@ -146,7 +147,10 @@ export function WhyTwoPasses({ initialReason = "callable" }: Props) {
               <motion.button
                 key={r.id}
                 type="button"
-                onClick={() => setReasonId(r.id)}
+                onClick={() => {
+                  if (r.id !== reasonId) playSound("Toggle-On");
+                  setReasonId(r.id);
+                }}
                 aria-pressed={active}
                 style={{
                   minHeight: 44,

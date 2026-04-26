@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { PRESS, SPRING } from "@/lib/motion";
+import { playSound } from "@/lib/audio";
 import { WidgetShell } from "./WidgetShell";
 
 type Method = "GET" | "POST" | "PUT" | "DELETE";
@@ -362,7 +363,10 @@ function SegmentedRow<T extends string>({
               role="radio"
               aria-checked={active}
               disabled={disabled}
-              onClick={() => onChange(opt)}
+              onClick={() => {
+                if (opt !== value) playSound("Toggle-On");
+                onChange(opt);
+              }}
               className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] min-h-[44px] inline-flex items-center font-mono transition-colors hover:enabled:text-[color:var(--color-accent)] disabled:cursor-not-allowed"
               style={{
                 fontSize: "var(--text-small)",
@@ -404,7 +408,12 @@ function Toggle({
     <motion.button
       type="button"
       aria-pressed={pressed}
-      onClick={onToggle}
+      onClick={() => {
+        // Toggle-On for both directions of the binary toggle (no Toggle-Off
+        // — playbook chose a single sound to keep vocabulary tight).
+        playSound("Toggle-On");
+        onToggle();
+      }}
       className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] min-h-[44px] inline-flex items-center font-mono transition-colors hover:text-[color:var(--color-accent)]"
       style={{
         fontSize: "var(--text-small)",
@@ -447,7 +456,10 @@ function CredentialsSwitch({
             type="button"
             role="radio"
             aria-checked={active}
-            onClick={() => onChange(o.v)}
+            onClick={() => {
+              if (o.v !== value) playSound("Toggle-On");
+              onChange(o.v);
+            }}
             className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] min-h-[44px] inline-flex items-center font-mono transition-colors hover:text-[color:var(--color-accent)]"
             style={{
               fontSize: "var(--text-small)",

@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { TextHighlighter } from "@/components/fancy";
 import { SPRING, PRESS } from "@/lib/motion";
 import { WidgetShell } from "@/components/viz/WidgetShell";
+import { playSound } from "@/lib/audio";
 
 const HL_COLOR = "color-mix(in oklab, var(--color-accent) 28%, transparent)";
 const HL_TX = { type: "spring" as const, duration: 0.9, bounce: 0 };
@@ -105,6 +106,7 @@ export function MicrotaskStarvation() {
 
   const addMicro = useCallback(() => {
     if (running) return;
+    playSound("Click");
     setMicroSeq((n) => {
       const next = n + 1;
       setMicro((q) => [...q, { id: nextId(), label: `m${next}`, kind: "micro" }]);
@@ -114,6 +116,7 @@ export function MicrotaskStarvation() {
 
   const addSelf = useCallback(() => {
     if (running) return;
+    playSound("Click");
     setMicroSeq((n) => {
       const next = n + 1;
       setMicro((q) => [
@@ -135,6 +138,7 @@ export function MicrotaskStarvation() {
 
   const addMacro = useCallback(() => {
     if (running) return;
+    playSound("Click");
     setMacroSeq((n) => {
       const next = n + 1;
       setMacro((q) => [...q, { id: nextId(), label: `M${next}`, kind: "macro" }]);
@@ -143,6 +147,7 @@ export function MicrotaskStarvation() {
   }, [running]);
 
   const reset = useCallback(() => {
+    playSound("Click");
     cancelRef.current = true;
     setMicro([]);
     setMacro([]);
@@ -254,6 +259,9 @@ export function MicrotaskStarvation() {
 
   const run = useCallback(async () => {
     if (running) return;
+    // ONE Slide cue per user Run-click. Queue-drain animations between
+    // hops are autonomous — they stay silent (principle 7).
+    playSound("Slide");
     cancelRef.current = false;
     setRunning(true);
     setSelfHintVisible(false);

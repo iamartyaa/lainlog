@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { PRESS } from "@/lib/motion";
+import { playSound } from "@/lib/audio";
 
 export function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -10,6 +11,9 @@ export function CopyButton({ text }: { text: string }) {
   const onClick = async () => {
     try {
       await navigator.clipboard.writeText(text);
+      // Audio fires AFTER the clipboard write resolves — the sound is the
+      // success cue, paired with the visible "copied" label change.
+      playSound("Copy");
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch {

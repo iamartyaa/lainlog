@@ -38,6 +38,7 @@ import {
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { ClickSpark } from "@/components/fancy/click-spark";
 import { SPRING } from "@/lib/motion";
+import { playSound } from "@/lib/audio";
 
 export type QuizOption = {
   /** Stable id used to check correctness — preserved across shuffles. */
@@ -112,9 +113,15 @@ export function Quiz({
     (id: string) => {
       if (revealed) return;
       const correct = id === correctId;
+      // Option-press click feedback — fires before the verdict so the two
+      // sounds land ~250ms apart (verdict animation lag handles the gap).
+      // Throttle in lib/audio won't suppress because the names differ.
+      playSound("Click");
       setChosenId(id);
       setRevealed(true);
       setOutcome(correct ? "right" : "wrong");
+      // Verdict cue — paired with the existing pulse / nod visual.
+      playSound(correct ? "Success" : "Error");
       onAnsweredRef.current?.(correct, id);
     },
     [correctId, revealed]
@@ -122,6 +129,9 @@ export function Quiz({
 
   const handleReveal = useCallback(() => {
     if (revealed) return;
+    // "Reveal answer" routes to wrong-path. Same Error cue as a wrong pick
+    // so the audio vocabulary stays consistent.
+    playSound("Error");
     setChosenId(null);
     setRevealed(true);
     setOutcome("wrong");

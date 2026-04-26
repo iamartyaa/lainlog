@@ -6,6 +6,7 @@ import { TextHighlighter } from "@/components/fancy";
 import { SPRING, PRESS } from "@/lib/motion";
 import { WidgetShell } from "@/components/viz/WidgetShell";
 import { Quiz } from "@/components/widgets/Quiz";
+import { playSound } from "@/lib/audio";
 
 const HL_COLOR = "color-mix(in oklab, var(--color-accent) 28%, transparent)";
 const HL_TX = { type: "spring" as const, duration: 0.9, bounce: 0 };
@@ -227,6 +228,7 @@ export function PredictTheOutput({ codeSlots }: Props) {
   const variant = VARIANTS.find((v) => v.id === variantId)!;
 
   function selectVariant(id: Variant["id"]) {
+    if (id !== variantId) playSound("Toggle-On");
     setVariantId(id);
     setAnswered(null);
   }

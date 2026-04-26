@@ -50,6 +50,7 @@ Every post answers a question the reader has already felt (*"how does X feel so 
 - **Keyboard-operable by default.** Real `<button>` and `<input type="range">`; no `<div onClick>`. Focus rings via the global `:focus-visible` rule.
 - **`SPRING.snappy` for taps and scrubber steps; `SPRING.smooth` for reveals.** Never bounce/elastic. Never animate width/height — only `transform` + `opacity`.
 - **Respect `prefers-reduced-motion`.** The `MotionConfigProvider` in `app/layout.tsx` handles this globally for `motion/react` springs. Don't undo it.
+- **Audio is a delight beat. Default off.** Wire user-triggered events to one of the eight Tier-1 sounds via `playSound()` from `@/lib/audio`. Never on autonomous animation, hover, or keypress. See [`audio-playbook.md`](./audio-playbook.md).
 
 ## 6. Structural patterns
 

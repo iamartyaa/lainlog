@@ -286,6 +286,7 @@ Every widget must clear every bullet. Reviewer's first pass checks these mechani
 - [ ] **Never** `ease-in-out`, `linear`, `bounce`, `elastic` for UI motion.
 - [ ] Every widget with timed sequences: gate durations via `useReducedMotion()` so the sequence collapses to instant under reduced motion. `motion.*` will auto-collapse transforms via the project-level `MotionConfig reducedMotion="user"`, but **animation scheduling you control** (e.g. `setTimeout`, `setInterval`) must also respect it.
 - [ ] Stagger siblings at 60 ms. Not 100, not 120.
+- [ ] Interactive widgets that user-trigger transitions wire `playSound()` per [`audio-playbook.md`](./audio-playbook.md). User actions only — autonomous motion stays silent. Default-off + reduced-motion + tab-hidden gates handled centrally in `lib/audio.ts`.
 
 ### Decoration bans (DESIGN.md §12)
 

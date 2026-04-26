@@ -96,6 +96,7 @@ At any checkpoint, the user may give free-form feedback ("redo the outline, swap
    - `metadata.ts` — title, hook, date, OG image wiring.
    - `widgets/<Name>.tsx` — one file per widget selected in Phase C.
 2. Implement widgets first; test each in isolation via a dev-only scratch page at `app/_scratch/<slug>/<Name>/page.tsx` (remove before Checkpoint 4).
+   - **Wire Tier-1 audio cues for any new interactive widget** per [`docs/audio-playbook.md`](../../docs/audio-playbook.md). Pick from the eight Tier-1 sounds — `Click` for nav buttons, `Toggle-On` for segmented controls, etc. Never invent new sounds; never wire to autonomous animation.
 3. Write TSX narrative following `outline.md`. Use **explicit Prose components** only — no regex classifier, no magic. Inline styling via `<Code>`, `<Kbd>`, `<Term>`, etc.
 4. Add entry to `content/posts-manifest.ts` (newest-first via POSTS_NEWEST_FIRST helper).
 5. Run `pnpm exec tsc --noEmit` + `pnpm build`. Fix any errors before proceeding.

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { TextHighlighter } from "@/components/fancy";
 import { WidgetShell } from "@/components/viz/WidgetShell";
 import { Quiz } from "@/components/widgets/Quiz";
+import { playSound } from "@/lib/audio";
 
 const HL_COLOR = "color-mix(in oklab, var(--color-accent) 28%, transparent)";
 const HL_TX = { type: "spring" as const, duration: 0.9, bounce: 0 };
@@ -97,6 +98,10 @@ export function PredictTheStart({ codeSlot }: Props) {
   // measurements + caption. <Quiz> owns the canonical reveal state; we listen
   // via onAnswered to flip our own.
   const [answered, setAnswered] = useState<null | { correct: boolean }>(null);
+  // Swoosh fires once per page-load when the verdict reveals. Quiz already
+  // plays Success/Error on the option-press; the Swoosh here is the
+  // "verdict landing" cue layered on top of that. Cap to one shot via ref.
+  const swooshFiredRef = useRef(false);
 
   return (
     <WidgetShell
@@ -154,7 +159,13 @@ export function PredictTheStart({ codeSlot }: Props) {
             ),
           }))}
           correctId={CORRECT_ID}
-          onAnswered={(correct) => setAnswered({ correct })}
+          onAnswered={(correct) => {
+            setAnswered({ correct });
+            if (!swooshFiredRef.current) {
+              swooshFiredRef.current = true;
+              playSound("Swoosh");
+            }
+          }}
           rightVerdict={
             <>
               <span style={{ color: "var(--color-accent)" }}>output</span>

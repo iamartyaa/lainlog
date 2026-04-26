@@ -8,6 +8,7 @@ The canonical reference set for authoring, reviewing, and shipping bytesize post
 2. **[`interactive-components.md`](./interactive-components.md)** — widget-shape taxonomy (§1), external primitives we've integrated (§2: `TextHighlighter`, `DragElements`, `MediaBetweenText`), the full Fancy-library curation with fit ratings for every upstream component (§2.5), DESIGN.md compliance invariants, anti-patterns from actual review feedback, widget catalogue with per-widget lessons.
 3. **[`pipeline-playbook.md`](./pipeline-playbook.md)** — the nine-phase authoring pipeline, per-phase lessons, session-resumption rules, checkpoint crib sheet, and per-skill lessons from Phase F design-review orchestration.
 4. **[`svg-cover-playbook.md`](./svg-cover-playbook.md)** — animated SVG cover authoring rules. Element budget, motion amplitudes, mobile-thumbnail legibility, the v3→v4 refactor lessons. Read before touching any `components/covers/*Cover.tsx`.
+5. **[`audio-playbook.md`](./audio-playbook.md)** — opt-in audio system. Eight Tier-1 sounds, anchor principles, per-sound gain calibration, throttle/decay rules, vendoring audit, new-widget checklist. Read before wiring sound to any new widget.
 
 ## Secondary references
 
