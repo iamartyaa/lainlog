@@ -16,25 +16,34 @@ import { PRESS, SPRING } from "@/lib/motion";
 import { CALL_STACK_SNIPPET } from "./CallStackSnippet";
 
 /**
- * CallStackECs v3 — built on the React Bits <Stack> primitive.
+ * CallStackECs v4 — tidy-mode <Stack> + smaller height + derived console.
  *
- * What changed from v2 (PR #57):
- *   1. Controls (Back / Run / Step / Reset) moved BELOW the stack viz.
- *      Cause and effect are co-located in the reader's eye-line — pressing
- *      Step now feeds the visualisation immediately above, not below.
- *   2. The EC pile now renders inside <Stack> from `components/fancy/`.
- *      Cards are absolutely-positioned with rotateZ / scale per depth, so
- *      the outer 260 px stack region is the SAME height with 1 EC, 2 ECs,
- *      3 ECs. The OUTER widget shell is therefore truly frame-stable
- *      regardless of how deep the stack pushes.
+ * What changed from v3 (PR #59 v1):
+ *   1. Stack viz region: 260 → 180 px tall; the inner Stack window
+ *      shrunk from 200 → 120 px. ~80 px reclaimed for content.
+ *   2. <Stack mode="tidy">. Cards no longer rotate around the bottom-
+ *      right corner; instead each card behind the top is offset upward
+ *      by depth*12 px and scaled around `transformOrigin: top center`.
+ *      Lower cards' top edges peek out behind the active card — the
+ *      reader can SEE there are 2 / 3 frames stacked, not just the top.
+ *   3. Depth-aware terracotta border gradient on each card body.
+ *      Top: solid accent. Depth -1: 55% accent / 45% muted. Depth -2:
+ *      30% accent / 70% muted. Depth -3+: plain muted. Same surface
+ *      background on all cards (readability) — the BORDER tells you
+ *      depth, not the fill. No drop-shadows (DESIGN.md §12 compliant).
+ *   4. Console output is now a DERIVED selector over
+ *      `STEPS[0..currentStep].emit`. Going back automatically removes
+ *      lines that haven't fired yet at that step. The previous
+ *      append-only `useState<ConsoleLine[]>` + `lastEmittedStep` ref
+ *      could leave stale lines after Back-then-Step. Bug fix.
+ *   5. Controls remain BELOW the stack viz (cause + effect colocated).
  *
- * Layout:
- *   - Mobile (< 720 px container): vertical — code pane (240 px) → ↓ glyph
- *     → stack viz (260 px) → controls (48 px) → console (88 px). Total
- *     pinned regardless of EC depth.
- *   - lg (≥ 720 px container, via @container query): two columns — code +
- *     console on the left, stack viz + controls on the right. Controls
- *     remain immediately below the stack on both layouts.
+ * Layout (unchanged grammar, smaller numbers):
+ *   - Mobile (< 720 px container): vertical — code pane (240 px) → ↓
+ *     glyph → stack viz (180 px) → controls (48 px) → console (88 px).
+ *     Total pinned regardless of EC depth.
+ *   - lg (≥ 720 px container, via @container query): two columns — code
+ *     + console on the left, stack viz + controls on the right.
  *
  * Code rendering: the snippet is pre-rendered by `<CodeBlock>` (server
  * component, async) in `page.tsx` and passed in as a `codeSlot: ReactNode`
@@ -53,7 +62,13 @@ type EC = {
   ve: Binding[];
 };
 
-type ConsoleLine = { id: number; text: string };
+/**
+ * Console output is a DERIVED selector over `STEPS[0..currentStep].emit`.
+ * Each line carries the step that produced it as its stable key — that
+ * way `<AnimatePresence mode="popLayout">` can match enter/exit cleanly
+ * when the reader steps back/forward.
+ */
+type ConsoleLine = { stepId: number; text: string };
 
 type Step = {
   stack: EC[];
@@ -191,25 +206,31 @@ type Props = {
 
 export function CallStackECs({ initialStep = 0, codeSlot }: Props) {
   const [step, setStep] = useState(initialStep);
-  const [consoleLog, setConsoleLog] = useState<ConsoleLine[]>([]);
   const [running, setRunning] = useState(false);
-  const lastEmittedStep = useRef<number>(-1);
   const reducedMotion = useReducedMotion();
 
   const clamped = Math.max(0, Math.min(step, TOTAL - 1));
   const current = STEPS[clamped];
   const topFrame = current.stack[current.stack.length - 1];
 
-  useEffect(() => {
-    if (lastEmittedStep.current === clamped) return;
-    lastEmittedStep.current = clamped;
-    if (current.emit !== null) {
-      setConsoleLog((prev) => [
-        ...prev,
-        { id: prev.length + 1, text: current.emit as string },
-      ]);
-    }
-  }, [clamped, current.emit]);
+  /**
+   * Console output as DERIVED state. Each line is the `emit` field of a
+   * step at index ≤ currentStep. Stepping back automatically drops lines
+   * whose step hasn't been reached yet; stepping forward replays them.
+   * No imperative `setLines` calls, no append-only history. (The PR #59
+   * v1 bug — going back left stale lines — was caused by an imperative
+   * append + a `lastEmittedStep` ref that prevented re-emission.)
+   */
+  const consoleLog = useMemo<ConsoleLine[]>(
+    () =>
+      STEPS
+        .slice(0, clamped + 1)
+        .map((s, idx) =>
+          s.emit !== null ? { stepId: idx, text: s.emit } : null,
+        )
+        .filter((l): l is ConsoleLine => l !== null),
+    [clamped],
+  );
 
   useEffect(() => {
     if (!running) return;
@@ -233,8 +254,6 @@ export function CallStackECs({ initialStep = 0, codeSlot }: Props) {
   const onReset = useCallback(() => {
     setRunning(false);
     setStep(0);
-    setConsoleLog([]);
-    lastEmittedStep.current = -1;
   }, []);
   const onRunToggle = useCallback(() => {
     if (running) {
@@ -243,8 +262,6 @@ export function CallStackECs({ initialStep = 0, codeSlot }: Props) {
     }
     if (clamped >= TOTAL - 1) {
       setStep(0);
-      setConsoleLog([]);
-      lastEmittedStep.current = -1;
     }
     setRunning(true);
   }, [running, clamped]);
@@ -430,16 +447,24 @@ function CallStackBoard({
   }, [activeLine, codeSlot]);
 
   // Build the Stack's `cards` array — BOTTOM of stack first, TOP last
-  // (Stack's z-order convention: last in the array renders visually on top).
+  // (Stack's z-order convention: last in the array renders visually on
+  // top). `depth` = how far behind the top card this frame is. The
+  // active top frame has depth 0; the one below it depth 1; etc. Cards
+  // use `depth` to pick a border-saturation tier so the reader can read
+  // depth identity without drop-shadows.
   const cards = useMemo<ReactNode[]>(
     () =>
-      stack.map((frame) => (
-        <ECCardContent
-          key={frame.id}
-          frame={frame}
-          isTop={frame.id === topId}
-        />
-      )),
+      stack.map((frame, idx) => {
+        const depth = stack.length - 1 - idx;
+        return (
+          <ECCardContent
+            key={frame.id}
+            frame={frame}
+            isTop={frame.id === topId}
+            depth={depth}
+          />
+        );
+      }),
     [stack, topId],
   );
 
@@ -503,14 +528,18 @@ function CallStackBoard({
       </div>
 
       {/* Stack viz — outer container is fixed size. The Stack primitive
-          absolutely-positions every card inside this 260 px frame, so depth
-          changes (1 EC, 2 ECs, 3 ECs) don't reflow the region. */}
+          absolutely-positions every card inside this 180 px frame, so
+          depth changes (1 EC, 2 ECs, 3 ECs) don't reflow the region.
+          mode="tidy" gives a deck-of-cards-on-a-desk look: each card
+          behind the top peeks above it via vertical stagger + scale-from-
+          top-center. Border saturation per card communicates depth. */}
       <div ref={stackPaneRef} className="bs-csec-region bs-csec-stack">
         <div className="bs-csec-region-head">CALL STACK</div>
         <div className="bs-csec-stack-window">
           <Stack
             cards={cards}
             disableDrag
+            mode="tidy"
             animationConfig={{ stiffness: 260, damping: 28 }}
           />
         </div>
@@ -523,20 +552,29 @@ function CallStackBoard({
           colocated in the reader's eye-line. */}
       <div className="bs-csec-region-controls">{controls}</div>
 
-      {/* Console pane. */}
+      {/* Console pane. Lines are derived from `STEPS[0..currentStep]
+          .emit`, so stepping back removes lines that haven't fired yet
+          and stepping forward replays them. AnimatePresence with
+          mode="popLayout" ensures exiting lines don't shift surviving
+          siblings. */}
       <div className="bs-csec-region bs-csec-console" aria-label="console output">
         <div className="bs-csec-region-head">CONSOLE</div>
         <div className="bs-csec-console-body" aria-live="polite">
-          <AnimatePresence initial={false}>
+          <AnimatePresence initial={false} mode="popLayout">
             {consoleLog.map((l) => (
               <motion.div
-                key={l.id}
+                key={`emit-${l.stepId}`}
                 layout
                 initial={
                   reducedMotion ? { opacity: 1 } : { opacity: 0, y: 4 }
                 }
                 animate={{ opacity: 1, y: 0 }}
-                transition={reducedMotion ? { duration: 0 } : { duration: 0.2 }}
+                exit={
+                  reducedMotion ? { opacity: 0 } : { opacity: 0, y: -4 }
+                }
+                transition={
+                  reducedMotion ? { duration: 0 } : { duration: 0.18 }
+                }
                 className="bs-csec-console-line font-mono"
               >
                 <span style={{ color: "var(--color-text-muted)" }}>›</span>{" "}
@@ -576,10 +614,14 @@ function CallStackBoard({
           text-transform: uppercase;
         }
         /* Reserved heights — R6 frame stability. Outer shell is invariant
-           regardless of EC depth (the win of using the Stack primitive). */
+           regardless of EC depth (the win of using the Stack primitive).
+           v4: stack region shrunk from 260 to 180 px (~80 px reclaimed
+           for content). Inner Stack window 200 → 120 px. The active card
+           body fills that 120 px; cards behind peek upward by 12 px per
+           depth (handled inside the Stack primitive in tidy mode). */
         .bs-csec-code { min-height: 240px; }
         .bs-csec-stack {
-          min-height: 260px;
+          min-height: 180px;
           display: flex;
           flex-direction: column;
         }
@@ -587,10 +629,11 @@ function CallStackBoard({
           position: relative;
           flex: 1;
           width: 100%;
-          /* The Stack uses perspective on its inner div; cards are
-             absolutely-positioned, so this wrapper must establish a
-             concrete height. Cards fill the wrapper via inset:0. */
-          min-height: 200px;
+          /* Cards are absolutely-positioned inside this fixed window.
+             Tidy mode lifts non-top cards UP by depth*12 px — there's
+             enough headroom (~24 px above the 120 px card body) for two
+             frames to peek above the active one. */
+          min-height: 120px;
           margin-top: 4px;
         }
         .bs-csec-stack-depth {
@@ -717,7 +760,38 @@ function FallbackCode({ lines }: { lines: number }) {
 /*  The Stack owns positioning, rotation, scale; we own the body.     */
 /* ------------------------------------------------------------------ */
 
-function ECCardContent({ frame, isTop }: { frame: EC; isTop: boolean }) {
+/**
+ * Border saturation tier — terracotta opacity steps to communicate
+ * depth without a drop-shadow (DESIGN.md §12 compliant). Depth 0 is
+ * the active top card; deeper = further back.
+ *
+ * Single-hue policy (DESIGN.md §3): every tint is the accent mixed with
+ * `--color-text-muted`, never a different colour family. Tiers are
+ * coarse on purpose — 4 visible bands tell the reader "this is depth N"
+ * faster than a continuous gradient would.
+ */
+function depthBorderColor(depth: number): string {
+  if (depth <= 0) return "var(--color-accent)";
+  if (depth === 1)
+    return "color-mix(in oklab, var(--color-accent) 55%, var(--color-text-muted))";
+  if (depth === 2)
+    return "color-mix(in oklab, var(--color-accent) 30%, var(--color-text-muted))";
+  return "var(--color-text-muted)";
+}
+
+function ECCardContent({
+  frame,
+  isTop,
+  depth,
+}: {
+  frame: EC;
+  isTop: boolean;
+  depth: number;
+}) {
+  const borderColor = depthBorderColor(depth);
+  // Depth chip — 0, -1, -2, etc. so the reader can read the deck order
+  // even if cards overlap.
+  const depthLabel = depth === 0 ? "depth 0" : `depth -${depth}`;
   return (
     <div
       style={{
@@ -725,9 +799,7 @@ function ECCardContent({ frame, isTop }: { frame: EC; isTop: boolean }) {
         height: "100%",
         padding: "10px 12px",
         background: "var(--color-surface)",
-        border: `1px solid ${
-          isTop ? "var(--color-accent)" : "var(--color-rule)"
-        }`,
+        border: `1.5px solid ${borderColor}`,
         borderRadius: 8,
         display: "flex",
         flexDirection: "column",
@@ -772,6 +844,23 @@ function ECCardContent({ frame, isTop }: { frame: EC; isTop: boolean }) {
         >
           {frame.label}
         </span>
+        <span
+          aria-hidden
+          className="font-mono"
+          style={{
+            fontSize: 9.5,
+            letterSpacing: "0.04em",
+            color: "var(--color-text-muted)",
+            border: `1px solid ${borderColor}`,
+            borderRadius: 4,
+            padding: "1px 5px",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {depthLabel}
+        </span>
       </div>
       <ul
         className="font-mono"
@@ -783,7 +872,10 @@ function ECCardContent({ frame, isTop }: { frame: EC; isTop: boolean }) {
           flexDirection: "column",
           gap: 2,
           fontSize: 10.5,
-          color: "var(--color-text)",
+          // Non-top cards de-emphasise their VE rows so the reader's eye
+          // settles on the active frame. The values are still visible
+          // (deliberate: bindings persist across the call), just muted.
+          color: isTop ? "var(--color-text)" : "var(--color-text-muted)",
         }}
       >
         {frame.ve.length === 0 ? (
@@ -806,7 +898,9 @@ function ECCardContent({ frame, isTop }: { frame: EC; isTop: boolean }) {
                   color:
                     b.value === "<uninit>"
                       ? "var(--color-text-muted)"
-                      : "var(--color-accent)",
+                      : isTop
+                      ? "var(--color-accent)"
+                      : "var(--color-text-muted)",
                   minWidth: 0,
                   overflow: "hidden",
                   textOverflow: "ellipsis",

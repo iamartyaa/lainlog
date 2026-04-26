@@ -26,6 +26,11 @@
  *      bundle.
  *   5. `"use client"` directive — required for the `useState` / `useEffect`
  *      / `motion` hooks the component depends on.
+ *   6. `mode?: "messy" | "tidy"` prop added — see StackProps for details.
+ *      `"messy"` preserves upstream rotateZ-around-90/90 behaviour;
+ *      `"tidy"` is a deck-of-cards-on-a-desk mode where each card behind
+ *      the top peeks out via a vertical stagger and `transformOrigin: top
+ *      center`. CallStackECs uses tidy so a reader can see depth identity.
  *
  * Named + default export for symmetry with `click-spark.tsx`.
  */
@@ -114,6 +119,24 @@ export interface StackProps {
    * `mobileClickOnly` / `isMobile`. The runtime owns push/pop order.
    */
   disableDrag?: boolean;
+  /**
+   * Bytesize override: layout mode for the pile.
+   *   - `"messy"` (default): upstream behaviour. Cards rotate around
+   *     `transformOrigin: 90% 90%`, scale down with depth — reads as a
+   *     casually tossed pile. Good for "look at the top thing" mechanics
+   *     where individual depth identity doesn't matter.
+   *   - `"tidy"`: zero rotation. Each card behind the top is offset
+   *     UPWARD by `depth * 12 px` and scaled around `transformOrigin: top
+   *     center`, so every lower card peeks visibly above the one in
+   *     front. Reads as a deck of cards on a desk — depth identity is
+   *     legible. Used in `CallStackECs` so the reader can see *that*
+   *     there are 2 / 3 EC frames stacked, not just the top one.
+   *
+   * The Stack primitive owns position + rotation + scale only. Border /
+   * background / depth-aware styling are the caller's concern (each card
+   * supplies its own body).
+   */
+  mode?: "messy" | "tidy";
 }
 
 export function Stack({
@@ -128,6 +151,7 @@ export function Stack({
   mobileClickOnly = false,
   mobileBreakpoint = 768,
   disableDrag = false,
+  mode = "messy",
 }: StackProps) {
   const reduce = useReducedMotion();
   const [isMobile, setIsMobile] = useState(false);
@@ -187,14 +211,28 @@ export function Stack({
       onMouseLeave={() => pauseOnHover && setIsPaused(false)}
     >
       {stack.map((card, index) => {
+        // depth = how far from the top this card is. The TOP card is the
+        // last in the array, so depth = stack.length - 1 - index.
+        const depth = stack.length - 1 - index;
+        const isTidy = mode === "tidy";
+
         const randomRotate =
-          randomRotation && !reduce ? Math.random() * 10 - 5 : 0;
-        const targetRotate = reduce
+          randomRotation && !reduce && !isTidy ? Math.random() * 10 - 5 : 0;
+        const targetRotate = reduce || isTidy
           ? 0
-          : (stack.length - index - 1) * 4 + randomRotate;
+          : depth * 4 + randomRotate;
+        // Tidy: slightly larger scale step so depth is felt; messy keeps
+        // the upstream 0.06.
+        const tidyScaleStep = 0.06;
         const targetScale = reduce
           ? 1
+          : isTidy
+          ? 1 - depth * tidyScaleStep
           : 1 + index * 0.06 - stack.length * 0.06;
+        // Tidy: lift each card behind the top by depth*12 px so the top
+        // edge of every lower card peeks out from behind. Messy keeps 0.
+        const targetY = reduce || !isTidy ? 0 : -depth * 12;
+        const targetTransformOrigin = isTidy ? "top center" : "90% 90%";
         return (
           <CardRotate
             key={card.id}
@@ -210,7 +248,8 @@ export function Stack({
               animate={{
                 rotateZ: targetRotate,
                 scale: targetScale,
-                transformOrigin: "90% 90%",
+                y: targetY,
+                transformOrigin: targetTransformOrigin,
               }}
               initial={false}
               transition={
