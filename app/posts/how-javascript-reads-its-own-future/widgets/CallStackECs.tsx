@@ -265,24 +265,24 @@ export function CallStackECs({ initialStep = 0, codeSlot }: Props) {
 
   const onStep = useCallback(() => {
     if (clamped < TOTAL - 1) {
-      playSound("Click");
+      playSound("Progress-Tick");
       setStep(clamped + 1);
     }
   }, [clamped]);
   const onBack = useCallback(() => {
     if (clamped > 0) {
-      playSound("Click");
+      playSound("Progress-Tick");
     }
     if (running) setRunning(false);
     if (clamped > 0) setStep(clamped - 1);
   }, [clamped, running]);
   const onReset = useCallback(() => {
-    playSound("Click");
+    playSound("Progress-Tick");
     setRunning(false);
     setStep(0);
   }, []);
   const onRunToggle = useCallback(() => {
-    playSound("Click");
+    playSound("Progress-Tick");
     if (running) {
       setRunning(false);
       return;

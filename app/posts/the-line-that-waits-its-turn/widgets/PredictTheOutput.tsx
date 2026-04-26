@@ -228,7 +228,7 @@ export function PredictTheOutput({ codeSlots }: Props) {
   const variant = VARIANTS.find((v) => v.id === variantId)!;
 
   function selectVariant(id: Variant["id"]) {
-    if (id !== variantId) playSound("Toggle-On");
+    if (id !== variantId) playSound("Radio");
     setVariantId(id);
     setAnswered(null);
   }

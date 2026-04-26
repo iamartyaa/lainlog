@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { PRESS } from "@/lib/motion";
+import { playSound } from "@/lib/audio";
 import { useAudioPreference } from "@/lib/hooks/use-audio-preference";
 import { AudioPromptTooltip } from "./AudioPromptTooltip";
 
@@ -39,7 +40,16 @@ export function AudioToggle() {
     <span className="relative inline-flex">
       <motion.button
         type="button"
-        onClick={toggle}
+        onClick={() => {
+          // Fire Radio BEFORE flipping the preference. While the user is
+          // turning audio OFF, the pref is still "on" at this point so the
+          // gate passes — they hear a confirmation tap. While the user is
+          // turning audio ON, the gate blocks Radio (pref still "off"); the
+          // unlock-preview Pop inside `setEnabled` is the audible
+          // confirmation instead. Net result: every click has feedback.
+          playSound("Radio");
+          toggle();
+        }}
         aria-pressed={enabled}
         aria-label={enabled ? "Sound on" : "Sound off"}
         className="inline-flex h-[44px] w-[44px] -m-[10px] items-center justify-center text-[color:var(--color-text-muted)] transition-colors hover:text-[color:var(--color-text)]"

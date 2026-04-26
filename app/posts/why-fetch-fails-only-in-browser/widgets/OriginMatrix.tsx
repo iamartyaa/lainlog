@@ -160,14 +160,14 @@ export function OriginMatrix() {
               role="button"
               tabIndex={0}
               onClick={() => {
-                if (focused !== i) playSound("Toggle-On");
+                if (focused !== i) playSound("Radio");
                 setFocused(i);
               }}
               onFocus={() => setFocused(i)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  if (focused !== i) playSound("Toggle-On");
+                  if (focused !== i) playSound("Radio");
                   setFocused(i);
                 }
               }}

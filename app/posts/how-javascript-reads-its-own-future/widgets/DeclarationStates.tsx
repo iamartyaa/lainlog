@@ -162,7 +162,7 @@ export function DeclarationStates({ initialKind = "var" }: Props) {
                 key={s.id}
                 type="button"
                 onClick={() => {
-                  if (s.id !== kindId) playSound("Toggle-On");
+                  if (s.id !== kindId) playSound("Radio");
                   setKindId(s.id);
                 }}
                 aria-pressed={active}

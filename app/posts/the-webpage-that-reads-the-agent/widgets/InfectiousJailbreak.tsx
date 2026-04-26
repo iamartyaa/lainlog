@@ -100,21 +100,21 @@ export function InfectiousJailbreak() {
   }, [infected, neighbours, prefersReducedMotion, running]);
 
   const reset = () => {
-    // Click on the user-press; the propagation tick that follows is autonomous.
-    playSound("Click");
+    // Progress-Tick on the user-press; the propagation tick that follows is autonomous.
+    playSound("Progress-Tick");
     if (tickRef.current !== null) window.clearTimeout(tickRef.current);
     setRunning(false);
     setInfected(new Set([0]));
   };
 
   const toggleRun = () => {
-    // Click on every play / pause / replay press. Don't double-fire when
-    // toggleRun delegates to reset().
+    // Progress-Tick on every play / pause / replay press. Don't double-fire
+    // when toggleRun delegates to reset().
     if (infected.size >= N) {
       reset();
       return;
     }
-    playSound("Click");
+    playSound("Progress-Tick");
     setRunning((r) => !r);
   };
 

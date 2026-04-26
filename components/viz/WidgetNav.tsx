@@ -253,7 +253,7 @@ export function WidgetNav({
           }}
           type="button"
           onClick={() => {
-            playSound("Click");
+            playSound("Progress-Tick");
             prevPulse.pulse();
             go(value - 1);
           }}
@@ -270,9 +270,10 @@ export function WidgetNav({
             ref={playBtnRef}
             type="button"
             onClick={() => {
-              // Click cue on every play/pause/replay press. Auto-advance
-              // between steps stays silent — that's autonomous animation.
-              playSound("Click");
+              // Progress-Tick on every play/pause/replay press — these
+              // advance the widget through its state machine. Auto-advance
+              // between steps stays silent (autonomous animation).
+              playSound("Progress-Tick");
               if (atEnd) {
                 go(0);
                 setPlaying(true);
@@ -303,7 +304,7 @@ export function WidgetNav({
           }}
           type="button"
           onClick={() => {
-            playSound("Click");
+            playSound("Progress-Tick");
             nextPulse.pulse();
             go(value + 1);
           }}

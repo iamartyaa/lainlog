@@ -64,9 +64,9 @@ export function TypingPause() {
   };
 
   const playSample = () => {
-    // Click on the user-press; the typed-keystroke animation that follows
+    // Progress-Tick on the user-press; the typed-keystroke animation that follows
     // is autonomous and stays silent.
-    playSound("Click");
+    playSound("Progress-Tick");
     stopAllTimers();
     setTyped("");
     setWaitMs(0);
@@ -91,7 +91,7 @@ export function TypingPause() {
   };
 
   const addKeystroke = () => {
-    playSound("Click");
+    playSound("Progress-Tick");
     stopAllTimers();
     setPhase("typing");
     setWaitMs(0);
@@ -103,7 +103,7 @@ export function TypingPause() {
   };
 
   const reset = () => {
-    playSound("Click");
+    playSound("Progress-Tick");
     stopAllTimers();
     setTyped("");
     setWaitMs(0);

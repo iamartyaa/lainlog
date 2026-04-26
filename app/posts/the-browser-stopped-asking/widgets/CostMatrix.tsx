@@ -135,7 +135,7 @@ export function CostMatrix() {
               key={m.key}
               type="button"
               onClick={() => {
-                playSound("Toggle-On");
+                playSound("Radio");
                 setActive(isActive ? null : m.key);
               }}
               aria-pressed={isActive}

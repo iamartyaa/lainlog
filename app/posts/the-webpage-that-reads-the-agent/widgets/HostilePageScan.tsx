@@ -49,14 +49,14 @@ export function HostilePageScan() {
   const [scanning, setScanning] = useState(false);
 
   const startScan = () => {
-    // Click on press; the scanline sweep that follows is autonomous and stays silent.
-    playSound("Click");
+    // Progress-Tick on press; the scanline sweep that follows is autonomous and stays silent.
+    playSound("Progress-Tick");
     setScanKey((k) => k + 1);
     setScanning(true);
   };
 
   const reset = () => {
-    playSound("Click");
+    playSound("Progress-Tick");
     setScanning(false);
     setScanKey(0);
   };
