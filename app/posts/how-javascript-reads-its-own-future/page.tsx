@@ -21,6 +21,8 @@ import {
   WhyTwoPasses,
   ClosingDot,
 } from "./widgets";
+import { CALL_STACK_SNIPPET } from "./widgets/CallStackSnippet";
+import { CodeBlock } from "@/components/code";
 import { metadata, subtitle } from "./metadata";
 
 export { metadata };
@@ -227,9 +229,9 @@ export default function HowJavaScriptReadsItsOwnFuture() {
         <P>
           Step through the widget below to watch a tiny program run:{" "}
           <Code>compute(7)</Code> calls <Code>multiply(7, 2)</Code>, which
-          returns <Code>14</Code>. The arrow shows where the thread is —
-          pointing from the line being run to the context running it. Each
-          call pushes a new EC onto the stack; each return pops one.{" "}
+          returns <Code>14</Code>. The highlighted line and the highlighted
+          frame are paired — the line being run, and the context running it.
+          Each call pushes a new EC onto the stack; each return pops one.{" "}
           <HL>
             Whichever frame is on top is the engine&apos;s thread of
             execution.
@@ -237,7 +239,16 @@ export default function HowJavaScriptReadsItsOwnFuture() {
         </P>
       </div>
 
-      <CallStackECs />
+      <CallStackECs
+        codeSlot={
+          <CodeBlock
+            code={CALL_STACK_SNIPPET}
+            lang="javascript"
+            filename="program.js"
+            showLineNumbers
+          />
+        }
+      />
 
       <div className="pt-[var(--spacing-lg)]">
         <P>
