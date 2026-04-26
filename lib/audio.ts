@@ -34,7 +34,6 @@ import {
   copy,
   error,
   pageEnter,
-  pageExit,
   pop,
   slide,
   success,
@@ -51,32 +50,37 @@ export type SoundName =
   | "Slide"
   | "Toggle-On"
   | "Swoosh"
-  | "Page-Enter"
-  | "Page-Exit";
+  | "Page-Enter";
 
 /**
  * Per-sound gain multipliers applied AFTER the patch's own `gain`. Recalibrated
- * 2026-04-26 (PR #64 fix pass) — the whole vocabulary now sits ~30–50% lower
- * than the original wiring, after first-round dogfooding flagged Click /
- * Slide / Page-Enter / Page-Exit as "too loud / too pingy".
+ * 2026-04-26 (PR #64 v4) to a UNIFORM 0.5 across the vocabulary so every sound
+ * lands at the same target loudness. The patch-level `gain` values (in
+ * `.web-kits/minimal.ts`) carry the per-sound balancing — those were tuned by
+ * the upstream library author for equal perceived loudness across different
+ * fundamentals, so applying a single multiplier on top preserves that balance.
  *
- * Page-Enter / Page-Exit also got a synthesis redesign in `.web-kits/minimal.ts`
- * (220–260 Hz musical-fourth pair, slower attack + longer decay). The exit
- * stays the quieter of the two so Enter still reads as the "landed" beat.
+ * Earlier revisions had per-sound multipliers (Copy 0.55, Click 0.4, etc.) but
+ * user feedback wanted "all sounds equally loud, no exceptions." The 0.5
+ * baseline is the midpoint of the prior range and gives the navigation tap
+ * the amplitude bump it needed.
  *
- * If you change a value here, also update §6 of `docs/audio-playbook.md`.
+ * Page-Exit was retired in this pass: navigation now plays a single Page-Enter
+ * "dub" rather than the previous Page-Exit + Page-Enter "dub-dub" pair.
+ *
+ * If you change this constant, also update §6 of `docs/audio-playbook.md`.
  */
+const UNIFORM_GAIN = 0.5;
 const GAIN_MULTIPLIER: Record<SoundName, number> = {
-  Copy: 0.55, // was 0.9 — quieter clipboard ack
-  Success: 0.6, // was 0.85 — chord still present, less celebratory
-  Error: 0.5, // was 0.7 — heavy low-300Hz pair, soften further
-  Click: 0.4, // was 0.7 — fires on EVERY WidgetNav press, must sit in BG
-  Pop: 0.45, // was 0.75 — EC push repeats through multi-step traces
-  Slide: 0.5, // was 1.0 — Run-click cue, halved
-  "Toggle-On": 0.55, // was 0.85 — segmented controls + theme toggle
-  Swoosh: 0.65, // was 1.1 — once-per-page verdict reveal, still earns lift
-  "Page-Enter": 0.4, // v3: low-bass tap @ 110→90 Hz, finger-on-soft-surface
-  "Page-Exit": 0.35, // v3: lower mirror @ 95→80 Hz, slightly quieter still
+  Copy: UNIFORM_GAIN,
+  Success: UNIFORM_GAIN,
+  Error: UNIFORM_GAIN,
+  Click: UNIFORM_GAIN,
+  Pop: UNIFORM_GAIN,
+  Slide: UNIFORM_GAIN,
+  "Toggle-On": UNIFORM_GAIN,
+  Swoosh: UNIFORM_GAIN,
+  "Page-Enter": UNIFORM_GAIN,
 };
 
 /**
@@ -93,7 +97,6 @@ const PATCH_DEF: Record<SoundName, SoundDefinition> = {
   "Toggle-On": toggleOn,
   Swoosh: swoosh,
   "Page-Enter": pageEnter,
-  "Page-Exit": pageExit,
 };
 
 const THROTTLE_MS = 100;

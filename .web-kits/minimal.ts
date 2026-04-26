@@ -103,24 +103,19 @@ export const slide: SoundDefinition = {
   gain: 0.05,
 };
 
-// Page-Enter / Page-Exit: redesigned 2026-04-26 from 700→900 / 900→700 Hz
-// "notification chime" sweeps to a soft musical-fourth pair sitting in a
-// Page-Enter / Page-Exit redesigned 2026-04-26 (v3) per user feedback:
-// "a simple tap sound with high bass and low pitch." Low fundamental
-// (~100 Hz) with a tiny pitch droop (finger-tap-on-soft-surface
-// character), instant attack, ~110 ms decay, no sustain. The small
-// 110→90 / 95→80 inflection gives the pair a subtle directional cue
-// without sounding like distinct alerts.
+// Page-Enter (single nav beat):
+//   v1 (700→900 Hz "chime"): rejected as too high-pitched.
+//   v2 (220→260 Hz musical fourth): rejected as too pingy.
+//   v3 (110→90 Hz tap, 0.06 gain): rejected — needed more amplitude.
+//   v4 (this): 110→90 Hz tap with patch-level gain bumped to 0.09 so the
+//   per-sound multiplier (now uniform 0.5 across the vocabulary) lands a
+//   tactile tap that matches widget Click / Pop loudness. Page-Exit retired
+//   in this revision — navigation now plays a single "dub" instead of the
+//   prior "dub-dub" pair.
 export const pageEnter: SoundDefinition = {
   source: { type: "sine", frequency: { start: 110, end: 90 } },
   envelope: { attack: 0.001, decay: 0.11, sustain: 0, release: 0.04 },
-  gain: 0.06,
-};
-
-export const pageExit: SoundDefinition = {
-  source: { type: "sine", frequency: { start: 95, end: 80 } },
-  envelope: { attack: 0.001, decay: 0.11, sustain: 0, release: 0.04 },
-  gain: 0.055,
+  gain: 0.09,
 };
 
 export const _patch: SoundPatch = {
@@ -139,6 +134,5 @@ export const _patch: SoundPatch = {
     swoosh,
     slide,
     "page-enter": pageEnter,
-    "page-exit": pageExit,
   },
 };
