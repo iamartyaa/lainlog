@@ -53,6 +53,8 @@ A 64 px thumbnail is the 200 px viewBox scaled to ~32%. A `translate: 4px` looks
 
 **One bold gesture > five subtle ones.** v3 covers had multiple subtle pulses on micro-elements — each motion was below the noise floor. v4 covers have one large gesture per cover (comet glides 60% of the viewBox; bit-array cells flip terracotta in sequence; outer scope fades visibly while inner stays solid).
 
+**§3 corollary (added after the v5 → v6 calibration):** "one bold gesture" can be misread as "go louder." It does not mean: solid terracotta fills everywhere, scale-led motion on every accent, parallel stacks of four punchy gestures. It means **one *clear* gesture** — and clarity often lands via opacity-led motion drawn with `pathLength`, not via amplified scale. **Translucent fills + thin strokes are not subtle — they are the right register for chrome.** Save solid terracotta + scale for the single hero element per cover. The amplitude thresholds in the table above are the *visibility floor*, not a target — clear above the noise floor, not "as loud as possible." See §14 for the full bold-vs-refined calibration.
+
 ---
 
 ## §4. Continuous motion, not phase-stagger
@@ -152,8 +154,9 @@ For every cover changed:
 - [ ] Hover amplifies idle motion (doesn't replace it)
 - [ ] `useId()` on any per-instance `<defs>` ids (SSR/CSR collision prevention)
 - [ ] Visually verified at 64 px AND hero size
+- [ ] Register check (§14): chrome uses translucent fills + thin strokes + opacity-led motion; solid terracotta + scale gestures reserved for the single hero element per cover
 
-If you can't tick all 11, don't push.
+If you can't tick all 12, don't push.
 
 ---
 
@@ -166,7 +169,11 @@ If the user comes back and says some variant of *"I can't see what's happening"*
 3. **Third diagnosis: phase-stagger gaps.** If the loop has a > 1.5s pause between gestures, fix to §4 continuous.
 4. **Fourth: hover doesn't amplify.** If hover replaces motion (e.g. starts a different animation), fix to §4 amplification model.
 
-Don't just tweak — refactor against this checklist. v3 → v4 was a refactor, not tweaks; that's why it succeeded.
+If the user comes back saying *"too bold"* / *"too punchy"* / *"please make it cleaner / smoother / less bold"* (the v5 → v6 case):
+
+5. **Fifth diagnosis: over-amplified chrome.** Look for solid terracotta fills on chrome elements (anything that isn't the single hero), `scale: 1 → 1.4` on small accents, parallel stacks of 4–5 motion gestures, snappy springs (`SPRING.smooth` everywhere), element counts at the cap. Refactor to the §14 register: translucent fills (`color-mix` ~24%), opacity-led motion, `SPRING.gentle`, one hero gesture + one quiet support gesture, longer loop periods (5–7s), element count below the cap (whitespace as design move).
+
+Don't just tweak — refactor against this checklist. v3 → v4 was a refactor, not tweaks; that's why it succeeded. v5 → v6 was the same kind of refactor, just in the opposite direction (over-bold → refined).
 
 ---
 
@@ -185,6 +192,57 @@ When adding a new post: register in `PostCover.tsx`, author the new `<Name>Cover
 ## §13. Concept-bundle gate (for orchestrated work)
 
 When a cover task is dispatched through `/orchestrate`, the agent MUST surface a concept bundle (one sentence + element list per cover) for user approval BEFORE drawing any paths. The v3 failure was caught at user-review; the v4 success was structured around concept-lock first. Build this gate into every cover task brief: *concepts approved → draw → motion → polish*, not *"hand me a finished bundle."*
+
+---
+
+## §14. The bold-vs-refined calibration (added after v5 → v6)
+
+The v3 → v4 lesson was *push toward bold* — element counts came down, amplitudes went up, motion became visible at 64 px. That fix was real and stays.
+
+The v5 → v6 lesson was the inverse failure mode: applying "be bold" as a quota instead of a default produced covers that read as **too punchy, too saturated, too dense**. The user's verbatim correction: *"make the SVGs more cleaner, more smooth, less bold."* The metaphors were right; the *register* was wrong.
+
+These are two separate axes, and a cover author has to land on the right point in both:
+
+| Axis | Under-bold (v3 failure) | Bold floor (v4) | Over-bold (v5 failure) | Refined (v6) |
+|---|---|---|---|---|
+| Element count | 50–70 (illegible at 64 px) | 10–14 | 13–14 (at cap, crowded) | 7–10 (whitespace as design) |
+| Fills | n/a | ~mixed | solid terracotta everywhere | translucent (`color-mix` ~24%) on chrome; solid only on the single hero |
+| Motion lead | n/a | mixed | scale-led on every accent | opacity-led on chrome; scale reserved for the hero |
+| Springs | n/a | `SPRING.smooth` (stiffness ~240) | `SPRING.smooth` everywhere — too snappy | `SPRING.gentle` (stiffness ~130, damping ~20) on chrome |
+| Loop period | longer with idle gaps | 4–5 s continuous | 4–5 s with parallel stacks | 5–7 s with single-narrative pacing |
+| Strokes | n/a | 2.0–3.0 on hero, 1.0–1.5 on chrome | 2.5–3.0 everywhere | 1.0–1.8 on chrome; 2.0 max for the hero stroke |
+| Delight beats | n/a | ≤ 1 per cover, e.g. tick spark | 1 per cover but punchy (`scale: 1 → 1.4`) | 1 per cover, gentle (`opacity 0 → 1` reveal, `scale: 1 → 1.05`) |
+| Parallel gestures | many subtle | 1 hero + 1 support | 4–5 stacked, all loud | 1 hero + 1 quiet support |
+
+**The right read of §3** ("one bold gesture > five subtle ones") is **clarity**, not amplitude. A `pathLength: 0 → 1` draw on a thin terracotta stroke can be the boldest thing on a cover precisely because it's the *only* thing moving. The v4 amplitude thresholds remain the visibility floor — but the floor is not the target.
+
+### The /bolder vs /refined skill choice
+
+When designing a cover, the skill phasing in §9 lists `/bolder` as the "between static and motion" check. **Whether to apply `/bolder` is article-dependent.** Use it when:
+- The static draft genuinely reads as safe / generic.
+- The metaphor is a kinetic one (an impact, a sweep, a reveal) that wants energy.
+
+Skip it (or apply `/refined` thinking instead) when:
+- The static draft already feels confident.
+- The metaphor is contemplative (closure / persistence / "the engine reads ahead") and wants graceful motion.
+- The user has signaled an editorial-calm preference for that cover or for the set.
+
+The `/overdrive` skill stays opt-in — never the default. If the user says some variant of "make this less bold," the answer is to drop `/bolder` *and* `/overdrive` from the phase list and rely on `/animate` + `/polish` + `/delight` + `/critique` (the user's own listed quartet during the v5 → v6 fix).
+
+### Per-cover register
+
+Not every cover wants the same register. The user's signaled preferences after v6:
+
+- **Kinetic / impact** (`WhyFetchFails`, `LineThatWaitsItsTurn`): refined kinetic — comet/indicator gestures stay, but at thinner strokes and gentler springs.
+- **Contemplative / persistence** (`FunctionRemembered`): refined contemplative — opacity fades and tether draws carry the metaphor; no scale gestures on chrome.
+- **Pedagogical / hero** (`HowGmail`, `HowJavascriptReadsItsOwnFuture`): refined editorial — multi-phase narrative is fine, but each phase reads at 64 px via opacity + pathLength rather than scale.
+- **Reveal / scan** (`WebpageReadsAgent`): the original refined exemplar — opacity reveals as a scanner traverses. This was always the calibration target.
+
+When briefing a new cover task, name the register up front. *"This is a refined contemplative cover; do not apply `/bolder`."*
+
+### One-line summary for future task briefs
+
+> Bold is a default to clear the §3 visibility floor. Refined is the register for chrome. Save solid terracotta + scale gestures for the single hero element per cover. If the user asks for "less bold," drop `/bolder` and `/overdrive` from the phase list and lean on `/polish /critique /animate /delight`.
 
 ---
 
