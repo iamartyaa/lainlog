@@ -11,6 +11,12 @@
  *     keyframes so the eyes mount in their look-forward state with
  *     zero ambient cadence — keeps decorative motion honest with the
  *     project's reduced-motion contract.
+ *   - Added `--eye-outline-color` and `--eye-outline-width` CSS
+ *     variables on the eye span so callers can ring the eye shape
+ *     with a thin border. Needed for the white-on-light-theme case
+ *     in AboutColumn (white eye discs on a near-white background
+ *     would be near-invisible without an outline). Defaults are
+ *     transparent / 0 so existing callers are unaffected.
  *
  * Color contract: the component reads `--eye-color` and `--pupil-color`
  * from its container so it inherits the bytesize palette without any
@@ -147,6 +153,8 @@ function WanderingEyes({
                 backgroundImage:
                   "radial-gradient(circle calc(var(--loading-ui-wandering-eyes-eye) * var(--loading-ui-wandering-eyes-pupil-scale)), var(--pupil-color) 100%, transparent 0)",
                 backgroundRepeat: "no-repeat",
+                border: "var(--eye-outline-width, 0) solid var(--eye-outline-color, transparent)",
+                boxSizing: "border-box",
                 animation:
                   "loading-ui-wandering-eyes-move var(--duration, 10s) infinite, loading-ui-wandering-eyes-blink var(--duration, 10s) infinite",
               }}
