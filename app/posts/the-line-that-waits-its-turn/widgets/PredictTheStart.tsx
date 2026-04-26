@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { TextHighlighter } from "@/components/fancy";
 import { SPRING, PRESS } from "@/lib/motion";
@@ -43,23 +43,10 @@ function CaptionCue({ children }: { children: React.ReactNode }) {
  *   →  A · F · H · C · E · G · D · B
  * --------------------------------------------------------------------------*/
 
-const SNIPPET = [
-  `console.log("A");`,
-  `setTimeout(() => console.log("B"), 0);`,
-  `Promise.resolve()`,
-  `  .then(() => {`,
-  `    console.log("C");`,
-  `    return Promise.resolve("D");`,
-  `  })`,
-  `  .then((d) => console.log(d));`,
-  `queueMicrotask(() => console.log("E"));`,
-  `(async () => {`,
-  `  console.log("F");`,
-  `  await null;`,
-  `  console.log("G");`,
-  `})();`,
-  `console.log("H");`,
-];
+// The opener snippet text lives in `./snippets.ts` (a non-client module)
+// so the RSC `page.tsx` can pre-render it through `<CodeBlock>` and pass
+// the highlighted element back in via the `codeSlot` prop. The widget
+// itself never needs to read the raw text.
 
 type Option = {
   /** Tokens, joined with a tabular separator for display. */
@@ -97,32 +84,6 @@ const SEP = "·";
 function tokensToLine(tokens: string[]) {
   return tokens.join(` ${SEP} `);
 }
-
-function CodePane() {
-  return (
-    <pre
-      className="font-mono"
-      style={{
-        background: "color-mix(in oklab, var(--color-surface) 60%, transparent)",
-        padding: "var(--spacing-sm)",
-        borderRadius: "var(--radius-sm)",
-        fontSize: 12,
-        lineHeight: 1.55,
-        color: "var(--color-text)",
-        margin: 0,
-        whiteSpace: "pre",
-        overflowX: "auto",
-        // Reserve enough rows that the pane doesn't shift when scrolling.
-        // 15 lines × ~19px line-height + 24px padding ≈ 309px.
-        minHeight: 280,
-      }}
-    >
-      {SNIPPET.join("\n")}
-    </pre>
-  );
-}
-
-const MemoCodePane = memo(CodePane);
 
 function OptionButton({
   option,
@@ -219,8 +180,19 @@ function OptionButton({
  *
  * Mobile-first: 360px target. Options stack vertically on <lg, 2×2 on lg+.
  * Snippet wraps to its own scroll container only as a last resort.
+ *
+ * Code rendering: the article's RSC `page.tsx` pre-renders the opener
+ * snippet through `<CodeBlock>` (Shiki, dual-theme) and passes the
+ * resulting element in via `codeSlot`. Keeps Shiki out of the client
+ * bundle and lets this widget stay a `"use client"` component for the
+ * pick/reveal state.
  */
-export function PredictTheStart() {
+type Props = {
+  /** Pre-rendered Shiki block for the opener snippet (see page.tsx). */
+  codeSlot: React.ReactNode;
+};
+
+export function PredictTheStart({ codeSlot }: Props) {
   const [picked, setPicked] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
 
@@ -337,7 +309,7 @@ export function PredictTheStart() {
       }
     >
       <div className="flex flex-col gap-[var(--spacing-sm)]">
-        <MemoCodePane />
+        {codeSlot}
 
         {/* Options — stacked on mobile, 2x2 on lg+. Frame-stable: container
             never resizes after pick or reveal. */}
