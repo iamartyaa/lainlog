@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { TextHighlighter } from "@/components/fancy";
-import { SPRING, PRESS } from "@/lib/motion";
 import { WidgetShell } from "@/components/viz/WidgetShell";
+import { Quiz } from "@/components/widgets/Quiz";
 
 const HL_COLOR = "color-mix(in oklab, var(--color-accent) 28%, transparent)";
 const HL_TX = { type: "spring" as const, duration: 0.9, bounce: 0 };
@@ -41,129 +40,30 @@ function CaptionCue({ children }: { children: React.ReactNode }) {
  *   microtask:  D  (the chained .then((d) => log(d)) finally fires)
  *   task:       B  (setTimeout drains last)
  *   →  A · F · H · C · E · G · D · B
+ *
+ * As of PR #58 the multi-choice / pulse / nod / verdict logic is delegated
+ * to the shared <Quiz> wrapper. We retain WidgetShell for the outer chrome
+ * (title, measurements strip, caption tone) and lift just enough state out
+ * of <Quiz> via `onAnswered` so the shell's measurements + caption reflect
+ * the post-answer state.
  * --------------------------------------------------------------------------*/
 
-// The opener snippet text lives in `./snippets.ts` (a non-client module)
-// so the RSC `page.tsx` can pre-render it through `<CodeBlock>` and pass
-// the highlighted element back in via the `codeSlot` prop. The widget
-// itself never needs to read the raw text.
-
-type Option = {
-  /** Tokens, joined with a tabular separator for display. */
-  tokens: string[];
-  /** Why a reader might pick this — for the post-answer "your model" hint. */
-  rationale: string;
-};
-
-const OPTIONS: Option[] = [
-  // 0 — correct
-  {
-    tokens: ["A", "F", "H", "C", "E", "G", "D", "B"],
-    rationale: "spec-accurate: returning Promise.resolve(D) costs two extra microtask hops",
-  },
-  // 1 — most common wrong: forgets the chained-Promise extra hops
-  {
-    tokens: ["A", "F", "H", "C", "E", "D", "G", "B"],
-    rationale: "thinks returning Promise.resolve(D) resolves immediately",
-  },
-  // 2 — forgot await is a microtask
-  {
-    tokens: ["A", "F", "G", "H", "C", "E", "D", "B"],
-    rationale: "thinks await null continues synchronously",
-  },
-  // 3 — thinks setTimeout(0) outranks microtasks
-  {
-    tokens: ["A", "F", "H", "B", "C", "E", "G", "D"],
-    rationale: "thinks setTimeout(0) wins because zero means now",
-  },
-];
-
-const CORRECT_INDEX = 0;
 const SEP = "·";
+const CORRECT_ID = "afhcegdb"; // canonical option id
+
+const OPTIONS = [
+  // correct
+  { id: "afhcegdb", tokens: ["A", "F", "H", "C", "E", "G", "D", "B"] },
+  // common wrong: forgets the chained-Promise extra hops
+  { id: "afhcedgb", tokens: ["A", "F", "H", "C", "E", "D", "G", "B"] },
+  // forgot await is a microtask
+  { id: "afghcedb", tokens: ["A", "F", "G", "H", "C", "E", "D", "B"] },
+  // thinks setTimeout(0) outranks microtasks
+  { id: "afhbcegd", tokens: ["A", "F", "H", "B", "C", "E", "G", "D"] },
+];
 
 function tokensToLine(tokens: string[]) {
   return tokens.join(` ${SEP} `);
-}
-
-function OptionButton({
-  option,
-  index,
-  picked,
-  revealed,
-  onPick,
-}: {
-  option: Option;
-  index: number;
-  picked: number | null;
-  revealed: boolean;
-  onPick: (i: number) => void;
-}) {
-  const reduce = useReducedMotion();
-  const isPicked = picked === index;
-  const isCorrect = index === CORRECT_INDEX;
-  const isWrongPick = revealed && isPicked && !isCorrect;
-  const showCorrect = revealed && isCorrect;
-
-  // Frame-stability: the button geometry never changes; only fill/stroke/text
-  // colour swap on reveal. The pulse is one-shot scale 1 → 1.04 → 1.
-  const animate =
-    showCorrect && !reduce
-      ? { scale: [1, 1.04, 1] }
-      : { scale: 1 };
-
-  return (
-    <motion.button
-      type="button"
-      onClick={() => !revealed && onPick(index)}
-      disabled={revealed}
-      aria-label={`option ${index + 1}: ${option.tokens.join(" ")}`}
-      animate={animate}
-      transition={
-        showCorrect && !reduce
-          ? { duration: 0.25, times: [0, 0.5, 1] }
-          : SPRING.snappy
-      }
-      whileTap={revealed ? undefined : { scale: 0.97 }}
-      className="font-mono rounded-[var(--radius-sm)] min-h-[44px] text-center"
-      style={{
-        padding: "10px 12px",
-        fontSize: 13,
-        letterSpacing: "0.02em",
-        background: showCorrect
-          ? "var(--color-accent)"
-          : isWrongPick
-            ? "transparent"
-            : isPicked
-              ? "color-mix(in oklab, var(--color-accent) 18%, transparent)"
-              : "color-mix(in oklab, var(--color-surface) 60%, transparent)",
-        color: showCorrect
-          ? "var(--color-bg)"
-          : isWrongPick
-            ? "var(--color-text-muted)"
-            : "var(--color-text)",
-        border: `1.5px solid ${
-          showCorrect
-            ? "transparent"
-            : isWrongPick
-              ? "var(--color-rule)"
-              : isPicked
-                ? "var(--color-accent)"
-                : "var(--color-rule)"
-        }`,
-        textDecoration: isWrongPick ? "line-through" : "none",
-        opacity: revealed && !showCorrect && !isPicked ? 0.5 : 1,
-        cursor: revealed ? "default" : "pointer",
-        transition: "background 200ms, color 200ms, border-color 200ms, opacity 200ms",
-      }}
-    >
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-        {showCorrect ? (
-          <span aria-hidden style={{ fontSize: 12 }}>✓</span>
-        ) : null}
-        <span style={{ whiteSpace: "nowrap" }}>{tokensToLine(option.tokens)}</span>
-      </span>
-    </motion.button>
-  );
 }
 
 /**
@@ -171,21 +71,21 @@ function OptionButton({
  * reader is expected to fail; the verdict steers them into the rest of the
  * post.
  *
- * One verb: predict (predict → reveal). Reveal-answer link is a parameter
- * shortcut, not a competing verb.
+ * One verb: predict (predict → reveal). The shared <Quiz> wrapper owns
+ * shuffle, focus management, sparkle/pulse/nod, and the verdict slot. This
+ * widget owns the surrounding shell (title, measurements, caption tone) and
+ * threads the answered state through `onAnswered` so the shell's caption +
+ * measurements track the same lifecycle the wrapper already drives.
  *
- * Frame stability (R6): code pane has `min-height`; verdict slot has
- * `min-height` reserved before any answer is given. No layout shift on
- * pick. Correct option pulses scale 1 → 1.04 → 1 once on reveal.
+ * Frame stability (R6): code pane has its own min-height via <CodeBlock>;
+ * <Quiz>'s verdict slot reserves space before the answer is given.
  *
- * Mobile-first: 360px target. Options stack vertically on <lg, 2×2 on lg+.
- * Snippet wraps to its own scroll container only as a last resort.
+ * Mobile-first: 360px target. <Quiz> stacks 1-col on narrow containers and
+ * shifts to 2-col at the `quiz` container query breakpoint.
  *
  * Code rendering: the article's RSC `page.tsx` pre-renders the opener
  * snippet through `<CodeBlock>` (Shiki, dual-theme) and passes the
- * resulting element in via `codeSlot`. Keeps Shiki out of the client
- * bundle and lets this widget stay a `"use client"` component for the
- * pick/reveal state.
+ * resulting element in via `codeSlot`.
  */
 type Props = {
   /** Pre-rendered Shiki block for the opener snippet (see page.tsx). */
@@ -193,46 +93,23 @@ type Props = {
 };
 
 export function PredictTheStart({ codeSlot }: Props) {
-  const [picked, setPicked] = useState<number | null>(null);
-  const [revealed, setRevealed] = useState(false);
-
-  const isCorrect = picked === CORRECT_INDEX;
-
-  function lockIn() {
-    if (picked === null) return;
-    setRevealed(true);
-  }
-
-  function revealUnguessed() {
-    setPicked(null);
-    setRevealed(true);
-  }
-
-  function reset() {
-    setPicked(null);
-    setRevealed(false);
-  }
+  // Mirror just enough of <Quiz>'s internal state to drive the WidgetShell
+  // measurements + caption. <Quiz> owns the canonical reveal state; we listen
+  // via onAnswered to flip our own.
+  const [answered, setAnswered] = useState<null | { correct: boolean }>(null);
 
   return (
     <WidgetShell
       title="predict the output"
-      measurements={revealed ? (isCorrect ? "got it" : "most miss this") : "8 logs · 4 queues"}
+      measurements={
+        answered === null
+          ? "8 logs · 4 queues"
+          : answered.correct
+            ? "got it"
+            : "most miss this"
+      }
       caption={
-        revealed ? (
-          isCorrect ? (
-            <>
-              <CaptionCue>You&apos;ve seen this before.</CaptionCue> Let&apos;s
-              see <em>why</em> it produces this output — the rest of the post is
-              the trace, line by line.
-            </>
-          ) : (
-            <>
-              <CaptionCue>Most readers miss this.</CaptionCue> Now we&apos;ll
-              learn <em>how</em> this output emerges. Keep this snippet open —
-              every section below points back to a line of it.
-            </>
-          )
-        ) : (
+        answered === null ? (
           <>
             <CaptionCue>Predict the output.</CaptionCue> Pick the order{" "}
             <code className="font-mono">console.log</code> will print. The
@@ -240,135 +117,70 @@ export function PredictTheStart({ codeSlot }: Props) {
             <code className="font-mono">await</code>. Most readers get this
             wrong on the first try.
           </>
+        ) : answered.correct ? (
+          <>
+            <CaptionCue>You&apos;ve seen this before.</CaptionCue> Let&apos;s
+            see <em>why</em> it produces this output — the rest of the post is
+            the trace, line by line.
+          </>
+        ) : (
+          <>
+            <CaptionCue>Most readers miss this.</CaptionCue> Now we&apos;ll
+            learn <em>how</em> this output emerges. Keep this snippet open —
+            every section below points back to a line of it.
+          </>
         )
       }
       captionTone="prominent"
-      controls={
-        <div className="flex flex-wrap items-center justify-center gap-[var(--spacing-sm)] w-full">
-          {!revealed ? (
-            <>
-              <motion.button
-                type="button"
-                onClick={lockIn}
-                disabled={picked === null}
-                className="font-sans rounded-[var(--radius-md)] min-h-[44px]"
-                style={{
-                  padding: "8px 18px",
-                  fontSize: "var(--text-ui)",
-                  background:
-                    picked === null
-                      ? "color-mix(in oklab, var(--color-accent) 30%, transparent)"
-                      : "var(--color-accent)",
-                  color: "var(--color-bg)",
-                  border: "none",
-                  cursor: picked === null ? "not-allowed" : "pointer",
-                  opacity: picked === null ? 0.6 : 1,
-                  transition: "opacity 200ms, background 200ms",
-                }}
-                {...(picked === null ? {} : PRESS)}
-              >
-                lock in ▸
-              </motion.button>
-              <button
-                type="button"
-                onClick={revealUnguessed}
-                className="font-sans min-h-[44px]"
-                style={{
-                  padding: "8px 12px",
-                  fontSize: "var(--text-small)",
-                  color: "var(--color-text-muted)",
-                  background: "transparent",
-                  border: "none",
-                  textDecoration: "underline",
-                  textDecorationStyle: "dotted",
-                  textUnderlineOffset: 4,
-                  cursor: "pointer",
-                }}
-              >
-                reveal answer
-              </button>
-            </>
-          ) : (
-            <motion.button
-              type="button"
-              onClick={reset}
-              className="font-sans rounded-[var(--radius-md)] min-h-[44px]"
-              style={{
-                padding: "8px 16px",
-                fontSize: "var(--text-ui)",
-                color: "var(--color-text-muted)",
-                background: "transparent",
-                border: "1px solid var(--color-rule)",
-              }}
-              {...PRESS}
-            >
-              try again
-            </motion.button>
-          )}
-        </div>
-      }
     >
       <div className="flex flex-col gap-[var(--spacing-sm)]">
         {codeSlot}
 
-        {/* Options — stacked on mobile, 2x2 on lg+. Frame-stable: container
-            never resizes after pick or reveal. */}
-        <div
-          className="grid gap-[var(--spacing-2xs)]"
-          style={{
-            gridTemplateColumns: "1fr",
-          }}
-        >
-          <style>{`
-            @media (min-width: 640px) {
-              .bs-predict-options {
-                grid-template-columns: 1fr 1fr !important;
-              }
-            }
-          `}</style>
-          <div
-            className="bs-predict-options grid gap-[var(--spacing-2xs)]"
-            style={{ gridTemplateColumns: "1fr" }}
-          >
-            {OPTIONS.map((opt, i) => (
-              <OptionButton
-                key={i}
-                option={opt}
-                index={i}
-                picked={picked}
-                revealed={revealed}
-                onPick={setPicked}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Verdict slot — fixed height so the layout doesn't jump on reveal. */}
-        <div style={{ minHeight: "2.25em" }}>
-          <AnimatePresence initial={false} mode="wait">
-            {revealed ? (
-              <motion.div
-                key="verdict"
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={SPRING.snappy}
+        <Quiz
+          question={null}
+          options={OPTIONS.map((opt) => ({
+            id: opt.id,
+            label: (
+              <span
                 className="font-mono"
                 style={{
-                  fontSize: 12,
-                  color: "var(--color-text-muted)",
-                  lineHeight: 1.6,
+                  fontSize: 13,
+                  letterSpacing: "0.02em",
+                  whiteSpace: "nowrap",
                 }}
               >
-                <span style={{ color: "var(--color-accent)" }}>output</span>
-                {"  "}
-                <span style={{ color: "var(--color-text)" }}>
-                  {tokensToLine(OPTIONS[CORRECT_INDEX].tokens)}
-                </span>
-              </motion.div>
-            ) : null}
-          </AnimatePresence>
-        </div>
+                {tokensToLine(opt.tokens)}
+              </span>
+            ),
+          }))}
+          correctId={CORRECT_ID}
+          onAnswered={(correct) => setAnswered({ correct })}
+          rightVerdict={
+            <>
+              <span style={{ color: "var(--color-accent)" }}>output</span>
+              {"  "}
+              <span
+                className="font-mono"
+                style={{ color: "var(--color-text)" }}
+              >
+                {tokensToLine(OPTIONS[0].tokens)}
+              </span>
+            </>
+          }
+          wrongVerdict={
+            <>
+              <span style={{ color: "var(--color-accent)" }}>output</span>
+              {"  "}
+              <span
+                className="font-mono"
+                style={{ color: "var(--color-text)" }}
+              >
+                {tokensToLine(OPTIONS[0].tokens)}
+              </span>
+            </>
+          }
+          randomize
+        />
       </div>
     </WidgetShell>
   );
