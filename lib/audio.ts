@@ -62,15 +62,20 @@ export type SoundName =
  *
  * Earlier revisions had per-sound multipliers (Copy 0.55, Click 0.4, etc.) but
  * user feedback wanted "all sounds equally loud, no exceptions." The 0.5
- * baseline is the midpoint of the prior range and gives the navigation tap
- * the amplitude bump it needed.
+ * baseline that landed in PR #64 turned out to be too quiet on typical
+ * laptop speakers (audible only near full system volume), so this constant
+ * was bumped to 1.0 in PR #65 — passing the patch's native gain through
+ * unattenuated. If the next round of feedback says it's still too quiet,
+ * the next lever is bumping the patch-level `gain` values in
+ * `.web-kits/minimal.ts` per-sound (or going above 1.0 here, with the
+ * caveat that values >1 risk WebAudio clipping on percussive transients).
  *
- * Page-Exit was retired in this pass: navigation now plays a single Page-Enter
+ * Page-Exit was retired in PR #64: navigation plays a single Page-Enter
  * "dub" rather than the previous Page-Exit + Page-Enter "dub-dub" pair.
  *
  * If you change this constant, also update §6 of `docs/audio-playbook.md`.
  */
-const UNIFORM_GAIN = 0.5;
+const UNIFORM_GAIN = 1.0;
 const GAIN_MULTIPLIER: Record<SoundName, number> = {
   Copy: UNIFORM_GAIN,
   Success: UNIFORM_GAIN,
