@@ -60,7 +60,7 @@ The closer should refer back to the opener: *"Run the opener again. The order is
 
 ## 2. External primitives we've integrated
 
-Four ship in articles (`TextHighlighter`, `MediaBetweenText`, `VerticalCutReveal`, `DragElements`). One — `ScrambleIn` — is installed but doesn't yet have a real article home; it landed during the gmail polish pass on a `NormalisationMap` that turned out not to need it (the rewritten widget shows transformations explicitly, which teaches more than a scramble dramatising "something happened"). The primitive stays in the folder waiting for a post that's genuinely *about* decoding. Keep this folder small and deliberate — every new primitive is overhead, and a primitive in search of a use is the worst kind of overhead.
+Five ship in articles (`TextHighlighter`, `MediaBetweenText`, `VerticalCutReveal`, `DragElements`, `Stack`). One — `ScrambleIn` — is installed but doesn't yet have a real article home; it landed during the gmail polish pass on a `NormalisationMap` that turned out not to need it (the rewritten widget shows transformations explicitly, which teaches more than a scramble dramatising "something happened"). The primitive stays in the folder waiting for a post that's genuinely *about* decoding. Keep this folder small and deliberate — every new primitive is overhead, and a primitive in search of a use is the worst kind of overhead.
 
 ### `TextHighlighter` (✅ ubiquitous)
 
@@ -151,6 +151,21 @@ It was first slotted into the gmail post's normalisation widget. That widget was
 - **Accessibility**: `role="radiogroup"`, each option `role="radio"` with `aria-checked`. Roving `tabindex`. ArrowDown / ArrowRight → next, ArrowUp / ArrowLeft → prev. Enter / Space invokes the button. Verdict region is `aria-live="polite"`.
 - **Migration note**: `PredictTheStart` is **not** migrated to `<Quiz>` yet. The wrapper is intentionally a separate primitive first; the migration is a future pass.
 
+### `Stack` (🟡 vendored — currently unused; primitive still available for future widgets)
+
+`components/fancy/stack-cards.tsx`. Vendored from [React Bits](https://reactbits.dev/components/stack). An absolutely-positioned card pile with z-ordering — each card sits on top of the previous via `transformOrigin: '90% 90%'` plus a `rotateZ` and `scale` derived from depth. Optional drag-to-reorder, optional autoplay rotation. Originally adopted for `CallStackECs` to visualise the JS execution-context pile, but neither `messy` nor `tidy` mode read clearly enough — the deck-of-cards metaphor obscured the data structure. `CallStackECs` v5 now renders ECs as a plain vertical pile (`flex-col-reverse` + `<AnimatePresence mode="popLayout">`); the Stack primitive stays vendored for a future widget where the deck-of-cards read genuinely fits.
+
+- **Use case**: any "stack with depth that the runtime owns" mechanic — call stacks, undo/redo states, layered modal contexts. The teaching moment is *"a thing pushes onto the top of a pile, the pile is taller now"*; Stack lets the pile grow without the *outer container* growing.
+- **Frame-stability win**: the Stack's outer `<div>` is a fixed-size relative box; every card is `absolute inset-0`. Push two more cards or pop them — the bounding box is identical. Perfect for widgets where dynamic depth would otherwise force sibling regions to reflow.
+- **Bytesize-specific overrides**:
+  - `disableDrag` prop added — when `true`, cards never receive drag handlers. The runtime owns push/pop in CallStackECs; the user shouldn't move cards arbitrarily (cf. the `DragElements` lesson — drag destroys position-as-meaning).
+  - `mode?: "messy" | "tidy"` prop added — picks the layout grammar for the pile. `"messy"` (default) preserves upstream behaviour: cards rotate around `transformOrigin: 90% 90%` and scale per depth; reads as a casually tossed pile. `"tidy"` zeroes rotation and offsets each card behind the top *upward* by `depth * 12 px` with `transformOrigin: top center`, so the top edge of every lower card peeks above the active one — a deck of cards on a desk. Pick **tidy** when depth identity matters to the reader (call stacks: "is there a frame underneath multiply?"); pick **messy** when only the top is the question. The Stack primitive owns position + rotation + scale; depth-aware borders/backgrounds are a caller concern (`CallStackECs` paints a terracotta border-saturation gradient on each card body to amplify the depth read without drop-shadows).
+  - `useReducedMotion()` branch — under reduced motion, cards mount in their final stacked layout with zero rotation, zero stagger and unit scale; springs collapse to instant. (DESIGN.md §9.)
+  - CSS inlined — no separate `Stack.css` import. Tailwind utility classes plus inline `style={{ perspective: 600 }}`.
+  - Default `cards = []` — upstream defaults to four Unsplash placeholder images; we drop them so the bundle has no network image dependency.
+- **Anti-uses**: not for sequenced concepts where order matters and the reader reads the order linearly (queues, traces, ordered tracks). Stack obscures every card except the top one — that's a feature for "show me what's on top" but a bug for "show me the whole sequence." Use static layout + `<AnimatePresence>` for those (cf. the `DragElements` anti-use note above; the same logic applies in reverse here — Stack is the right reach when the *top frame* is the question, the wrong reach when the *whole order* is the question).
+- **Caller contract**: pass `cards: ReactNode[]` with bottom-of-stack first, top-of-stack last. The last card in the array is visually on top. The Stack handles z-ordering, rotation, and scale; the caller owns each card's body styling.
+
 ### `ClickSpark` (✅ shipped — internal to `<Quiz>`)
 
 `components/fancy/click-spark.tsx`. Vendored from [React Bits](https://reactbits.dev/animations/click-spark). Canvas-based radial spark burst on click — N short lines fan out from the click point, each travelling `sparkRadius` px before fading.
@@ -203,7 +218,8 @@ Every rating is against bytesize's editorial-calm voice (DESIGN.md §1: *precise
 |---|---|---|
 | **Media Between Text** | ✅ shipped | Surgical use only — one per article. See §2.3. |
 | **Drag Elements** | ⚠️ installed, niche | Not a good hero interaction. See §2.2 for constraints. |
-| **Stacking Cards** | 🔹 niche | bytesize isn't a card-grid site (DESIGN.md §12 bans card grids on home), but for *within* a post this could work for a "peel through six traps" reveal. Reader has to scroll to advance — teaches pacing. Still tentative. |
+| **Stack** | ✅ shipped | Vendored as `components/fancy/stack-cards.tsx` for `CallStackECs` (hoisting/TDZ post). Used to visualise an EC pile whose *outer container size is invariant* regardless of depth — the absolute-positioned cards rotate + scale per depth instead of consuming layout space. See §2 entry. |
+| **Stacking Cards** | 🔹 niche | Distinct from the shipped `Stack` above — this is the scroll-to-peel variant. For *within* a post this could work for a "peel through six traps" reveal. Reader has to scroll to advance — teaches pacing. Still tentative. |
 | **Marquee Along SVG Path** | 🔹 niche | The path can be the teaching object: e.g. HTTP request/response flow along a path. Rare but powerful when it fits. |
 | **Float** | 🔹 niche | Subtle ambient float on a single element. 90% decorative; 10% of the time it hints at "untethered / drifting" (e.g. an agent exploring). Use the 10%. |
 | **Simple Marquee** | 🔹 niche | Scrolling headline crawl. Almost never the right reach for editorial-calm. Exception: a literal ticker of shipped CVEs or incidents. |
