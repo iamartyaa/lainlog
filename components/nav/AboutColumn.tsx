@@ -1,5 +1,6 @@
 import { ReaderCount } from "@/components/nav/ReaderCount";
 import { WanderingEyes } from "@/components/loading-ui/wandering-eyes";
+import { ScriptedGazeEyes } from "@/components/loading-ui/scripted-gaze-eyes";
 import { SITE_ABOUT, SITE_NAME } from "@/lib/site";
 
 const COPYRIGHT_START = 2026;
@@ -79,37 +80,43 @@ export function AboutColumn({ readerCount }: AboutColumnProps) {
         {SITE_ABOUT}
       </p>
 
-      {/* Desktop-only WanderingEyes slot — centered both axes between the
-          subtitle paragraph and the meta row. flex-1 grows to fill the
-          remaining vertical space; items-center + justify-center balance
-          the eyes inside that space (equal gap above + below, horizontal
-          mid). Sized h-14 / 126×56 px per 9:4. White eye disc with a 1 px
-          black outline (so it reads on the near-white light theme) and a
-          solid black pupil. 8s cadence sits in the editorial-calm register
-          from svg-cover-playbook §14. */}
-      <div className="hidden lg:flex flex-1 items-center justify-center">
-        <WanderingEyes
-          aria-label=""
-          aria-hidden
-          role="presentation"
-          className="h-14 w-[126px] [--eye-color:#ffffff] [--pupil-color:#000000] [--eye-outline-color:#000000] [--eye-outline-width:1px]"
-          style={{
-            // CSS custom property consumed by the upstream component to
-            // pace both keyframe loops (move + blink).
-            "--duration": "8s",
-          } as React.CSSProperties}
-        />
-      </div>
+      {/* Bottom-pinned group: desktop scripted-gaze eyes + meta row. The
+          wrapper's `mt-auto` pushes the pair to the bottom of the aside
+          flex-col so the eyes sit just above the reader-count matrix
+          rather than floating in vertical center. The eyes get
+          `pb-[var(--spacing-md)]` for a tight ~16 px gap above the meta
+          row, and the meta row keeps its prior `pt-[var(--spacing-2xl)]`
+          so spacing between subtitle and meta remains identical when
+          the eyes are hidden (mobile / reduced-motion mount state). */}
+      <div className="mt-auto">
+        {/* Desktop-only ScriptedGazeEyes — runs an 8-phase directed
+            sequence (right → left → forward → squint → enlarge → down →
+            hold → return) that pulls the reader's eye toward the
+            ReaderCount matrix below. Sized h-14 / 126×56 px per 9:4.
+            White eye disc with a 1 px black outline (so it reads on
+            the near-white light theme) and a solid black pupil. 14 s
+            loop sits in the editorial-calm register from
+            svg-cover-playbook §14. */}
+        <div className="hidden lg:flex justify-center pb-[var(--spacing-md)]">
+          <ScriptedGazeEyes
+            aria-label=""
+            aria-hidden
+            role="presentation"
+            className="h-14 w-[126px] [--eye-color:#ffffff] [--pupil-color:#000000] [--eye-outline-color:#000000] [--eye-outline-width:1px]"
+            duration="14s"
+          />
+        </div>
 
-      {/* Bottom-left meta row — reader count + copyright */}
-      <div
-        className="mt-auto pt-[var(--spacing-2xl)] flex items-center gap-[var(--spacing-lg)] font-mono"
-        style={{ fontSize: "var(--text-small)", color: "var(--color-text-muted)" }}
-      >
-        <ReaderCount count={readerCount} />
-        <span className="tabular-nums" aria-label={`copyright ${years}`}>
-          © {years}
-        </span>
+        {/* Bottom-left meta row — reader count + copyright */}
+        <div
+          className="pt-[var(--spacing-2xl)] flex items-center gap-[var(--spacing-lg)] font-mono"
+          style={{ fontSize: "var(--text-small)", color: "var(--color-text-muted)" }}
+        >
+          <ReaderCount count={readerCount} />
+          <span className="tabular-nums" aria-label={`copyright ${years}`}>
+            © {years}
+          </span>
+        </div>
       </div>
     </aside>
   );
