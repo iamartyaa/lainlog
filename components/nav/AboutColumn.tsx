@@ -1,6 +1,5 @@
 import { ReaderCount } from "@/components/nav/ReaderCount";
 import { WanderingEyes } from "@/components/loading-ui/wandering-eyes";
-import { ScriptedGazeEyes } from "@/components/loading-ui/scripted-gaze-eyes";
 import { SITE_ABOUT, SITE_NAME } from "@/lib/site";
 
 const COPYRIGHT_START = 2026;
@@ -94,18 +93,19 @@ export function AboutColumn({ readerCount }: AboutColumnProps) {
             identical to before this change. On lg+ the eyes appear
             centered above ReaderCount with a small gap. */}
         <div className="flex flex-col items-center gap-[var(--spacing-sm)]">
-          {/* Wrapper div owns the responsive show/hide so the eyes only
-              render on lg+. (Passing `hidden lg:block` directly to
-              ScriptedGazeEyes mixes with the component's internal
-              `inline-block` and the cascade can land either way; a
-              wrapper avoids that ambiguity.) */}
+          {/* Same WanderingEyes ornament as the mobile heading-row
+              instance, just sized for the desktop slot (h-14 / 126×56
+              px per 9:4). Wrapper div owns the responsive show/hide
+              so exactly one ornament paints per breakpoint. */}
           <div className="hidden lg:block">
-            <ScriptedGazeEyes
+            <WanderingEyes
               aria-label=""
               aria-hidden
               role="presentation"
               className="h-14 w-[126px] [--eye-color:#ffffff] [--pupil-color:#000000] [--eye-outline-color:#000000] [--eye-outline-width:1px]"
-              duration="10s"
+              style={{
+                "--duration": "8s",
+              } as React.CSSProperties}
             />
           </div>
           <ReaderCount count={readerCount} />
