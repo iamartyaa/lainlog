@@ -94,15 +94,17 @@ export function AboutColumn({ readerCount }: AboutColumnProps) {
             centered above ReaderCount with a small gap. */}
         <div className="flex flex-col items-center gap-[var(--spacing-sm)]">
           {/* Same WanderingEyes ornament as the mobile heading-row
-              instance, just sized for the desktop slot (h-14 / 126×56
-              px per 9:4). Wrapper div owns the responsive show/hide
-              so exactly one ornament paints per breakpoint. */}
+              instance, in the SAME size (h-9 / 81×36 px per 9:4) so
+              outline thickness and animation travel-distance per
+              second match exactly between breakpoints. Wrapper div
+              owns the responsive show/hide so exactly one ornament
+              paints per breakpoint. */}
           <div className="hidden lg:block">
             <WanderingEyes
               aria-label=""
               aria-hidden
               role="presentation"
-              className="h-14 w-[126px] [--eye-color:#ffffff] [--pupil-color:#000000] [--eye-outline-color:#000000] [--eye-outline-width:1px]"
+              className="h-9 w-[81px] [--eye-color:#ffffff] [--pupil-color:#000000] [--eye-outline-color:#000000] [--eye-outline-width:1px]"
               style={{
                 "--duration": "8s",
               } as React.CSSProperties}
