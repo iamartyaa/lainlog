@@ -79,14 +79,15 @@ export function AboutColumn({ readerCount }: AboutColumnProps) {
         {SITE_ABOUT}
       </p>
 
-      {/* Desktop-only WanderingEyes slot — between subtitle and meta row.
-          Sized at h-14 / 126×56 px on lg+ per the 9:4 aspect ratio. The lg
-          heading is ~72 px font with a ~58 px visual block; h-14 sits just
-          below it, matching the mobile relationship. White eye disc with a
-          1 px black outline (so it reads on the near-white light theme)
-          and a solid black pupil. 8s cadence sits in the editorial-calm
-          register from svg-cover-playbook §14. */}
-      <div className="mt-[var(--spacing-lg)] hidden lg:flex items-center">
+      {/* Desktop-only WanderingEyes slot — centered both axes between the
+          subtitle paragraph and the meta row. flex-1 grows to fill the
+          remaining vertical space; items-center + justify-center balance
+          the eyes inside that space (equal gap above + below, horizontal
+          mid). Sized h-14 / 126×56 px per 9:4. White eye disc with a 1 px
+          black outline (so it reads on the near-white light theme) and a
+          solid black pupil. 8s cadence sits in the editorial-calm register
+          from svg-cover-playbook §14. */}
+      <div className="hidden lg:flex flex-1 items-center justify-center">
         <WanderingEyes
           aria-label=""
           aria-hidden
