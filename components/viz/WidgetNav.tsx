@@ -34,7 +34,7 @@ type WidgetNavProps = {
 };
 
 /**
- * WidgetNav — the canonical step-controls primitive for bytesize widgets.
+ * WidgetNav — the canonical step-controls primitive for lainlog widgets.
  *
  * Visual: prev / play / next sit as a joined pill row. A single `motion.div`
  * indicator pill morphs between the active button position via

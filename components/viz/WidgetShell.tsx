@@ -21,7 +21,7 @@ type Props = {
 };
 
 /**
- * WidgetShell — the canonical skeleton for every bytesize widget. DESIGN.md §7:
+ * WidgetShell — the canonical skeleton for every lainlog widget. DESIGN.md §7:
  * <FullBleed><Figure><Header><Canvas><Controls></Figure></FullBleed>.
  *
  * The outer wrapper declares `container-type: inline-size` so nested widgets

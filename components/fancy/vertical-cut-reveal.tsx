@@ -69,7 +69,7 @@ function segment(text: string): Segment[] {
  * across the line. Motion uses `transform: translateY` + `opacity` only
  * (DESIGN.md §9). Overflow-clipped container hides the pre-reveal state.
  *
- * Used in bytesize for one-shot climax moments (e.g. a post's thesis
+ * Used in lainlog for one-shot climax moments (e.g. a post's thesis
  * sentence). Not ambient. Reduced-motion is handled globally by
  * MotionConfig reducedMotion="user" — transforms collapse to instant.
  */

@@ -5,8 +5,8 @@
  * (TypeScript + CSS variant). Canvas-based radial spark burst on click,
  * scoped to the wrapped subtree.
  *
- * Bytesize override: default `sparkColor` is `var(--color-accent)` (terracotta)
- * instead of the upstream `'#fff'`, since bytesize is dark-canvas-default and
+ * lainlog override: default `sparkColor` is `var(--color-accent)` (terracotta)
+ * instead of the upstream `'#fff'`, since lainlog is dark-canvas-default and
  * the accent is the only colour with semantic load (DESIGN.md §3 / §10).
  *
  * Reduced-motion users get no canvas — the wrapper renders children only and
