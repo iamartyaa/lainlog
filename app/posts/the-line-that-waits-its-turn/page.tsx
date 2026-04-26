@@ -345,12 +345,9 @@ export default function TheLineThatWaitsItsTurn() {
         </P>
         <P>
           The widget below makes the priority rule playable. Build a queue:
-          tap <em>+ microtask</em> a few times, then <em>+ macrotask</em>, then{" "}
+          tap <em>+ micro</em> a few times, then <em>+ macro</em>, then{" "}
           <em>Run</em> — the console writes the firing order so you can see
-          microtasks drain first. Then add a{" "}
-          <em>+ self-scheduling micro</em>: a microtask that schedules another
-          microtask. The macrotask never gets its turn — that&apos;s
-          starvation, made visible without freezing your tab.
+          microtasks drain first.
         </P>
       </div>
 
@@ -358,13 +355,17 @@ export default function TheLineThatWaitsItsTurn() {
 
       <div>
         <P>
-          Each loop tick, the engine drains every pending microtask before
-          touching macrotasks. With a self-scheduling microtask in flight, the
-          microtask queue keeps re-filling itself — the macrotask waits and
-          waits, even though the engine isn&apos;t doing real work, just
-          servicing the queue. Same rule, different consequence: the priority
-          that lets <Code>await</Code> feel seamless is the same priority that
-          lets one runaway Promise hold a tab hostage.
+          Each loop tick, the engine drains every pending microtask{" "}
+          <em>before</em> it touches macrotasks. Add a few of each and click{" "}
+          <em>Run</em> to feel the priority.{" "}
+          <HL>Now click <em>+ self-sched</em></HL> — a microtask whose body
+          schedules another microtask. Every time the engine drains it, the
+          queue grows by one. The microtask queue <em>never empties</em>, so
+          the loop never moves to the macrotask queue. Macrotasks (timers,
+          fetch responses, the next render frame) are stranded.{" "}
+          <HL>That&apos;s microtask starvation:</HL> a runaway Promise chain
+          stalls everything else, even though the runtime isn&apos;t actually
+          busy — just servicing its own queue.
         </P>
         <Aside>
           Node has a different inventory but the same hazard. Its loop runs in

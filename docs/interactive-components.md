@@ -321,6 +321,101 @@ Every widget wraps in `<WidgetShell>`. Consistent header/canvas/controls/caption
 - **Props you'll actually pass**: `value`, `total`, `onChange`, optionally `playable={false}` (for non-autoplay widgets), `playInterval` (custom cadence), `counterNoun` (when "step" reads wrong), `ariaLabel`.
 - **Stepper deprecation**: `<Stepper>` is preserved as a shim that forwards to `WidgetNav` for one release, so external imports survive. Migrate your callsite to `<WidgetNav>` directly when you touch the widget.
 
+### 4.7 Mobile-first widget building (v2 — added after the queue-race + call-stack-ECs redesigns)
+
+The two widgets in [`MicrotaskStarvation`](../app/posts/the-line-that-waits-its-turn/widgets/MicrotaskStarvation.tsx) and [`CallStackECs`](../app/posts/how-javascript-reads-its-own-future/widgets/CallStackECs.tsx) shipped first as desktop-shaped layouts that broke on mobile and changed the shell's outer size during interaction. The user's note was clear: *"for mobile devices we are able to render it nicely on the entire screen and the layout or the size of the overall component doesn't change on interactions."* These guidelines codify the rebuild so future widgets start mobile-first by default.
+
+**1. The 360 px first rule.** Every widget is designed for a 360 px viewport before any larger breakpoint. Ergonomic minimums:
+- Tap target ≥ 44 × 44 CSS px on every interactive element (`min-h-[44px]` plus padding sized for the glyph).
+- Body / chip / line font size ≥ 11 px; UI-control font size ≥ 12 px.
+- No element is clipped at 360 px. Buttons may use icon + short label (e.g. `↻ self-sched`) instead of full sentences so the controls row stays single-line.
+- Horizontal scroll is permitted **inside** a bounded region (e.g. `overflow-x-auto` on a queue strip when chips exceed viewport width) but **never** on the widget shell itself.
+
+**2. R6 frame-stability rule for widgets.** The shell's `width × height` MUST NOT change during interaction. Every region whose contents grow or shrink (queues filling, console writing, EC stack pushing, verdict revealing) reserves a fixed `min-height` so growth happens *inside* the reserved space, not by pushing siblings around. Variable content beyond the reservation scrolls **internally** (e.g. console pane scrolls past 6 lines without growing). Concrete pattern from `MicrotaskStarvation`:
+
+```css
+.bs-qrace-strip { min-height: 168px; overflow-x: auto; }   /* micro queue */
+.bs-qrace-console { min-height: 148px; max-height: 192px; overflow-y: auto; }
+```
+
+Forbidden: animating `width`, `height`, `top`, `left`, `viewBox`, or any geometric SVG attribute on the shell or any region container. Use `transform`, `opacity`, and `motion.div` `layout` only.
+
+**3. Container queries over viewport breakpoints.** Widgets sit inside articles whose container width is narrower than the viewport. Drive layout flips off the *render context*, not the device:
+
+```css
+@container widget (min-width: 720px) { … }   /* not @media (min-width: 1024px) */
+```
+
+`WidgetShell` already declares `container-type: inline-size`. The 720 px breakpoint is the canonical "ok, we have room for two columns" threshold — same as `CallStackECs` and `MicrotaskStarvation`.
+
+**4. Vertical-stack-on-mobile, side-by-side-on-desktop pattern.** Author the mobile shape first; promote to two columns at the container breakpoint. The mobile-only down-glyph (`↓` between code and stack panes in `CallStackECs`) is *always rendered* and toggled visible / hidden via CSS so `:nth-child` indices stay stable across both layouts.
+
+```
+mobile (< 720 px)            desktop (≥ 720 px)
+┌───────────────┐            ┌──────────┬──────────┐
+│ controls      │            │ controls (full row)  │
+├───────────────┤            ├──────────┼──────────┤
+│ region A      │            │ region A │ region B │
+├───────────────┤            ├──────────┤ (spans)  │
+│   ↓ glyph     │            │ region C │          │
+├───────────────┤            └──────────┴──────────┘
+│ region B      │
+├───────────────┤
+│ region C      │
+└───────────────┘
+```
+
+**5. Code rendering inside widgets — the RSC + `codeSlot` pattern.** Use [`<CodeBlock>`](../components/code/CodeBlock.tsx) for any syntax-highlighted snippet. CodeBlock is a server component (async); widgets are typically `"use client"`. The pattern: `page.tsx` (RSC) renders the `<CodeBlock>` and passes it to the widget as a `codeSlot: ReactNode` prop. The widget overlays interactive layers (e.g. an active-line wash) on top with absolute positioning + `useLayoutEffect` + `ResizeObserver` to measure the rendered Shiki `span.line` rows. Never re-implement Shiki client-side; never animate the Shiki HTML itself.
+
+```tsx
+// page.tsx (RSC)
+<CallStackECs codeSlot={<CodeBlock code={SNIPPET} lang="javascript" />} />
+
+// widget.tsx ("use client")
+type Props = { codeSlot?: ReactNode };
+// in JSX:
+<div ref={codeSlotRef} className="codeslot">
+  <ActiveLineWash rect={washRect} />
+  {codeSlot}
+</div>
+```
+
+Languages registered in [`lib/shiki.ts`](../lib/shiki.ts): `typescript`, `tsx`, `javascript`, `jsx`, `bash`, `python`, `json`, `http`, `html`. Anything else: add it there in a separate PR before using.
+
+**Caveat — snippet exports must NOT live in the client widget file.** Next wraps every export from a `"use client"` module as a client reference, including string constants. Importing `CALL_STACK_SNIPPET` from the client widget into the RSC page hands `<CodeBlock code={...}>` a *function* instead of a string, which prerender catches as `TypeError: a.replace is not a function`. Put the snippet in its own `*.ts` file alongside the widget (e.g. `CallStackSnippet.ts`, no `"use client"`) and import it from both sides. See `app/posts/how-javascript-reads-its-own-future/widgets/CallStackSnippet.ts` for the working example.
+
+**6. Reduced-motion contract for widgets.** Every widget MUST branch on `useReducedMotion()`. The reduced path collapses to: opacity-only crossfades; `pathLength` reveals teleport to 1; `layoutId` indicators appear in their final position rather than gliding. Pattern:
+
+```tsx
+const reduce = useReducedMotion();
+<motion.div
+  initial={reduce ? { opacity: 0 } : { opacity: 0, y: -16 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={reduce ? { duration: 0 } : SPRING.smooth}
+/>
+```
+
+`setTimeout` / `setInterval` cadences should also gate on `reduce` — auto-step cadences double, fire-delay falls to 0, console-caret blink stops.
+
+**7. Accessibility minimums.**
+- `aria-live="polite"` on regions that announce state changes — tick counter, current EC, console pane, queue length.
+- `role="group"` + `aria-label` on every controls strip.
+- `role="radiogroup"` / `role="radio"` for option groups (premise quiz, scenario tabs).
+- Focus rings preserved (no `outline: none` without a replacement). Tap targets ≥ 44 × 44 px (rule 1).
+- Keyboard nav: arrow keys + Enter for ordered controls; Tab to focus and Enter / Space to fire for buttons.
+- State-dependent `aria-label`s name the *current* state, never a future outcome.
+
+**8. Frame-stability checklist (run before push).**
+- [ ] Every variable-content region has a fixed `min-height`.
+- [ ] No element animates `width` / `height` / `viewBox` / `top` / `left` / geometric SVG attributes. Only `transform`, `opacity`, `pathLength`, motion-derived `cx` / `x1`.
+- [ ] Outer shell renders identically at 360 px and at the lg breakpoint between idle / mid-step / post-step. (Open dev-tools, set viewport to 360 × 800, screenshot at idle, click through, screenshot again — outer rect identical.)
+- [ ] No horizontal overflow on the widget shell at 360 px.
+- [ ] Reduced-motion path verified: animation collapses without breaking layout.
+- [ ] Tap targets all ≥ 44 px high — including the small icon-only buttons.
+- [ ] Container queries (not viewport `@media`) drive every layout flip.
+
+This sub-section is the doc anchor future widget tasks will cite. Cross-reference: [`mobile-first-verification.md`](./mobile-first-verification.md) for the project-wide mobile audit script.
+
 ## 5. Anti-patterns (from actual review feedback)
 
 ### Auto-playing on mount

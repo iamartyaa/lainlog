@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { TextHighlighter } from "@/components/fancy";
 import { SPRING, PRESS } from "@/lib/motion";
@@ -23,26 +23,30 @@ function CaptionCue({ children }: { children: React.ReactNode }) {
 }
 
 /* ---------------------------------------------------------------------------
- * MicrotaskStarvation — "Queue Race".
+ * MicrotaskStarvation — "Queue Race" v2 (mobile-first, frame-stable).
  *
- * State-machine simulation of the event-loop priority rule:
- *   On each tick:  drain ALL microtasks  →  run ONE macrotask  →  repeat.
+ * Layout:
+ *   - Mobile (< 720 px container): vertical stack, fixed reserved heights for
+ *     every region. No horizontal scroll on the shell. Buttons stay one row;
+ *     queue chips overflow horizontally inside their own bounded strip.
+ *   - lg (≥ 720 px container, via @container query): two columns — queues +
+ *     console side-by-side under the controls strip.
  *
- * The reader builds the queues by tapping `+ microtask` and `+ macrotask`,
- * then taps `Run` to drain one tick. The console pane records the firing
- * order. A fourth button — `+ self-scheduling micro` — adds a microtask
- * that, when fired, enqueues another microtask (capped at SELF_HOPS to
- * keep the demo finite). With self-scheduling micros pending, the
- * macrotask never gets a turn — that is microtask starvation, made
- * visible without simulating a real freeze.
+ * Frame stability (R6): the outer shell never resizes during interaction.
+ * Each region reserves a fixed `min-h-*`; growth happens inside reserved
+ * space. Console scrolls internally past 6 lines; queues scroll horizontally
+ * past viewport width. Starved badge fades in place — never reflows headers.
  *
- * No real Promise / setTimeout recursion. No rAF. Pure state machine.
+ * State machine only — no real Promise / setTimeout recursion. The
+ * `+ self-scheduling micro` chip caps at SELF_HOPS hops, then settles, so
+ * the demo stays finite even though it teaches an unbounded concept.
  * --------------------------------------------------------------------------*/
 
 const SELF_HOPS = 6;
 const STARVED_BADGE_AT = 4;
-const FIRE_DELAY_MS = 280; // visible per-step pacing for the Run animation
+const FIRE_DELAY_MS = 280;
 const MAX_CONSOLE_LINES = 12;
+const TOOLTIP_FADE_MS = 6000;
 
 type Chip = {
   id: string;
@@ -72,15 +76,32 @@ export function MicrotaskStarvation() {
   const [running, setRunning] = useState(false);
   const [starved, setStarved] = useState(false);
 
-  // Counters for label generation. Persist across resets via state, not refs,
-  // so the chip labels stay readable.
   const [microSeq, setMicroSeq] = useState(0);
   const [macroSeq, setMacroSeq] = useState(0);
 
-  // Active-chip indicator: which chip is currently "firing" (highlighted).
   const [activeId, setActiveId] = useState<string | null>(null);
 
+  /** First-click mini-tooltip explaining the self-scheduling button. */
+  const [selfHintShown, setSelfHintShown] = useState(false);
+  const [selfHintVisible, setSelfHintVisible] = useState(false);
+  const hintTimerRef = useRef<number | null>(null);
+
   const cancelRef = useRef(false);
+
+  // Auto-fade the self-scheduling tooltip after TOOLTIP_FADE_MS or once a
+  // run starts (whichever comes first).
+  useEffect(() => {
+    if (!selfHintVisible) return;
+    hintTimerRef.current = window.setTimeout(() => {
+      setSelfHintVisible(false);
+    }, TOOLTIP_FADE_MS);
+    return () => {
+      if (hintTimerRef.current != null) {
+        window.clearTimeout(hintTimerRef.current);
+        hintTimerRef.current = null;
+      }
+    };
+  }, [selfHintVisible]);
 
   const addMicro = useCallback(() => {
     if (running) return;
@@ -106,7 +127,11 @@ export function MicrotaskStarvation() {
       ]);
       return next;
     });
-  }, [running]);
+    if (!selfHintShown) {
+      setSelfHintShown(true);
+      setSelfHintVisible(true);
+    }
+  }, [running, selfHintShown]);
 
   const addMacro = useCallback(() => {
     if (running) return;
@@ -128,14 +153,12 @@ export function MicrotaskStarvation() {
     setStarved(false);
     setRunning(false);
     setActiveId(null);
+    setSelfHintVisible(false);
   }, []);
 
-  // Read latest queue state via functional setters; UI updates each step.
   const wait = (ms: number) =>
     new Promise<void>((res) => {
       const t = window.setTimeout(res, ms);
-      // best-effort cancel: we still resolve, but the run loop checks
-      // cancelRef.current to bail.
       void t;
     });
 
@@ -144,7 +167,6 @@ export function MicrotaskStarvation() {
       kind: "micro" | "macro",
       step: number,
     ): Promise<{ fired: boolean; spawnedSelf: boolean }> => {
-      // Snapshot top-of-queue.
       let snapshot: Chip | undefined;
       if (kind === "micro") {
         setMicro((q) => {
@@ -157,15 +179,12 @@ export function MicrotaskStarvation() {
           return q;
         });
       }
-      // Allow setMicro/setMacro flush.
       await wait(0);
       if (!snapshot) return { fired: false, spawnedSelf: false };
 
-      // Highlight the head briefly.
       setActiveId(snapshot.id);
       await wait(reduce ? 0 : Math.round(FIRE_DELAY_MS * 0.45));
 
-      // Pop it + write to console + maybe spawn next self-scheduling micro.
       const fired = snapshot;
       let spawnedSelf = false;
       if (kind === "micro") {
@@ -199,12 +218,9 @@ export function MicrotaskStarvation() {
         );
       }
 
-      // Trigger starved badge once we've drained STARVED_BADGE_AT consecutive
-      // micros within the same Run with macros pending.
       if (kind === "micro" && step >= STARVED_BADGE_AT) {
         setStarved((prev) => {
           if (prev) return prev;
-          // Only mark starved if there ARE macros waiting.
           let hasMacro = false;
           setMacro((q) => {
             hasMacro = q.length > 0;
@@ -221,8 +237,6 @@ export function MicrotaskStarvation() {
     [reduce],
   );
 
-  // Probe current queue lengths via setState callback — guarantees freshest
-  // values without subscribing to render cycles.
   const peekMicroLen = () =>
     new Promise<number>((res) => {
       setMicro((q) => {
@@ -242,9 +256,8 @@ export function MicrotaskStarvation() {
     if (running) return;
     cancelRef.current = false;
     setRunning(true);
+    setSelfHintVisible(false);
 
-    // Hard cap on micro-drain steps in a single Run (handles self-scheduling
-    // chains). Visually matches "the macrotask never got its turn".
     const MAX_MICRO_STEPS_PER_TICK = 32;
 
     let microSteps = 0;
@@ -256,7 +269,6 @@ export function MicrotaskStarvation() {
       microLen = await peekMicroLen();
     }
 
-    // ONE macrotask, only if we drained micros (else: starved).
     if (!cancelRef.current && microSteps < MAX_MICRO_STEPS_PER_TICK) {
       const macLen = await peekMacroLen();
       if (macLen > 0) {
@@ -268,8 +280,8 @@ export function MicrotaskStarvation() {
     setRunning(false);
   }, [running, fireOneFromQueue]);
 
-  // Derived
-  const outputStr = output.map((o) => o.label).join(" · ") || "—";
+  const totalQueued = micro.length + macro.length;
+  const canRun = !running && totalQueued > 0;
 
   return (
     <WidgetShell
@@ -301,221 +313,261 @@ export function MicrotaskStarvation() {
         )
       }
       captionTone="prominent"
-      controls={
-        <div className="flex flex-wrap items-center justify-center gap-[var(--spacing-sm)] w-full">
-          <motion.button
-            type="button"
-            onClick={addMicro}
-            disabled={running}
-            className="font-sans rounded-[var(--radius-sm)] min-h-[44px]"
-            style={{
-              padding: "8px 14px",
-              fontSize: "var(--text-ui)",
-              background: "color-mix(in oklab, var(--color-accent) 14%, transparent)",
-              color: "var(--color-accent)",
-              border: "1px solid var(--color-accent)",
-              opacity: running ? 0.5 : 1,
-              cursor: running ? "not-allowed" : "pointer",
-            }}
-            {...(running ? {} : PRESS)}
-          >
-            + microtask
-          </motion.button>
-          <motion.button
-            type="button"
-            onClick={addMacro}
-            disabled={running}
-            className="font-sans rounded-[var(--radius-sm)] min-h-[44px]"
-            style={{
-              padding: "8px 14px",
-              fontSize: "var(--text-ui)",
-              background: "transparent",
-              color: "var(--color-text)",
-              border: "1px solid var(--color-rule)",
-              opacity: running ? 0.5 : 1,
-              cursor: running ? "not-allowed" : "pointer",
-            }}
-            {...(running ? {} : PRESS)}
-          >
-            + macrotask
-          </motion.button>
-          <motion.button
-            type="button"
-            onClick={addSelf}
-            disabled={running}
-            className="font-sans rounded-[var(--radius-sm)] min-h-[44px]"
-            style={{
-              padding: "8px 14px",
-              fontSize: "var(--text-ui)",
-              background: "color-mix(in oklab, var(--color-accent) 8%, transparent)",
-              color: "var(--color-accent)",
-              border: "1px dashed var(--color-accent)",
-              opacity: running ? 0.5 : 1,
-              cursor: running ? "not-allowed" : "pointer",
-            }}
-            {...(running ? {} : PRESS)}
-            aria-label="add a self-scheduling microtask (warning: starves the macrotask queue)"
-          >
-            + self-scheduling micro
-          </motion.button>
-          <motion.button
-            type="button"
+    >
+      <div className="bs-qrace">
+        {/* Tick counter strip — fixed height, aria-live announces ticks. */}
+        <div
+          className="bs-qrace-tick font-mono tabular-nums"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <span style={{ color: "var(--color-text-muted)" }}>tick</span>{" "}
+          <span style={{ color: "var(--color-accent)" }}>{tick}</span>
+          <span style={{ color: "var(--color-text-muted)", margin: "0 8px" }}>
+            ·
+          </span>
+          <span style={{ color: "var(--color-text-muted)" }}>output</span>{" "}
+          <span style={{ color: "var(--color-text)" }}>{output.length}</span>
+          {running ? (
+            <span
+              className="bs-qrace-run"
+              aria-hidden
+              style={{ marginLeft: 10, color: "var(--color-accent)" }}
+            >
+              ▸ running
+            </span>
+          ) : null}
+        </div>
+
+        {/* Body grid — single column on mobile, 2 cols at lg. */}
+        <div className="bs-qrace-body">
+          <div className="bs-qrace-queues">
+            <QueueRegion
+              label="microtask queue"
+              chips={micro}
+              activeId={activeId}
+              accent
+              reservedCount={5}
+            />
+            <QueueRegion
+              label="macrotask queue"
+              chips={macro}
+              activeId={activeId}
+              accent={false}
+              reservedCount={2}
+              badge={starved ? "starved" : null}
+            />
+          </div>
+          <ConsolePane lines={output} />
+        </div>
+
+        {/* Controls strip. Tap targets ≥ 44px; flex-wrap only as last resort
+            — at 360 px the row stays single via short labels. */}
+        <div
+          className="bs-qrace-controls"
+          role="group"
+          aria-label="Queue controls"
+        >
+          <CtrlBtn onClick={addMicro} disabled={running} kind="accent">
+            <span aria-hidden>+</span>
+            <span>micro</span>
+          </CtrlBtn>
+          <CtrlBtn onClick={addMacro} disabled={running} kind="muted">
+            <span aria-hidden>+</span>
+            <span>macro</span>
+          </CtrlBtn>
+          <div className="bs-qrace-self-wrap">
+            <CtrlBtn
+              onClick={addSelf}
+              disabled={running}
+              kind="dashed"
+              ariaLabel="add a self-scheduling microtask"
+            >
+              <span aria-hidden>↻</span>
+              <span>self-sched</span>
+            </CtrlBtn>
+            <AnimatePresence>
+              {selfHintVisible ? (
+                <motion.div
+                  key="hint"
+                  className="bs-qrace-hint"
+                  initial={
+                    reduce ? { opacity: 0 } : { opacity: 0, y: -4 }
+                  }
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={reduce ? { duration: 0 } : SPRING.smooth}
+                  role="note"
+                >
+                  This microtask schedules another microtask. Hit Run — the
+                  queue never empties.
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+          </div>
+          <CtrlBtn
             onClick={run}
-            disabled={running || (micro.length === 0 && macro.length === 0)}
-            className="font-sans rounded-[var(--radius-md)] min-h-[44px]"
-            style={{
-              padding: "8px 22px",
-              fontSize: "var(--text-ui)",
-              background: "var(--color-accent)",
-              color: "var(--color-bg)",
-              border: "none",
-              opacity:
-                running || (micro.length === 0 && macro.length === 0) ? 0.5 : 1,
-              cursor:
-                running || (micro.length === 0 && macro.length === 0)
-                  ? "not-allowed"
-                  : "pointer",
-              fontWeight: 600,
-            }}
-            {...(running || (micro.length === 0 && macro.length === 0)
-              ? {}
-              : PRESS)}
+            disabled={!canRun}
+            kind="primary"
+            ariaLabel={running ? "running" : "run one tick"}
           >
             {running ? "running…" : "Run ▸"}
-          </motion.button>
-          <motion.button
-            type="button"
-            onClick={reset}
-            className="font-sans rounded-[var(--radius-sm)] min-h-[44px]"
-            style={{
-              padding: "8px 14px",
-              fontSize: "var(--text-ui)",
-              color: "var(--color-text-muted)",
-              background: "transparent",
-              border: "1px solid var(--color-rule)",
-            }}
-            {...PRESS}
-          >
+          </CtrlBtn>
+          <CtrlBtn onClick={reset} kind="ghost" ariaLabel="reset queues">
             reset
-          </motion.button>
+          </CtrlBtn>
         </div>
-      }
-    >
-      <div className="flex flex-col gap-[var(--spacing-md)]">
-        <div className="bs-qrace-grid">
-          <QueueColumn
-            label="microtask queue"
-            chips={micro}
-            activeId={activeId}
-            accent
-          />
-          <QueueColumn
-            label="macrotask queue"
-            chips={macro}
-            activeId={activeId}
-            accent={false}
-            badge={starved ? "starved" : null}
-          />
-        </div>
-        <ConsolePane lines={output} />
-        <p
-          className="font-sans"
-          style={{
-            fontSize: 12,
-            color: "var(--color-text-muted)",
-            margin: 0,
-            textAlign: "center",
-            lineHeight: 1.5,
-          }}
-        >
+
+        <p className="bs-qrace-rule">
           Run = drain <em>all</em> microtasks, then <em>one</em> macrotask, then
           repeat.
         </p>
-        <style>{`
-          .bs-qrace-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: var(--spacing-md);
-          }
-          @media (min-width: 640px) {
-            .bs-qrace-grid {
-              grid-template-columns: 1fr 1fr;
-            }
-          }
-        `}</style>
       </div>
+
+      <style>{`
+        .bs-qrace {
+          display: flex;
+          flex-direction: column;
+          gap: var(--spacing-sm);
+        }
+        .bs-qrace-tick {
+          min-height: 24px;
+          line-height: 24px;
+          font-size: 12px;
+          letter-spacing: 0.02em;
+          padding: 0 2px;
+        }
+        .bs-qrace-body {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: var(--spacing-sm);
+        }
+        .bs-qrace-queues {
+          display: flex;
+          flex-direction: column;
+          gap: var(--spacing-sm);
+        }
+        .bs-qrace-controls {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 6px;
+          padding-top: 4px;
+        }
+        .bs-qrace-self-wrap {
+          position: relative;
+          display: inline-flex;
+        }
+        .bs-qrace-hint {
+          position: absolute;
+          left: 0;
+          top: calc(100% + 6px);
+          z-index: 2;
+          width: max-content;
+          max-width: 240px;
+          padding: 6px 10px;
+          font-family: var(--font-sans);
+          font-size: 11px;
+          line-height: 1.4;
+          color: var(--color-text);
+          background: var(--color-surface);
+          border: 1px solid var(--color-accent);
+          border-radius: var(--radius-sm);
+        }
+        .bs-qrace-hint::before {
+          content: "";
+          position: absolute;
+          top: -5px;
+          left: 18px;
+          width: 8px;
+          height: 8px;
+          background: var(--color-surface);
+          border-top: 1px solid var(--color-accent);
+          border-left: 1px solid var(--color-accent);
+          transform: rotate(45deg);
+        }
+        .bs-qrace-rule {
+          font-family: var(--font-sans);
+          font-size: 11px;
+          color: var(--color-text-muted);
+          text-align: center;
+          margin: 2px 0 0 0;
+          line-height: 1.5;
+        }
+        @container widget (min-width: 720px) {
+          .bs-qrace-body {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+          }
+        }
+      `}</style>
     </WidgetShell>
   );
 }
 
-function QueueColumn({
+/* ----------------------------------------------------------------------- */
+/*  Queue region — fixed reserved height; chips overflow horizontally     */
+/*  inside the bounded strip when the queue grows past the viewport.      */
+/* ----------------------------------------------------------------------- */
+
+function QueueRegion({
   label,
   chips,
   activeId,
   accent,
   badge,
+  reservedCount,
 }: {
   label: string;
   chips: Chip[];
   activeId: string | null;
   accent: boolean;
   badge?: string | null;
+  /** Used to size the reserved strip on mobile. Microtask gets more height. */
+  reservedCount: number;
 }) {
-  // Reserve at least 4 chip rows of vertical space (R6 frame stability).
-  const RESERVED = 4;
-  const ROW_H = 30;
+  // Reserved heights match the spec: 192 px for micros (5 rows × ~32 + chrome),
+  // 96 px for macros (2 rows). Both are min-heights so chips stack inside,
+  // never push the surrounding regions.
+  const STRIP_H = reservedCount >= 4 ? 168 : 72;
   return (
-    <div className="flex flex-col gap-[var(--spacing-2xs)]">
-      <div
-        className="flex items-center justify-between font-sans"
-        style={{ fontSize: 11, color: "var(--color-text-muted)" }}
-      >
-        <span style={{ letterSpacing: "0.02em" }}>{label}</span>
-        <AnimatePresence initial={false}>
-          {badge ? (
-            <motion.span
-              key="badge"
-              initial={{ opacity: 0, scale: 0.7 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.7 }}
-              transition={SPRING.smooth}
-              className="font-mono"
-              style={{
-                fontSize: 10,
-                padding: "2px 8px",
-                borderRadius: 999,
-                color: "var(--color-bg)",
-                background: "var(--color-accent)",
-                letterSpacing: "0.04em",
-                textTransform: "uppercase",
-              }}
-            >
-              {badge}
-            </motion.span>
-          ) : (
-            <span
-              className="font-mono tabular-nums"
-              style={{ fontSize: 11, opacity: 0.7 }}
-            >
-              {chips.length}
-            </span>
-          )}
-        </AnimatePresence>
+    <div className="bs-qrace-region">
+      <div className="bs-qrace-head">
+        <span style={{ color: "var(--color-text-muted)" }}>{label}</span>
+        <span className="bs-qrace-head-right">
+          <AnimatePresence initial={false}>
+            {badge ? (
+              <motion.span
+                key="badge"
+                initial={{ opacity: 0, scale: 0.7 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.7 }}
+                transition={SPRING.smooth}
+                className="bs-qrace-badge font-mono"
+                aria-live="polite"
+              >
+                {badge}
+              </motion.span>
+            ) : null}
+          </AnimatePresence>
+          <span
+            className="font-mono tabular-nums"
+            style={{ color: "var(--color-text-muted)", opacity: 0.8 }}
+          >
+            {chips.length}
+          </span>
+        </span>
       </div>
       <div
+        className="bs-qrace-strip"
         style={{
-          border: `1px ${accent ? "solid" : "dashed"} var(--color-rule)`,
-          borderRadius: "var(--radius-sm)",
-          padding: 8,
-          minHeight: RESERVED * (ROW_H + 6) + 16,
-          display: "flex",
-          flexDirection: "column",
-          gap: 6,
+          minHeight: STRIP_H,
+          borderStyle: accent ? "solid" : "dashed",
           background: accent
-            ? "color-mix(in oklab, var(--color-accent) 4%, transparent)"
+            ? "color-mix(in oklab, var(--color-accent) 5%, transparent)"
             : "color-mix(in oklab, var(--color-surface) 30%, transparent)",
-          position: "relative",
         }}
+        aria-live="polite"
+        aria-label={`${label} (${chips.length} pending)`}
       >
         <AnimatePresence initial={false}>
           {chips.length === 0 ? (
@@ -524,154 +576,224 @@ function QueueColumn({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="font-sans"
-              style={{
-                fontSize: 11,
-                color: "var(--color-text-muted)",
-                opacity: 0.5,
-                fontStyle: "italic",
-                position: "absolute",
-                top: "50%",
-                left: 0,
-                right: 0,
-                textAlign: "center",
-                transform: "translateY(-50%)",
-                pointerEvents: "none",
-              }}
+              className="bs-qrace-empty font-sans"
             >
               empty
             </motion.span>
           ) : (
-            chips.map((c) => {
-              const isActive = activeId === c.id;
-              return (
-                <motion.div
-                  key={c.id}
-                  layout
-                  layoutId={`chip-${c.id}`}
-                  initial={{ opacity: 0, scale: 0.8, y: 6 }}
-                  animate={{
-                    opacity: 1,
-                    scale: isActive ? 1.04 : 1,
-                    y: 0,
-                  }}
-                  exit={{ opacity: 0, scale: 0.7, x: 18 }}
-                  transition={SPRING.smooth}
-                  className="font-mono"
-                  style={{
-                    height: ROW_H,
-                    lineHeight: `${ROW_H}px`,
-                    paddingInline: 12,
-                    fontSize: 12,
-                    borderRadius: 4,
-                    background: accent
-                      ? isActive
+            <div className="bs-qrace-chiprow">
+              {chips.map((c) => {
+                const isActive = activeId === c.id;
+                return (
+                  <motion.div
+                    key={c.id}
+                    layout
+                    layoutId={`chip-${c.id}`}
+                    initial={{ opacity: 0, scale: 0.8, y: 6 }}
+                    animate={{
+                      opacity: 1,
+                      scale: isActive ? 1.06 : 1,
+                      y: 0,
+                    }}
+                    exit={{ opacity: 0, scale: 0.7 }}
+                    transition={SPRING.smooth}
+                    className="bs-qrace-chip font-mono"
+                    style={{
+                      background: accent
+                        ? isActive
+                          ? "var(--color-accent)"
+                          : "color-mix(in oklab, var(--color-accent) 12%, transparent)"
+                        : isActive
+                          ? "color-mix(in oklab, var(--color-text) 14%, transparent)"
+                          : "color-mix(in oklab, var(--color-surface) 80%, transparent)",
+                      color: accent
+                        ? isActive
+                          ? "var(--color-bg)"
+                          : "var(--color-accent)"
+                        : "var(--color-text)",
+                      borderStyle: c.kind === "self" ? "dashed" : "solid",
+                      borderColor: accent
                         ? "var(--color-accent)"
-                        : "color-mix(in oklab, var(--color-accent) 12%, transparent)"
-                      : isActive
-                        ? "color-mix(in oklab, var(--color-text) 14%, transparent)"
-                        : "color-mix(in oklab, var(--color-surface) 80%, transparent)",
-                    color: accent
-                      ? isActive
-                        ? "var(--color-bg)"
-                        : "var(--color-accent)"
-                      : "var(--color-text)",
-                    border: `1px ${
-                      c.kind === "self" ? "dashed" : "solid"
-                    } ${
-                      accent ? "var(--color-accent)" : "var(--color-rule)"
-                    }`,
-                    textAlign: "left",
-                  }}
-                >
-                  {c.label}
-                  {c.kind === "self" ? (
-                    <span
-                      aria-hidden
-                      style={{
-                        marginLeft: 8,
-                        fontSize: 10,
-                        opacity: 0.7,
-                      }}
-                    >
-                      ↻
-                    </span>
-                  ) : null}
-                </motion.div>
-              );
-            })
+                        : "var(--color-rule)",
+                    }}
+                  >
+                    {c.label}
+                    {c.kind === "self" ? (
+                      <span
+                        aria-hidden
+                        style={{ marginLeft: 6, fontSize: 10, opacity: 0.7 }}
+                      >
+                        ↻
+                      </span>
+                    ) : null}
+                  </motion.div>
+                );
+              })}
+            </div>
           )}
         </AnimatePresence>
       </div>
+
+      <style>{`
+        .bs-qrace-region {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          min-width: 0;
+        }
+        .bs-qrace-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          font-family: var(--font-sans);
+          font-size: 11px;
+          letter-spacing: 0.02em;
+          min-height: 16px;
+        }
+        .bs-qrace-head-right {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .bs-qrace-badge {
+          font-size: 10px;
+          padding: 2px 8px;
+          border-radius: 999px;
+          color: var(--color-bg);
+          background: var(--color-accent);
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+        }
+        .bs-qrace-strip {
+          position: relative;
+          border: 1px solid var(--color-rule);
+          border-radius: var(--radius-sm);
+          padding: 8px;
+          overflow-x: auto;
+          overflow-y: hidden;
+          touch-action: pan-x;
+          -webkit-overflow-scrolling: touch;
+        }
+        .bs-qrace-empty {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          color: var(--color-text-muted);
+          opacity: 0.5;
+          font-style: italic;
+          pointer-events: none;
+        }
+        .bs-qrace-chiprow {
+          display: flex;
+          flex-wrap: nowrap;
+          gap: 6px;
+          align-items: center;
+          min-height: 40px;
+        }
+        .bs-qrace-chip {
+          flex: 0 0 auto;
+          min-width: 56px;
+          height: 40px;
+          line-height: 40px;
+          padding: 0 12px;
+          font-size: 12px;
+          border-radius: 4px;
+          border-width: 1px;
+          text-align: center;
+          white-space: nowrap;
+        }
+      `}</style>
     </div>
   );
 }
 
+/* ----------------------------------------------------------------------- */
+/*  Console pane — fixed reserved height; lines past 6 scroll internally  */
+/*  so the pane never grows. Caret blinks slowly while idle.              */
+/* ----------------------------------------------------------------------- */
+
 function ConsolePane({ lines }: { lines: ConsoleLine[] }) {
-  const RESERVED_LINES = 4;
+  const reduce = useReducedMotion();
+  const RESERVED_LINES = 6;
   const LINE_H = 22;
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+
+  // Pin scroll to the bottom as new lines arrive (so the latest is always
+  // visible without changing pane height).
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [lines.length]);
+
   return (
-    <div className="flex flex-col gap-[var(--spacing-2xs)]">
-      <div
-        className="flex items-baseline justify-between font-sans"
-        style={{ fontSize: 11, color: "var(--color-text-muted)" }}
-      >
-        <span style={{ letterSpacing: "0.02em" }}>console · firing order</span>
+    <div className="bs-qrace-console-region">
+      <div className="bs-qrace-console-head">
+        <span style={{ color: "var(--color-text-muted)" }}>
+          console · firing order
+        </span>
         <span
           className="font-mono tabular-nums"
-          style={{ fontSize: 11, opacity: 0.7 }}
+          style={{ color: "var(--color-text-muted)", opacity: 0.8 }}
         >
           {lines.length}
         </span>
       </div>
       <div
-        style={{
-          background: "color-mix(in oklab, var(--color-surface) 60%, transparent)",
-          border: "1px solid var(--color-rule)",
-          borderRadius: "var(--radius-sm)",
-          padding: "8px 12px",
-          minHeight: RESERVED_LINES * LINE_H + 16,
-          fontSize: 12,
-          display: "flex",
-          flexDirection: "column",
-          gap: 2,
-        }}
+        ref={scrollerRef}
+        className="bs-qrace-console"
+        style={{ minHeight: RESERVED_LINES * LINE_H + 16 }}
+        aria-live="polite"
       >
-        <AnimatePresence initial={false}>
-          {lines.length === 0 ? (
+        {lines.length === 0 ? (
+          <span className="bs-qrace-console-empty font-sans">
+            waiting for Run
             <motion.span
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="font-sans"
+              aria-hidden
+              animate={
+                reduce
+                  ? { opacity: 1 }
+                  : { opacity: [0.2, 1, 1, 0.2] }
+              }
+              transition={
+                reduce
+                  ? { duration: 0 }
+                  : { duration: 1.6, repeat: Infinity, times: [0, 0.4, 0.6, 1] }
+              }
               style={{
-                fontSize: 11,
-                color: "var(--color-text-muted)",
-                opacity: 0.5,
-                fontStyle: "italic",
-                lineHeight: `${LINE_H}px`,
+                marginLeft: 4,
+                color: "var(--color-accent)",
+                fontFamily: "var(--font-mono)",
               }}
             >
-              waiting for Run…
+              ▍
             </motion.span>
-          ) : (
-            lines.map((l, i) => (
+          </span>
+        ) : (
+          <AnimatePresence initial={false}>
+            {lines.map((l, i) => (
               <motion.div
                 key={l.id}
                 layout
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={
+                  reduce
+                    ? { opacity: 0 }
+                    : { opacity: 0, y: 4 }
+                }
+                animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                transition={SPRING.smooth}
-                className="font-mono"
+                transition={
+                  reduce ? { duration: 0 } : { duration: 0.2 }
+                }
+                className="bs-qrace-console-line font-mono"
                 style={{
-                  lineHeight: `${LINE_H}px`,
                   color:
                     l.kind === "micro"
                       ? "var(--color-accent)"
                       : "var(--color-text)",
-                  whiteSpace: "pre",
                 }}
               >
                 <span
@@ -687,10 +809,122 @@ function ConsolePane({ lines }: { lines: ConsoleLine[] }) {
                   {l.kind === "micro" ? "micro" : "macro"} → {l.label}
                 </span>
               </motion.div>
-            ))
-          )}
-        </AnimatePresence>
+            ))}
+          </AnimatePresence>
+        )}
       </div>
+
+      <style>{`
+        .bs-qrace-console-region {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          min-width: 0;
+        }
+        .bs-qrace-console-head {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          font-family: var(--font-sans);
+          font-size: 11px;
+          letter-spacing: 0.02em;
+          min-height: 16px;
+        }
+        .bs-qrace-console {
+          background: color-mix(in oklab, var(--color-surface) 60%, transparent);
+          border: 1px solid var(--color-rule);
+          border-radius: var(--radius-sm);
+          padding: 8px 12px;
+          font-size: 12px;
+          line-height: 22px;
+          overflow-y: auto;
+          max-height: 192px;
+          -webkit-overflow-scrolling: touch;
+        }
+        .bs-qrace-console-line {
+          white-space: pre;
+          line-height: 22px;
+        }
+        .bs-qrace-console-empty {
+          font-size: 11px;
+          color: var(--color-text-muted);
+          font-style: italic;
+          line-height: 22px;
+          opacity: 0.7;
+        }
+      `}</style>
     </div>
+  );
+}
+
+/* ----------------------------------------------------------------------- */
+/*  CtrlBtn — control row button. Tap target ≥ 44 × 44 px.                */
+/* ----------------------------------------------------------------------- */
+
+function CtrlBtn({
+  children,
+  onClick,
+  disabled,
+  kind,
+  ariaLabel,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  kind: "primary" | "accent" | "muted" | "dashed" | "ghost";
+  ariaLabel?: string;
+}) {
+  const base: React.CSSProperties = {
+    minHeight: 44,
+    padding: "0 12px",
+    borderRadius: "var(--radius-sm)",
+    fontFamily: "var(--font-sans)",
+    fontSize: "var(--text-ui)",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.5 : 1,
+    border: "1px solid var(--color-rule)",
+    background: "transparent",
+    color: "var(--color-text)",
+    whiteSpace: "nowrap",
+  };
+  const variant: Record<typeof kind, React.CSSProperties> = {
+    primary: {
+      background: "var(--color-accent)",
+      color: "var(--color-bg)",
+      border: "1px solid var(--color-accent)",
+      fontWeight: 600,
+      padding: "0 18px",
+    },
+    accent: {
+      background:
+        "color-mix(in oklab, var(--color-accent) 14%, transparent)",
+      color: "var(--color-accent)",
+      border: "1px solid var(--color-accent)",
+    },
+    muted: {},
+    dashed: {
+      background:
+        "color-mix(in oklab, var(--color-accent) 8%, transparent)",
+      color: "var(--color-accent)",
+      border: "1px dashed var(--color-accent)",
+    },
+    ghost: {
+      color: "var(--color-text-muted)",
+    },
+  };
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      style={{ ...base, ...variant[kind] }}
+      {...(disabled ? {} : PRESS)}
+    >
+      {children}
+    </motion.button>
   );
 }

@@ -6,80 +6,60 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { WidgetShell } from "@/components/viz/WidgetShell";
 import { PRESS, SPRING } from "@/lib/motion";
+import { CALL_STACK_SNIPPET } from "./CallStackSnippet";
 
 /**
- * CallStackECs — W3, the SPINE of "how JavaScript reads its own future".
+ * CallStackECs v2 — mobile-first, frame-stable.
  *
- * A static, annotated call-stack visualization. The reader presses Step
- * (or Run) to walk through a tiny program. On each step:
- *   - the active source line lights up in the code pane,
- *   - execution-context cards push/pop on the stack pane via spring,
- *   - on desktop, an SVG arrow connects the active line to the active EC
- *     ("the thread of execution is here"),
- *   - on mobile (≤ 640px container) the arrow collapses to a small
- *     down-glyph between the two stacked panes,
- *   - the console pane mirrors `console.log` output as it fires.
+ * Layout:
+ *   - Mobile (< 720 px container): vertical stack — controls / code pane /
+ *     stack pane / console pane. Each region reserves a fixed `min-h` so the
+ *     outer shell never resizes during stepping. Tap targets ≥ 44 px.
+ *   - lg (≥ 720 px container, via @container query): two columns — code +
+ *     console on the left, stack on the right. The SVG arrow overlay
+ *     activates only at this breakpoint to connect active line → top frame.
  *
- * Replaces the round-2 DragElements implementation. The cards are not
- * draggable; the thread of execution is *annotated*, not manipulated.
+ * Code rendering: the snippet is pre-rendered by `<CodeBlock>` (server
+ * component, async) in `page.tsx` and passed in as a `codeSlot: ReactNode`
+ * prop. The widget overlays a terracotta wash on the active line by
+ * measuring the rendered Shiki `<span class="line">` rows with
+ * `useLayoutEffect` + `ResizeObserver`. The Shiki HTML is unchanged.
  *
- * Frame stability (R6): every pane reserves a fixed min-height that fits
- * the deepest stack the snippet produces (3 frames) and the longest
- * console output, so step changes never reflow the outer shell.
+ * Frame stability (R6):
+ *   - code pane min-height fits the SNIPPET line count.
+ *   - stack pane min-height fits the deepest stack (3 frames).
+ *   - console pane min-height fits the longest emit list (2 lines).
+ *   - mobile down-glyph row reserves its own height (rendered always; toggled
+ *     visible/hidden so :nth-child indexes stay stable for the @container
+ *     fallback).
  */
 
 type ECName = "global" | "compute" | "multiply";
 
-type Binding = {
-  name: string;
-  value: string;
-};
+type Binding = { name: string; value: string };
 
 type EC = {
-  /** Stable identifier — keeps cards mounted across steps where possible. */
   id: ECName;
-  /** Header label inside the card. */
   label: string;
-  /** The card's variable environment at this step. */
   ve: Binding[];
 };
 
-type ConsoleLine = {
-  /** Monotonically incremented per emit. */
-  id: number;
-  text: string;
-};
+type ConsoleLine = { id: number; text: string };
 
 type Step = {
-  /** Stack from bottom to top. The top frame is the running EC. */
   stack: EC[];
-  /** Active line in the source panel (1-indexed). */
+  /** 1-indexed line number into SNIPPET. */
   activeLine: number | null;
-  /** New console.log output appended at this step (if any). */
   emit: string | null;
-  /** Caption beat. */
   beat: string;
 };
 
-const SNIPPET = [
-  "function multiply(a, b) {",
-  "  const result = a * b;",
-  "  return result;",
-  "}",
-  "",
-  "function compute(x) {",
-  "  const doubled = multiply(x, 2);",
-  "  console.log(doubled);",
-  "  return doubled;",
-  "}",
-  "",
-  "const answer = compute(7);",
-  "console.log(answer);",
-];
+const SNIPPET_LINES = CALL_STACK_SNIPPET.replace(/\n+$/, "").split("\n").length;
 
 const GLOBAL_VE_INITIAL: Binding[] = [
   { name: "multiply", value: "ƒ" },
@@ -195,9 +175,17 @@ const STEPS: Step[] = [
 const TOTAL = STEPS.length;
 const RUN_INTERVAL_MS = 900;
 
-type Props = { initialStep?: number };
+type Props = {
+  initialStep?: number;
+  /**
+   * Pre-rendered `<CodeBlock>` from `page.tsx`. Server-side Shiki output
+   * with line numbers + chrome. The widget overlays the active-line wash
+   * on top of this slot via absolute positioning.
+   */
+  codeSlot?: ReactNode;
+};
 
-export function CallStackECs({ initialStep = 0 }: Props) {
+export function CallStackECs({ initialStep = 0, codeSlot }: Props) {
   const [step, setStep] = useState(initialStep);
   const [consoleLog, setConsoleLog] = useState<ConsoleLine[]>([]);
   const [running, setRunning] = useState(false);
@@ -208,7 +196,6 @@ export function CallStackECs({ initialStep = 0 }: Props) {
   const current = STEPS[clamped];
   const topFrame = current.stack[current.stack.length - 1];
 
-  // Console-log emissions: append once per fresh step.
   useEffect(() => {
     if (lastEmittedStep.current === clamped) return;
     lastEmittedStep.current = clamped;
@@ -220,7 +207,6 @@ export function CallStackECs({ initialStep = 0 }: Props) {
     }
   }, [clamped, current.emit]);
 
-  // Auto-run loop.
   useEffect(() => {
     if (!running) return;
     if (clamped >= TOTAL - 1) {
@@ -252,7 +238,6 @@ export function CallStackECs({ initialStep = 0 }: Props) {
       return;
     }
     if (clamped >= TOTAL - 1) {
-      // restart from beginning
       setStep(0);
       setConsoleLog([]);
       lastEmittedStep.current = -1;
@@ -280,117 +265,132 @@ export function CallStackECs({ initialStep = 0 }: Props) {
   return (
     <WidgetShell
       title="call stack · execution contexts"
+      measurements={`step ${clamped + 1}/${TOTAL}`}
       caption={caption}
       captionTone="prominent"
-      controls={
+    >
+      <div className="bs-csec">
+        {/* Controls strip — single row at 360 px. Tap targets ≥ 44 px. */}
         <div
+          className="bs-csec-controls"
           role="group"
-          aria-label="Step controls"
-          className="flex flex-wrap items-center justify-center gap-[var(--spacing-2xs)] font-sans"
-          style={{ fontSize: "var(--text-ui)" }}
+          aria-label="Call-stack step controls"
         >
-          <motion.button
-            type="button"
+          <CtrlBtn
             onClick={onBack}
             disabled={clamped === 0}
-            aria-label="Step back"
-            style={btnStyle(false, clamped === 0)}
-            {...PRESS}
+            kind="muted"
+            ariaLabel="Step back"
           >
-            ← Back
-          </motion.button>
-          <motion.button
-            type="button"
+            <span aria-hidden>←</span>
+            <span className="bs-csec-btn-label">Back</span>
+          </CtrlBtn>
+          <CtrlBtn
             onClick={onRunToggle}
-            aria-label={running ? "Pause auto-run" : "Run auto-step"}
-            style={btnStyle(true, false)}
-            {...PRESS}
+            kind="accent"
+            ariaLabel={running ? "Pause auto-run" : "Run auto-step"}
           >
-            {runLabel}
-          </motion.button>
-          <motion.button
-            type="button"
+            <span aria-hidden>{running ? "⏸" : "▶"}</span>
+            <span className="bs-csec-btn-label">{runLabel}</span>
+          </CtrlBtn>
+          <CtrlBtn
             onClick={onStep}
             disabled={clamped === TOTAL - 1 || running}
-            aria-label="Step forward"
-            style={btnStyle(false, clamped === TOTAL - 1 || running)}
-            {...PRESS}
+            kind="primary"
+            ariaLabel="Step forward"
           >
-            Step →
-          </motion.button>
-          <motion.button
-            type="button"
+            <span className="bs-csec-btn-label">Step</span>
+            <span aria-hidden>→</span>
+          </CtrlBtn>
+          <CtrlBtn
             onClick={onReset}
-            aria-label="Reset"
-            style={btnStyle(false, false)}
-            {...PRESS}
+            kind="ghost"
+            ariaLabel="Reset to first step"
           >
-            Reset
-          </motion.button>
-          <span
-            className="font-mono tabular-nums"
-            style={{
-              fontSize: 11,
-              color: "var(--color-text-muted)",
-              marginLeft: 6,
-            }}
-          >
-            {clamped + 1}/{TOTAL}
-          </span>
+            <span aria-hidden>↺</span>
+            <span className="bs-csec-btn-label">Reset</span>
+          </CtrlBtn>
         </div>
-      }
-    >
-      <CallStackBoard
-        snippet={SNIPPET}
-        activeLine={current.activeLine}
-        stack={current.stack}
-        topId={topFrame.id}
-        consoleLog={consoleLog}
-        reducedMotion={Boolean(reducedMotion)}
-      />
+
+        <CallStackBoard
+          activeLine={current.activeLine}
+          stack={current.stack}
+          topId={topFrame.id}
+          consoleLog={consoleLog}
+          reducedMotion={Boolean(reducedMotion)}
+          codeSlot={codeSlot}
+        />
+      </div>
+
+      <style>{`
+        .bs-csec {
+          display: flex;
+          flex-direction: column;
+          gap: var(--spacing-sm);
+          min-width: 0;
+        }
+        .bs-csec-controls {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          align-items: center;
+          justify-content: flex-start;
+          min-height: 48px;
+        }
+        .bs-csec-btn-label {
+          font-family: var(--font-sans);
+          font-size: var(--text-ui);
+        }
+      `}</style>
     </WidgetShell>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Board: code pane + stack pane + arrow overlay + console pane.     */
+/*  Board: code pane (Shiki + active-line wash) + stack pane +        */
+/*  console pane + arrow (desktop) / down-glyph (mobile).             */
 /* ------------------------------------------------------------------ */
 
 function CallStackBoard({
-  snippet,
   activeLine,
   stack,
   topId,
   consoleLog,
   reducedMotion,
+  codeSlot,
 }: {
-  snippet: string[];
   activeLine: number | null;
   stack: EC[];
   topId: ECName;
   consoleLog: ConsoleLine[];
   reducedMotion: boolean;
+  codeSlot?: ReactNode;
 }) {
-  // Geometry refs for the SVG arrow (desktop only).
   const boardRef = useRef<HTMLDivElement | null>(null);
   const codePaneRef = useRef<HTMLDivElement | null>(null);
+  const codeSlotRef = useRef<HTMLDivElement | null>(null);
   const stackPaneRef = useRef<HTMLDivElement | null>(null);
-  const lineRefs = useRef<Map<number, HTMLLIElement>>(new Map());
   const cardRefs = useRef<Map<ECName, HTMLDivElement>>(new Map());
 
+  /** Active-line wash geometry (relative to the codeSlot wrapper). */
+  const [washRect, setWashRect] = useState<{ top: number; height: number } | null>(
+    null,
+  );
+
+  /** Container-width branch — drives single-column vs two-column + arrow. */
+  const [isWide, setIsWide] = useState(false);
+
+  /** SVG arrow geometry (board-relative, only used when isWide). */
   const [arrow, setArrow] = useState<{
     from: { x: number; y: number };
     to: { x: number; y: number };
-    visible: boolean;
   } | null>(null);
 
-  const [isWide, setIsWide] = useState(false);
-
-  // Track container width via ResizeObserver — drives the desktop/mobile split.
+  // Width branch via ResizeObserver.
   useLayoutEffect(() => {
     const el = boardRef.current;
     if (!el) return;
-    const update = () => setIsWide(el.clientWidth >= 640);
+    const update = () => setIsWide(el.clientWidth >= 720);
     update();
     if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(update);
@@ -398,183 +398,140 @@ function CallStackBoard({
     return () => ro.disconnect();
   }, []);
 
-  // Recompute arrow geometry whenever the active line / top card / width changes.
+  // Measure the active line inside the rendered Shiki HTML and position the
+  // terracotta wash over it. Re-measures when activeLine changes, fonts load,
+  // or the code pane resizes.
+  useLayoutEffect(() => {
+    const slot = codeSlotRef.current;
+    if (!slot) return;
+    const measure = () => {
+      if (activeLine == null) {
+        setWashRect(null);
+        return;
+      }
+      // Shiki output: each source line is `<span class="line">…</span>` inside
+      // the highlighted body. We index by 0-based position.
+      const lineEls = slot.querySelectorAll<HTMLElement>("span.line");
+      const target = lineEls[activeLine - 1];
+      if (!target) {
+        setWashRect(null);
+        return;
+      }
+      const slotRect = slot.getBoundingClientRect();
+      const lineRect = target.getBoundingClientRect();
+      setWashRect({
+        top: lineRect.top - slotRect.top,
+        height: lineRect.height,
+      });
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(slot);
+    return () => ro.disconnect();
+  }, [activeLine, codeSlot]);
+
+  // Arrow from active line (right edge) to top stack card (left edge).
   useLayoutEffect(() => {
     if (!isWide) {
       setArrow(null);
       return;
     }
     const board = boardRef.current;
-    const lineEl = activeLine != null ? lineRefs.current.get(activeLine) : null;
+    const slot = codeSlotRef.current;
     const cardEl = cardRefs.current.get(topId);
-    if (!board || !lineEl || !cardEl) {
+    if (!board || !slot || !cardEl || activeLine == null) {
+      setArrow(null);
+      return;
+    }
+    const lineEls = slot.querySelectorAll<HTMLElement>("span.line");
+    const target = lineEls[activeLine - 1];
+    if (!target) {
       setArrow(null);
       return;
     }
     const boardRect = board.getBoundingClientRect();
-    const lineRect = lineEl.getBoundingClientRect();
+    const lineRect = target.getBoundingClientRect();
     const cardRect = cardEl.getBoundingClientRect();
-    const from = {
-      x: lineRect.right - boardRect.left + 4,
-      y: lineRect.top - boardRect.top + lineRect.height / 2,
-    };
-    const to = {
-      x: cardRect.left - boardRect.left - 8,
-      y: cardRect.top - boardRect.top + Math.min(20, cardRect.height / 2),
-    };
-    setArrow({ from, to, visible: true });
-  }, [activeLine, topId, isWide, stack.length]);
+    setArrow({
+      from: {
+        x: lineRect.right - boardRect.left + 4,
+        y: lineRect.top - boardRect.top + lineRect.height / 2,
+      },
+      to: {
+        x: cardRect.left - boardRect.left - 8,
+        y: cardRect.top - boardRect.top + Math.min(20, cardRect.height / 2),
+      },
+    });
+  }, [activeLine, topId, isWide, stack.length, codeSlot]);
 
-  // Re-measure on window resize too (covers font swaps, etc.).
+  // Re-measure on window resize too.
   useEffect(() => {
-    const onResize = () => {
-      // Trigger a re-render via state nudge.
-      setIsWide((w) => w);
-    };
+    const onResize = () => setIsWide((w) => w);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
   return (
-    <div
-      ref={boardRef}
-      className="bs-csec-board"
-      style={{
-        position: "relative",
-        display: "grid",
-        gap: "var(--spacing-sm)",
-        gridTemplateColumns: "minmax(0, 1fr)",
-      }}
-    >
-      {/* Code pane */}
-      <div
-        ref={codePaneRef}
-        style={{
-          background:
-            "color-mix(in oklab, var(--color-surface) 35%, transparent)",
-          border: "1px solid var(--color-rule)",
-          borderRadius: 3,
-          padding: "10px 12px",
-          minWidth: 0,
-          minHeight: 220,
-        }}
-      >
-        <div
-          className="font-sans"
-          style={{
-            fontSize: 9,
-            letterSpacing: "0.08em",
-            color: "var(--color-text-muted)",
-            marginBottom: 8,
-          }}
-        >
-          CODE
-        </div>
-        <ol
-          className="font-mono"
-          style={{
-            listStyle: "none",
-            margin: 0,
-            padding: 0,
-            display: "flex",
-            flexDirection: "column",
-            gap: 1,
-            fontSize: 11.5,
-            lineHeight: 1.5,
-          }}
-        >
-          {snippet.map((line, i) => {
-            const lineNum = i + 1;
-            const isActive = activeLine === lineNum;
-            return (
-              <motion.li
-                key={lineNum}
-                ref={(el) => {
-                  if (el) lineRefs.current.set(lineNum, el);
-                  else lineRefs.current.delete(lineNum);
-                }}
-                initial={false}
-                animate={{ opacity: isActive ? 1 : 0.6 }}
-                transition={
-                  reducedMotion ? { duration: 0 } : { duration: 0.2 }
+    <div ref={boardRef} className="bs-csec-board">
+      {/* Code pane — reserved height fits SNIPPET. The codeSlot is the
+          server-rendered <CodeBlock>; the wash <div> overlays it. */}
+      <div ref={codePaneRef} className="bs-csec-region bs-csec-code">
+        <div className="bs-csec-region-head">CODE</div>
+        <div ref={codeSlotRef} className="bs-csec-codeslot">
+          {/* Active-line wash — sits behind the Shiki HTML via stacking
+              order. Animates `transform: translateY` on the y axis only;
+              its own height is unchanged once measured (R6 inside the
+              region). */}
+          <AnimatePresence>
+            {washRect ? (
+              <motion.div
+                key={`wash-${activeLine}`}
+                aria-hidden
+                initial={
+                  reducedMotion
+                    ? { opacity: 0 }
+                    : { opacity: 0 }
                 }
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={
+                  reducedMotion ? { duration: 0 } : { duration: 0.18 }
+                }
+                className="bs-csec-wash"
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "1.2em 2em minmax(0, 1fr)",
-                  alignItems: "center",
-                  columnGap: 6,
-                  padding: "1px 6px",
-                  borderRadius: 2,
-                  background: isActive
-                    ? "color-mix(in oklab, var(--color-accent) 14%, transparent)"
-                    : "transparent",
-                  color: isActive
-                    ? "var(--color-accent)"
-                    : "var(--color-text)",
-                  fontWeight: isActive ? 600 : 400,
+                  top: 0,
+                  height: washRect.height,
+                  transform: `translateY(${washRect.top}px)`,
                 }}
-              >
-                <span
-                  aria-hidden
-                  style={{
-                    color: "var(--color-accent)",
-                    fontSize: 10,
-                    visibility: isActive ? "visible" : "hidden",
-                  }}
-                >
-                  ▶
-                </span>
-                <span
-                  style={{
-                    color: "var(--color-text-muted)",
-                    fontSize: 10,
-                    textAlign: "right",
-                  }}
-                >
-                  {lineNum}
-                </span>
-                <span
-                  style={{
-                    minWidth: 0,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {line || " "}
-                </span>
-              </motion.li>
-            );
-          })}
-        </ol>
+              />
+            ) : null}
+          </AnimatePresence>
+          {codeSlot ?? <FallbackCode lines={SNIPPET_LINES} />}
+        </div>
       </div>
 
-      {/* Mobile-only down-glyph hint between code and stack.
-          Always rendered so :nth-child indexes stay stable; CSS hides on
-          desktop. */}
+      {/* Mobile-only down-glyph between code and stack panes. Always
+          rendered so the @container fallback's :nth-child indices remain
+          stable; CSS hides it on desktop. */}
       <div
         aria-hidden
         className="bs-csec-glyph"
         style={{
           display: isWide ? "none" : "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          margin: "-4px 0 -4px 0",
         }}
       >
         <motion.span
           key={`${activeLine}-${topId}`}
           initial={
-            reducedMotion
-              ? { opacity: 1, y: 0 }
-              : { opacity: 0, y: -4 }
+            reducedMotion ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.6 }
           }
-          animate={{ opacity: 1, y: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={reducedMotion ? { duration: 0 } : SPRING.smooth}
           style={{
             color: "var(--color-accent)",
             fontFamily: "var(--font-mono)",
-            fontSize: 14,
+            fontSize: 16,
             lineHeight: 1,
           }}
         >
@@ -582,40 +539,10 @@ function CallStackBoard({
         </motion.span>
       </div>
 
-      {/* Stack pane */}
-      <div
-        ref={stackPaneRef}
-        style={{
-          position: "relative",
-          background:
-            "color-mix(in oklab, var(--color-surface) 25%, transparent)",
-          border: "1px solid var(--color-rule)",
-          borderRadius: 3,
-          padding: "10px 12px",
-          minHeight: 240,
-          minWidth: 0,
-        }}
-      >
-        <div
-          className="font-sans"
-          style={{
-            fontSize: 9,
-            letterSpacing: "0.08em",
-            color: "var(--color-text-muted)",
-            marginBottom: 8,
-          }}
-        >
-          CALL STACK
-        </div>
-        {/* Cards laid out top-of-stack at the top, bottom-of-stack below. */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column-reverse",
-            gap: "var(--spacing-2xs)",
-            justifyContent: "flex-start",
-          }}
-        >
+      {/* Stack pane — reserved height fits 3 frames. */}
+      <div ref={stackPaneRef} className="bs-csec-region bs-csec-stack">
+        <div className="bs-csec-region-head">CALL STACK</div>
+        <div className="bs-csec-cards">
           <AnimatePresence initial={false}>
             {stack.map((frame) => (
               <ECCard
@@ -632,113 +559,177 @@ function CallStackBoard({
         </div>
       </div>
 
-      {/* Console pane */}
-      <div
-        aria-label="console output"
-        style={{
-          background: "var(--color-surface)",
-          border: "1px solid var(--color-rule)",
-          borderRadius: 3,
-          padding: "10px 12px",
-          minHeight: 92,
-          minWidth: 0,
-          fontFamily: "var(--font-mono)",
-          fontSize: 11.5,
-          color: "var(--color-text)",
-          display: "flex",
-          flexDirection: "column",
-          gap: 2,
-        }}
-      >
-        <div
-          className="font-sans"
-          style={{
-            fontSize: 9,
-            letterSpacing: "0.08em",
-            color: "var(--color-text-muted)",
-            marginBottom: 6,
-          }}
-        >
-          CONSOLE
-        </div>
-        <AnimatePresence initial={false}>
-          {consoleLog.map((l) => (
-            <motion.div
-              key={l.id}
-              initial={
-                reducedMotion ? { opacity: 1 } : { opacity: 0, y: 4 }
-              }
-              animate={{ opacity: 1, y: 0 }}
-              transition={
-                reducedMotion ? { duration: 0 } : { duration: 0.2 }
-              }
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1.2em minmax(0, 1fr)",
-                columnGap: 6,
-                minWidth: 0,
-              }}
-            >
-              <span style={{ color: "var(--color-text-muted)" }}>›</span>
-              <span
-                style={{
-                  minWidth: 0,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
+      {/* Console pane — reserved height fits ≤ 2 emit lines (the snippet's
+          maximum). */}
+      <div className="bs-csec-region bs-csec-console" aria-label="console output">
+        <div className="bs-csec-region-head">CONSOLE</div>
+        <div className="bs-csec-console-body" aria-live="polite">
+          <AnimatePresence initial={false}>
+            {consoleLog.map((l) => (
+              <motion.div
+                key={l.id}
+                layout
+                initial={
+                  reducedMotion ? { opacity: 1 } : { opacity: 0, y: 4 }
+                }
+                animate={{ opacity: 1, y: 0 }}
+                transition={reducedMotion ? { duration: 0 } : { duration: 0.2 }}
+                className="bs-csec-console-line font-mono"
               >
+                <span style={{ color: "var(--color-text-muted)" }}>›</span>{" "}
                 {l.text}
-              </span>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        {consoleLog.length === 0 ? (
-          <div
-            style={{
-              color: "var(--color-text-muted)",
-              fontSize: 11,
-              fontStyle: "italic",
-            }}
-          >
-            (no output yet — press Run)
-          </div>
-        ) : null}
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          {consoleLog.length === 0 ? (
+            <div className="bs-csec-console-empty font-sans">
+              (no output yet — press Run)
+            </div>
+          ) : null}
+        </div>
       </div>
 
-      {/* Desktop SVG arrow overlay. */}
+      {/* Desktop SVG arrow overlay — only when isWide and we have geometry. */}
       {isWide && arrow ? (
         <ArrowOverlay arrow={arrow} reducedMotion={reducedMotion} />
       ) : null}
 
-      <style jsx>{`
-        @container widget (min-width: 640px) {
+      <style>{`
+        .bs-csec-board {
+          position: relative;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          gap: var(--spacing-sm);
+          min-width: 0;
+        }
+        .bs-csec-region {
+          background: color-mix(in oklab, var(--color-surface) 35%, transparent);
+          border: 1px solid var(--color-rule);
+          border-radius: var(--radius-sm);
+          padding: 10px 12px;
+          min-width: 0;
+        }
+        .bs-csec-region-head {
+          font-family: var(--font-sans);
+          font-size: 9px;
+          letter-spacing: 0.08em;
+          color: var(--color-text-muted);
+          margin-bottom: 6px;
+          text-transform: uppercase;
+        }
+        /* Reserved heights — R6 frame stability. */
+        .bs-csec-code { min-height: 240px; }
+        .bs-csec-stack { min-height: 264px; }
+        .bs-csec-console { min-height: 88px; }
+
+        .bs-csec-codeslot {
+          position: relative;
+          min-width: 0;
+          /* The CodeBlock has its own margin (.my-[var(--spacing-lg)]); we
+             neutralise it inside the widget so the pane's reserved height
+             stays accurate. */
+        }
+        .bs-csec-codeslot > .bs-code {
+          margin: 0 !important;
+        }
+        .bs-csec-wash {
+          position: absolute;
+          left: 0;
+          right: 0;
+          background: color-mix(in oklab, var(--color-accent) 16%, transparent);
+          border-left: 2px solid var(--color-accent);
+          pointer-events: none;
+          z-index: 1;
+        }
+        /* Stack cards: top-of-stack visually on top. */
+        .bs-csec-cards {
+          display: flex;
+          flex-direction: column-reverse;
+          gap: var(--spacing-2xs);
+          justify-content: flex-start;
+        }
+        .bs-csec-glyph {
+          justify-content: center;
+          align-items: center;
+          min-height: 24px;
+        }
+        .bs-csec-console-body {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          font-family: var(--font-mono);
+          font-size: 11.5px;
+          color: var(--color-text);
+          min-height: 44px;
+        }
+        .bs-csec-console-line {
+          line-height: 1.45;
+        }
+        .bs-csec-console-empty {
+          color: var(--color-text-muted);
+          font-size: 11px;
+          font-style: italic;
+        }
+
+        @container widget (min-width: 720px) {
           .bs-csec-board {
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+            grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
             grid-template-rows: auto auto;
           }
-          /* code pane: top-left */
-          .bs-csec-board > :global(:nth-child(1)) {
+          /* code pane — top-left */
+          .bs-csec-board > .bs-csec-code {
             grid-column: 1 / 2;
             grid-row: 1 / 2;
           }
-          /* mobile glyph: hidden on desktop */
-          .bs-csec-board > :global(.bs-csec-glyph) {
+          /* mobile glyph hides */
+          .bs-csec-board > .bs-csec-glyph {
             display: none !important;
           }
-          /* stack pane: top-right */
-          .bs-csec-board > :global(:nth-child(3)) {
+          /* stack pane — right column, full height */
+          .bs-csec-board > .bs-csec-stack {
             grid-column: 2 / 3;
-            grid-row: 1 / 2;
+            grid-row: 1 / 3;
           }
-          /* console pane: spans both columns, row 2 */
-          .bs-csec-board > :global(:nth-child(4)) {
-            grid-column: 1 / 3;
+          /* console pane — left column, row 2 */
+          .bs-csec-board > .bs-csec-console {
+            grid-column: 1 / 2;
             grid-row: 2 / 3;
           }
         }
       `}</style>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Fallback code — used if the codeSlot prop wasn't supplied.        */
+/*  The active-line wash measurement targets `span.line`, so the      */
+/*  fallback emits the same DOM shape Shiki produces.                 */
+/* ------------------------------------------------------------------ */
+
+function FallbackCode({ lines }: { lines: number }) {
+  const arr = CALL_STACK_SNIPPET.replace(/\n+$/, "").split("\n").slice(0, lines);
+  return (
+    <pre
+      className="font-mono"
+      style={{
+        margin: 0,
+        padding: 0,
+        fontSize: 11.5,
+        lineHeight: 1.5,
+        color: "var(--color-text)",
+        whiteSpace: "pre",
+        overflowX: "auto",
+      }}
+    >
+      <code>
+        {arr.map((line, i) => (
+          <span className="line" key={i} style={{ display: "block" }}>
+            {line || " "}
+          </span>
+        ))}
+      </code>
+    </pre>
   );
 }
 
@@ -754,12 +745,10 @@ function ArrowOverlay({
   reducedMotion: boolean;
 }) {
   const { from, to } = arrow;
-  // Cubic curve with horizontal handles for a gentle s-shape.
   const dx = Math.max(40, (to.x - from.x) * 0.5);
   const c1 = { x: from.x + dx, y: from.y };
   const c2 = { x: to.x - dx, y: to.y };
   const path = `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`;
-  // Arrowhead at the end of the curve.
   const angle = Math.atan2(to.y - c2.y, to.x - c2.x);
   const headLen = 8;
   const headW = 5;
@@ -784,6 +773,7 @@ function ArrowOverlay({
         height: "100%",
         pointerEvents: "none",
         overflow: "visible",
+        zIndex: 2,
       }}
     >
       <AnimatePresence mode="wait">
@@ -792,9 +782,7 @@ function ArrowOverlay({
           initial={reducedMotion ? { opacity: 1 } : { opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={
-            reducedMotion ? { duration: 0 } : { duration: 0.15 }
-          }
+          transition={reducedMotion ? { duration: 0 } : { duration: 0.15 }}
         >
           <motion.path
             d={path}
@@ -802,14 +790,10 @@ function ArrowOverlay({
             stroke="var(--color-accent)"
             strokeWidth={2}
             strokeLinecap="round"
-            initial={
-              reducedMotion ? { pathLength: 1 } : { pathLength: 0 }
-            }
+            initial={reducedMotion ? { pathLength: 1 } : { pathLength: 0 }}
             animate={{ pathLength: 1 }}
             transition={
-              reducedMotion
-                ? { duration: 0 }
-                : { type: "spring", stiffness: 240, damping: 28 }
+              reducedMotion ? { duration: 0 } : SPRING.smooth
             }
           />
           <motion.polygon
@@ -853,13 +837,9 @@ function ECCard({
         else cardRefs.current.delete(frameId);
       }}
       layout={!reducedMotion}
-      initial={
-        reducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: -16 }
-      }
+      initial={reducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: -16 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={
-        reducedMotion ? { opacity: 0, y: 0 } : { opacity: 0, y: -16 }
-      }
+      exit={reducedMotion ? { opacity: 0, y: 0 } : { opacity: 0, y: -16 }}
       transition={reducedMotion ? { duration: 0 } : SPRING.smooth}
       style={{
         padding: "8px 10px",
@@ -899,9 +879,7 @@ function ECCard({
           style={{
             fontSize: 12,
             fontWeight: 600,
-            color: isTop
-              ? "var(--color-accent)"
-              : "var(--color-text-muted)",
+            color: isTop ? "var(--color-accent)" : "var(--color-text-muted)",
             minWidth: 0,
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -939,9 +917,7 @@ function ECCard({
                 minWidth: 0,
               }}
             >
-              <span style={{ color: "var(--color-text-muted)" }}>
-                {b.name}
-              </span>
+              <span style={{ color: "var(--color-text-muted)" }}>{b.name}</span>
               <span
                 style={{
                   textAlign: "right",
@@ -967,19 +943,66 @@ function ECCard({
   );
 }
 
-function btnStyle(primary: boolean, disabled: boolean): React.CSSProperties {
-  return {
+/* ------------------------------------------------------------------ */
+/*  CtrlBtn — tap target ≥ 44 × 44 px.                                */
+/* ------------------------------------------------------------------ */
+
+function CtrlBtn({
+  children,
+  onClick,
+  disabled,
+  kind,
+  ariaLabel,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+  kind: "primary" | "accent" | "muted" | "ghost";
+  ariaLabel?: string;
+}) {
+  const base: React.CSSProperties = {
     minHeight: 44,
     padding: "0 12px",
     borderRadius: "var(--radius-sm)",
-    border: `1px solid ${primary ? "var(--color-accent)" : "var(--color-rule)"}`,
-    background: primary
-      ? "color-mix(in oklab, var(--color-accent) 14%, transparent)"
-      : "transparent",
-    color: primary ? "var(--color-accent)" : "var(--color-text)",
+    border: "1px solid var(--color-rule)",
+    background: "transparent",
+    color: "var(--color-text)",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
     fontFamily: "var(--font-mono)",
     fontSize: 12,
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.5 : 1,
+    whiteSpace: "nowrap",
   };
+  const variant: Record<typeof kind, React.CSSProperties> = {
+    primary: {
+      background: "var(--color-accent)",
+      color: "var(--color-bg)",
+      border: "1px solid var(--color-accent)",
+      fontWeight: 600,
+    },
+    accent: {
+      background: "color-mix(in oklab, var(--color-accent) 14%, transparent)",
+      color: "var(--color-accent)",
+      border: "1px solid var(--color-accent)",
+    },
+    muted: {},
+    ghost: {
+      color: "var(--color-text-muted)",
+    },
+  };
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      style={{ ...base, ...variant[kind] }}
+      {...(disabled ? {} : PRESS)}
+    >
+      {children}
+    </motion.button>
+  );
 }
