@@ -26,7 +26,7 @@ Every post answers a question the reader has already felt (*"how does X feel so 
 - **Rare terms defined in ≤ 8 words.** "Strict serialisability — a promise that, from the outside, it's as if every transaction happened one at a time." Not "for a total order σ consistent with real-time partial order, …"
 - **Citations go in `<Aside>`, `<Callout>`, or inline `<A href>` links.** Never `(Bose et al. 2008)`-style parenthetical references in body prose.
 - **No cliffhangers, no "next bytesize" teasers.** Every post stands alone. The closer lands on the reader's new capability, not on a pointer forward. Exception: one-sentence "this connects to X" if the connection is genuinely load-bearing.
-- **Cut to the bone.** Target ≤ 1500 words of `<P>` prose for a 12–15-min post. If a section is over 250 words with no interactive, it's probably too long.
+- **Cut to the bone — but don't cap a section.** Total `<P>` prose runs in a soft band of ~1500–2200 words for a 12–15-min post. **No max length per section** — right-size each one to the concept's cognitive arc. Per user direction (post #46 / #47): *"there shouldn't be any max length limit per section in any of my articles, I am ready to go above and beyond limits if it's necessary to introduce a concept better."* If a section needs 800 words to land its mechanism cleanly, take 800 — landing the concept is the gate. The signal of bloat isn't word count, it's meandering: if the prose has stopped advancing the argument, cut. See §12 for the full pattern.
 
 ## 4. Widget rules
 
@@ -196,3 +196,149 @@ When validating a post, the SEO sweep is part of the gate (`pipeline-playbook.md
 - OG + Twitter mirror title + description
 - Visible H1 matches `VISIBLE_HEADING` exactly
 - `subtitle` export matches `LYRICAL_TAGLINE`
+
+## §12. Patterns from the two-flagship release (event-loop + hoisting/TDZ)
+
+Two posts shipped back-to-back in late April 2026 — *"JavaScript Event Loop Explained: Microtasks and the Call Stack"* (`the-line-that-waits-its-turn`) and *"JavaScript Hoisting, the TDZ, and the Call Stack Explained"* (`how-javascript-reads-its-own-future`). The user's verbatim direction after the pair landed: *"I am deeply in love with the pedagogy, the tone, the writing manner, the layout, the interactive components of [these two articles]. update our content creation guidelines to follow and adhere to these for voice profiling, layout, preface and overall structure."*
+
+These patterns are additive — they don't replace §§1–11, they extend them for posts that teach a non-obvious order, output, or mechanism.
+
+### §12.1. The premise-quiz opener as the article anchor
+
+**Rule.** Open the post with a hard quiz the reader is expected to fail — a `<PredictTheStart>`-style W0 widget (see [`interactive-components.md §1`](./interactive-components.md), Premise quiz row) that surfaces a snippet, asks for the predicted output / order, and reveals a wrong answer most readers will give. The wrong answer creates demand for the explanation; everything that follows pays the demand back.
+
+**Example** (event-loop opener, `the-line-that-waits-its-turn/page.tsx`):
+
+```tsx
+{/* §0 — the quiz hook */}
+<P>
+  Before we explain anything, try the snippet below. Read it once, then
+  guess the order it prints. Most readers get this wrong on the first
+  try — and <HL>the gap between your guess and the truth is exactly
+  what this post fills</HL>.
+</P>
+
+<PredictTheStart />
+```
+
+The opener's snippet/scenario stays referenced through the body. §1 names *why* `A`, `F`, `H` print first; §3 names *why* `B` lands last; §4 names *why* `G` doesn't sit next to `F`; §6 (the closer) tells the reader to scroll back and re-run the opener. Every later section reinforces the opener's puzzle.
+
+The hoisting post does the same with a smaller snippet (`console.log(x); var x = 5;`) and walks four sections back to it.
+
+**When not to use.** Posts where the topic is a product moment / system tour rather than a non-obvious mechanism (e.g. the Gmail post). Those still want a flow widget within 150 words (§2), but the opener is a scene, not a quiz. The quiz opener is for posts whose central question is "what does this do, and why?"
+
+### §12.2. Mechanism-first reframe, not feature-first taxonomy
+
+**Rule.** Both flagship articles begin from the *mechanism* — the engine reads ahead; the loop drains microtasks first — and not from a feature taxonomy (`var` vs `let` vs `const`; microtasks vs macrotasks vs the call stack). The taxonomy is a *consequence* of the mechanism, presented after the mechanism is in the reader's hands.
+
+**Example** (hoisting post, §1):
+
+> "The trick isn't that `var` moved anywhere. *Nothing moves. The engine walks the body once before any of it runs.* On that first pass — call it the creation phase — every `var`, every `let`, every function declaration, every parameter gets a binding installed in the function's memory."
+
+§2 then runs the four declaration-kind cases. The taxonomy isn't the lesson; it's a *check* — does the mechanism explain what each kind does at line 1? Yes, and that's the proof.
+
+The TDZ article reframes hoisting + TDZ + call stack as **"one mechanism, not three quirks."** The closer (§5) lands on it: *"Hoisting, the TDZ, functions callable from above — three names for one mechanism."*
+
+**When not to use.** Posts where the topic IS a taxonomy (the agent-traps post, with its four-class framework). Those want argument-claim H2s per class (§9), not a prior mechanism. The mechanism-first reframe is for posts where two or three concepts are usually taught separately *but share a single underlying machine*.
+
+### §12.3. The "many-views-of-one-mechanism" structural device
+
+**Rule.** When teaching a system whose pieces are usually taught separately, present them as multiple views of one mechanism. The closing recap names the mechanism explicitly.
+
+The event-loop post does this with two queues + the call stack — they're not three things, they're three views of "the loop only reaches into its queues when the stack is empty, and the microtask queue drains first."
+
+The hoisting post does it with hoisting + TDZ + execution context — three names for the creation-phase pre-walk.
+
+**Closer formulation:** *"X, Y, and Z — three names for one mechanism."* (or its variant: *"the rule that lets [X feel seamless] is the same rule that lets [Y stall the tab]."*) Then a single italic line restating the mechanism. Then a single centred terracotta dot.
+
+**Example** (event-loop closer):
+
+> "The line that waits its turn is the task queue. The line that *doesn't* is the microtask queue — it gets drained completely, every checkpoint, before anything else moves. One rule explains why `await` works, why `setTimeout(0)` is never zero, and why one runaway Promise stalls your whole tab."
+
+**When not to use.** Single-concept posts (one widget, one insight) — they don't have multiple views to unify. Use this when the article frames itself as resolving an apparent contradiction or merging concepts the reader thinks of separately.
+
+### §12.4. Inline `<Aside>` for engine implementation details
+
+**Rule.** Use `<Aside>` for "if you want to go one level deeper" beats — V8 preparser citations, ECMA-262 §10.2.x references, browser-convergence history, libuv vs HTML-spec divergence, V8 fast-path optimisations. Without the Aside the article would lose technical credibility; with it the main flow stays readable.
+
+The aside is **never** load-bearing for the lesson. A reader who skips every Aside still gets the article. A reader who reads them gets the engine-internals layer that earns the post's authority.
+
+**Example** (hoisting post, §1):
+
+```tsx
+<Aside>
+  The spec name for this pre-walk is{" "}
+  <Code>FunctionDeclarationInstantiation</Code> for function bodies
+  and <Code>GlobalDeclarationInstantiation</Code> for the script. See{" "}
+  <A href="https://tc39.es/ecma262/multipage/...">ECMA-262 §10.2.11</A>.
+  Throughout this post we'll just call it the creation phase.
+</Aside>
+```
+
+**Cadence.** 1 Aside per major section is plenty; 2 in a 5-section post is the upper bound. More than that and the asides start carrying weight that should be in the prose.
+
+**When not to use.** For a callout that the reader MUST read to understand the next paragraph — that belongs in `<P>`, not `<Aside>`. The Aside is for the reader who wants the next layer down, not for the reader trying to follow the main argument.
+
+### §12.5. `<Term>` for first-introduction of jargon
+
+**Rule.** Both flagship articles `<Term>`-mark new terms on their first appearance and only their first. After that, the term is plain text or `<Code>`. The Term tag tells the reader *this is the spec name; remember it because it'll come back* — and the article rewards the memory.
+
+**Example** (hoisting post): `<Term>creation phase</Term>` on first mention in §1; thereafter just "the creation phase" in plain prose. `<Term>temporal dead zone</Term>` on first mention in §2; thereafter "the TDZ." `<Term>variable environment</Term>`, `<Term>lexical environment</Term>` on first mention in §3.
+
+**When not to use.** Don't `<Term>`-mark a word the reader already knows in the post's domain. (Don't `<Term>`-mark "function" in a hoisting article; the reader knows it.) And don't double-mark — once a term is introduced, it's introduced.
+
+### §12.6. The widget-prose ramp
+
+**Rule.** Every widget sits inside three pieces of prose:
+
+1. **Motivating ramp** (1–2 sentences) that sets up the question the widget answers.
+2. **The widget.**
+3. **Landing paragraph** (1–2 sentences, often containing an `<HL>`-marked phrase) that names what the widget showed.
+
+The widget is **never standalone**. A widget without a ramp lands in the middle of the page with no prompt; a widget without a landing paragraph leaves the reader to derive the lesson on their own. Both fail.
+
+**Example** (event-loop, around `RuntimeSimulator`):
+
+> *Ramp:* "So the engine is single-threaded, but the runtime around it is doing work in parallel… The widget below walks ten ticks of a small program and shows where every piece sits."
+>
+> `<RuntimeSimulator />`
+>
+> *Landing:* "By tick 7 the stack is empty, both queues hold one item, and the loop reaches in. It pulls from the microtask queue first… The microtask jumped the line — `<HL>the rule that let it isn't a quirk; it's the entire model</HL>`."
+
+**When not to use.** The W0 / opener widget can skip the landing paragraph if the *next section* (§1) carries that role — the opener's snippet is referenced through the body, so the landing is distributed across the article. Every other widget needs all three pieces.
+
+### §12.7. No section length cap
+
+**Rule.** **There is no max length per section.** Word counts on individual sections are not a quality signal; cognitive arc completion is. A section is "right-sized" when the concept is fully introduced — even if that takes 800 words.
+
+Per user direction: *"there shouldn't be any max length limit per section in any of my articles, I am ready to go above and beyond limits if it's necessary to introduce a concept better."*
+
+This durably replaces any prior "≤ N words per section" or "if a section is over N words it's too long" heuristic. The flagship event-loop post's §3 (the two queues + microtask checkpoint) and §4 (await desugaring) both run long, and that's correct — those are the sections where the mechanism is introduced and stress-tested across cases. Cutting them to fit a heuristic would have lost the article.
+
+The total post target stays a soft band (~1500–2200 words for a 12–15-min read) but is **not a hard gate**. If landing the mechanism takes 2400 words, take 2400.
+
+**The signal of bloat is not word count** — it's meandering. A section is too long if the prose has stopped advancing the argument. A section is right-sized if every paragraph is doing teaching work, regardless of how many of them there are.
+
+**When this binds.** This rule applies to *body* sections — the ones doing teaching. The opener (§0) and closer remain compact by their nature; the closer especially is allowed to be one paragraph + one italic line + a dot (see §9 closer pattern). Don't read "no length cap" as licence to bloat the opener.
+
+### §12.8. Closer that loops back to the opener
+
+**Rule.** The closer references the opener directly. The reader is invited to re-read the opener with their new mental model and find that the puzzle is no longer a puzzle.
+
+**Example** (event-loop closer):
+
+> "Scroll back up and run the opener again. The order isn't a riddle anymore — it's the sequence the runtime had to take."
+
+**Example** (hoisting closer):
+
+> "Hoisting, the TDZ, functions callable from above — three names for one mechanism. The opening scene wasn't a quirk. It was the mechanism showing through.
+>
+> *The engine reads your future to run your present.*"
+
+The closer is **still prose**, optionally with one italic line and a centred terracotta dot. **Not `VerticalCutReveal`** — that primitive is banned (see playbook). The pacing comes from `<HL>` and the dot, not from a reveal animation.
+
+**When not to use.** Posts that don't open with a quiz (product-moment posts) loop the closer back to the *scene* instead — the gmail post closes on "the gap between Google and Netflix" because the scene was about that gap. Same shape, different anchor. The rule is "loop back to the opening anchor," whatever the anchor was.
+
+### §12.9. Voice register confirmation (no change, just emphasis)
+
+The two flagship posts confirm — don't change — the §3 prose rules. Engineer-not-paper. Second-person hooks (*"You type two lines into a console…"*, *"Before we explain anything, try the snippet below…"*). Mechanism-first sentences (*"The engine reads your file before it runs line 1."*). Numbers felt, not derived. Aside / Term / Em / Code primitives sprinkled to build texture without bloating the prose. If a future agent finds themselves drifting from that register, re-read these two posts as the canonical exemplars.
