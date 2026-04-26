@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { TextHighlighter } from "@/components/fancy";
 import { SPRING, PRESS } from "@/lib/motion";
@@ -153,28 +153,6 @@ const SOURCE_STROKE: Record<Source, string> = {
   micro: "transparent",
 };
 
-function CodePane({ code }: { code: string[] }) {
-  return (
-    <pre
-      className="font-mono"
-      style={{
-        background: "color-mix(in oklab, var(--color-surface) 60%, transparent)",
-        padding: "var(--spacing-sm)",
-        borderRadius: "var(--radius-sm)",
-        fontSize: 12,
-        color: "var(--color-text)",
-        lineHeight: 1.65,
-        margin: 0,
-        whiteSpace: "pre",
-        overflowX: "auto",
-        minHeight: "9em",
-      }}
-    >
-      {code.join("\n")}
-    </pre>
-  );
-}
-
 function RevealStrip({ reveal }: { reveal: Variant["reveal"] }) {
   return (
     <div
@@ -221,7 +199,9 @@ function RevealStrip({ reveal }: { reveal: Variant["reveal"] }) {
   );
 }
 
-const MemoCodePane = memo(CodePane);
+// Per-variant code text lives in `./snippets.ts` (a non-client module)
+// so the RSC `page.tsx` can pre-render each block through `<CodeBlock>`
+// and pass the highlighted elements back in via `codeSlots`.
 
 /**
  * PredictTheOutput (W2) — three selectable variants. Reader picks an
@@ -234,8 +214,17 @@ const MemoCodePane = memo(CodePane);
  * Frame stability (R6): variant chooser, code pane, predict options, and
  * reveal strip share a single fixed-rectangle canvas. The reveal strip has
  * `min-height` so the card doesn't grow when it appears.
+ *
+ * Code rendering: Shiki-highlighted code panes (one per variant) are
+ * pre-rendered by the article's RSC `page.tsx` and passed in as
+ * `codeSlots`, keyed by variant id. Keeps Shiki out of the client bundle.
  */
-export function PredictTheOutput() {
+type Props = {
+  /** One pre-rendered Shiki block per variant. */
+  codeSlots: Record<Variant["id"], React.ReactNode>;
+};
+
+export function PredictTheOutput({ codeSlots }: Props) {
   const [variantId, setVariantId] = useState<Variant["id"]>("alpha");
   const [picked, setPicked] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
@@ -342,7 +331,7 @@ export function PredictTheOutput() {
           })}
         </div>
 
-        <MemoCodePane code={variant.code} />
+        {codeSlots[variantId]}
 
         {/* Predict / reveal area — fixed-rectangle, shares min-height. */}
         <div style={{ minHeight: "9em" }}>

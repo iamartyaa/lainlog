@@ -13,6 +13,7 @@ import {
 import { PostBackLink } from "@/components/nav/PostBackLink";
 import { PostNavCards } from "@/components/nav/PostNavCards";
 import { TextHighlighter } from "@/components/fancy";
+import { CodeBlock } from "@/components/code/CodeBlock";
 import {
   RuntimeSimulator,
   PredictTheStart,
@@ -20,6 +21,10 @@ import {
   AwaitDesugar,
   MicrotaskStarvation,
 } from "./widgets";
+import {
+  PREDICT_THE_START_SNIPPET,
+  PREDICT_THE_OUTPUT_VARIANT_CODE,
+} from "./widgets/snippets";
 import { metadata, subtitle } from "./metadata";
 
 export { metadata };
@@ -91,7 +96,15 @@ export default function TheLineThatWaitsItsTurn() {
         </P>
       </div>
 
-      <PredictTheStart />
+      <PredictTheStart
+        codeSlot={
+          <CodeBlock
+            lang="javascript"
+            filename="predict the output"
+            code={PREDICT_THE_START_SNIPPET}
+          />
+        }
+      />
 
       <div>
         <P>
@@ -217,7 +230,31 @@ export default function TheLineThatWaitsItsTurn() {
         </P>
       </div>
 
-      <PredictTheOutput />
+      <PredictTheOutput
+        codeSlots={{
+          alpha: (
+            <CodeBlock
+              lang="javascript"
+              filename="α · baseline"
+              code={PREDICT_THE_OUTPUT_VARIANT_CODE.alpha}
+            />
+          ),
+          beta: (
+            <CodeBlock
+              lang="javascript"
+              filename="β · microtasks spawn microtasks"
+              code={PREDICT_THE_OUTPUT_VARIANT_CODE.beta}
+            />
+          ),
+          gamma: (
+            <CodeBlock
+              lang="javascript"
+              filename="γ · task scheduled first"
+              code={PREDICT_THE_OUTPUT_VARIANT_CODE.gamma}
+            />
+          ),
+        }}
+      />
 
       <div>
         <P>
