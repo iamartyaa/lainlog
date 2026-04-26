@@ -26,7 +26,7 @@ export function LongPoll() {
   const tap = useTapPulse<HTMLButtonElement>();
 
   const onClick = () => {
-    playSound("Click");
+    playSound("Progress-Tick");
     tap.pulse();
     toggle();
   };

@@ -50,7 +50,7 @@ export function PredictReveal({ answer, label = "reveal" }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => {
-              playSound("Click");
+              playSound("Progress-Tick");
               setOpen(true);
             }}
             className="font-mono rounded-[var(--radius-sm)] transition-colors hover:text-[color:var(--color-accent)]"

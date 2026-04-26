@@ -364,7 +364,7 @@ function SegmentedRow<T extends string>({
               aria-checked={active}
               disabled={disabled}
               onClick={() => {
-                if (opt !== value) playSound("Toggle-On");
+                if (opt !== value) playSound("Radio");
                 onChange(opt);
               }}
               className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] min-h-[44px] inline-flex items-center font-mono transition-colors hover:enabled:text-[color:var(--color-accent)] disabled:cursor-not-allowed"
@@ -409,9 +409,9 @@ function Toggle({
       type="button"
       aria-pressed={pressed}
       onClick={() => {
-        // Toggle-On for both directions of the binary toggle (no Toggle-Off
-        // — playbook chose a single sound to keep vocabulary tight).
-        playSound("Toggle-On");
+        // Radio for both directions of the binary toggle (no separate
+        // off-sound — playbook chose a single sound to keep vocabulary tight).
+        playSound("Radio");
         onToggle();
       }}
       className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] min-h-[44px] inline-flex items-center font-mono transition-colors hover:text-[color:var(--color-accent)]"
@@ -457,7 +457,7 @@ function CredentialsSwitch({
             role="radio"
             aria-checked={active}
             onClick={() => {
-              if (o.v !== value) playSound("Toggle-On");
+              if (o.v !== value) playSound("Radio");
               onChange(o.v);
             }}
             className="rounded-[var(--radius-sm)] px-[var(--spacing-sm)] py-[var(--spacing-2xs)] min-h-[44px] inline-flex items-center font-mono transition-colors hover:text-[color:var(--color-accent)]"

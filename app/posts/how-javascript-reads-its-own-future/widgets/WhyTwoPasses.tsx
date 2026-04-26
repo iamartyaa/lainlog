@@ -148,7 +148,7 @@ export function WhyTwoPasses({ initialReason = "callable" }: Props) {
                 key={r.id}
                 type="button"
                 onClick={() => {
-                  if (r.id !== reasonId) playSound("Toggle-On");
+                  if (r.id !== reasonId) playSound("Radio");
                   setReasonId(r.id);
                 }}
                 aria-pressed={active}

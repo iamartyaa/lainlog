@@ -74,7 +74,7 @@ export function ParseVsRender() {
               role="tab"
               aria-selected={view === v}
               onClick={() => {
-                if (view !== v) playSound("Toggle-On");
+                if (view !== v) playSound("Radio");
                 setView(v);
               }}
               className="px-[var(--spacing-md)] py-[var(--spacing-2xs)] min-h-[44px] transition-colors"

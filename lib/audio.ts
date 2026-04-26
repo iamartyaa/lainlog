@@ -1,5 +1,5 @@
 /**
- * lib/audio.ts — central play surface for the lainlog audio system.
+ * lib/audio.ts — central play surface for the bytesize audio system.
  *
  * Anchor principles (also enumerated in `docs/audio-playbook.md`):
  *   1. Audio is OPT-IN, default OFF. State persists in
@@ -7,10 +7,28 @@
  *   2. `prefers-reduced-motion: reduce` → audio off automatically.
  *   3. Sound is never the sole feedback channel.
  *   4. Same action = same sound everywhere.
- *   5. Volumes calibrated subtle (~30–40% of upstream Minimal patch).
- *      Per-sound gain documented inline below.
+ *   5. Volumes calibrated subtle. Per-sound gain documented inline below.
  *   6. Pause when tab is hidden (`document.visibilityState !== "visible"`).
  *   7. User-triggered only — autonomous animations do NOT call `playSound`.
+ *
+ * Patch migration (2026-04-26): the upstream `@web-kits/audio` patch was
+ * swapped from `minimal` → `core`. The new vocabulary adopts three richer
+ * sounds — `Progress-Tick`, `Radio`, `Dropdown-Open` — and retires three
+ * — `Toggle-On`, `Page-Enter`, `Page-Exit`. The total cap is still 10.
+ *
+ *   - `Progress-Tick` covers state-machine advance: WidgetNav step / back /
+ *     run / pause / reset, scrubber arrow-key advance, one-shot widget Run
+ *     buttons, PredictReveal. Fires when the action *advances through a
+ *     sequence*.
+ *   - `Click` is reserved for discrete pick / commit: Quiz option-press
+ *     remains the only Click site after the migration. The distinction is
+ *     for dev consistency, not reader perception.
+ *   - `Radio` covers all binary state flips and segmented-control rows that
+ *     used to fire `Toggle-On`. Theme toggle, Audio toggle, every per-row
+ *     pick across the catalogue.
+ *   - `Dropdown-Open` covers the single-beat `<NavigationSounds />` cue on
+ *     client-side route change. `Page-Exit` stays retired (single beat
+ *     preserved per PR #64 dub-dub feedback). No `Dropdown-Close`.
  *
  * Implementation notes:
  *   - SSR-safe: every `window`/`document`/`localStorage` access is guarded.
@@ -32,76 +50,72 @@ import { defineSound, type SoundDefinition } from "@web-kits/audio";
 import {
   click,
   copy,
+  dropdownOpen,
   error,
-  pageEnter,
   pop,
+  progressTick,
+  radio,
   slide,
   success,
   swoosh,
-  toggleOn,
-} from "@/.web-kits/minimal";
+} from "@/.web-kits/core";
 
 export type SoundName =
-  | "Copy"
-  | "Success"
-  | "Error"
+  | "Progress-Tick"
   | "Click"
+  | "Copy"
+  | "Radio"
   | "Pop"
   | "Slide"
-  | "Toggle-On"
-  | "Swoosh"
-  | "Page-Enter";
+  | "Dropdown-Open"
+  | "Success"
+  | "Error"
+  | "Swoosh";
 
 /**
- * Per-sound gain multipliers applied AFTER the patch's own `gain`. Recalibrated
- * 2026-04-26 (PR #64 v4) to a UNIFORM 0.5 across the vocabulary so every sound
- * lands at the same target loudness. The patch-level `gain` values (in
- * `.web-kits/minimal.ts`) carry the per-sound balancing — those were tuned by
- * the upstream library author for equal perceived loudness across different
- * fundamentals, so applying a single multiplier on top preserves that balance.
+ * Per-sound gain multipliers applied AFTER the patch's own `gain`. The
+ * UNIFORM 1.0 baseline (PR #65) passes the patch's native gain through
+ * unattenuated — the per-sound balancing lives at the patch level (see
+ * `.web-kits/core.ts`, where Click / Pop / Error / Radio / Copy were
+ * trimmed from the upstream Core defaults to land at the same perceived
+ * loudness as Slide / Swoosh / Dropdown-Open / Progress-Tick / Success).
  *
- * Earlier revisions had per-sound multipliers (Copy 0.55, Click 0.4, etc.) but
- * user feedback wanted "all sounds equally loud, no exceptions." The 0.5
- * baseline that landed in PR #64 turned out to be too quiet on typical
- * laptop speakers (audible only near full system volume), so this constant
- * was bumped to 1.0 in PR #65 — passing the patch's native gain through
- * unattenuated. If the next round of feedback says it's still too quiet,
- * the next lever is bumping the patch-level `gain` values in
- * `.web-kits/minimal.ts` per-sound (or going above 1.0 here, with the
- * caveat that values >1 risk WebAudio clipping on percussive transients).
- *
- * Page-Exit was retired in PR #64: navigation plays a single Page-Enter
- * "dub" rather than the previous Page-Exit + Page-Enter "dub-dub" pair.
+ * If the next round of feedback says it's still too quiet, the next lever
+ * is bumping the patch-level `gain` values in `.web-kits/core.ts` per-sound
+ * (or going above 1.0 here, with the caveat that values >1 risk WebAudio
+ * clipping on percussive transients).
  *
  * If you change this constant, also update §6 of `docs/audio-playbook.md`.
  */
 const UNIFORM_GAIN = 1.0;
 const GAIN_MULTIPLIER: Record<SoundName, number> = {
-  Copy: UNIFORM_GAIN,
-  Success: UNIFORM_GAIN,
-  Error: UNIFORM_GAIN,
+  "Progress-Tick": UNIFORM_GAIN,
   Click: UNIFORM_GAIN,
+  Copy: UNIFORM_GAIN,
+  Radio: UNIFORM_GAIN,
   Pop: UNIFORM_GAIN,
   Slide: UNIFORM_GAIN,
-  "Toggle-On": UNIFORM_GAIN,
+  "Dropdown-Open": UNIFORM_GAIN,
+  Success: UNIFORM_GAIN,
+  Error: UNIFORM_GAIN,
   Swoosh: UNIFORM_GAIN,
-  "Page-Enter": UNIFORM_GAIN,
 };
 
 /**
  * Map our public `SoundName` (CamelCase, brand-friendly) onto the patch
- * exports (camelCase locals from `@/.web-kits/minimal`).
+ * exports (camelCase locals from `@/.web-kits/core`).
  */
 const PATCH_DEF: Record<SoundName, SoundDefinition> = {
-  Copy: copy,
-  Success: success,
-  Error: error,
+  "Progress-Tick": progressTick,
   Click: click,
+  Copy: copy,
+  Radio: radio,
   Pop: pop,
   Slide: slide,
-  "Toggle-On": toggleOn,
+  "Dropdown-Open": dropdownOpen,
+  Success: success,
+  Error: error,
   Swoosh: swoosh,
-  "Page-Enter": pageEnter,
 };
 
 const THROTTLE_MS = 100;

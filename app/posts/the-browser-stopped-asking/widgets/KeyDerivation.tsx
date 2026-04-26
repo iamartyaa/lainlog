@@ -57,7 +57,7 @@ export function KeyDerivation() {
 
   const onClick = () => {
     if (pending) return;
-    playSound("Click");
+    playSound("Progress-Tick");
     tap.pulse();
     void reroll();
   };

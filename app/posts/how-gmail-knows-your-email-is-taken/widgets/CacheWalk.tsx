@@ -302,7 +302,7 @@ export function CacheWalk({
                       key={l.id}
                       type="button"
                       onClick={() => {
-                        if (l.id !== localityId) playSound("Toggle-On");
+                        if (l.id !== localityId) playSound("Radio");
                         setLocalityId(l.id);
                       }}
                       aria-pressed={active}

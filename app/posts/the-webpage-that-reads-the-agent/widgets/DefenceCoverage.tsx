@@ -120,7 +120,7 @@ export function DefenceCoverage() {
               key={l.key}
               type="button"
               onClick={() => {
-                playSound("Toggle-On");
+                playSound("Radio");
                 setActive(isActive ? null : l.key);
               }}
               aria-pressed={isActive}

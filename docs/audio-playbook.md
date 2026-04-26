@@ -2,7 +2,7 @@
 
 The reference document for how the lainlog audio system sounds and feels. Authority for any sound-related decision in the codebase.
 
-Audio is a delight beat — the same register as `ClickSpark`, `TextHighlighter`, or a one-shot SVG-cover loop. It is **opt-in**, **default off**, and has only **ten** sounds in its vocabulary (eight user-triggered + the Page-Enter / Page-Exit pair fired by `<NavigationSounds />` on every client-side route change). New widgets pick one of those ten or stay silent; we do not invent new sounds for new widgets.
+Audio is a delight beat — the same register as `ClickSpark`, `TextHighlighter`, or a one-shot SVG-cover loop. It is **opt-in**, **default off**, and has only **ten** sounds in its vocabulary (nine user-triggered widget cues + the single-beat Dropdown-Open fired by `<NavigationSounds />` on every client-side route change). New widgets pick one of those ten or stay silent; we do not invent new sounds for new widgets.
 
 This doc is loaded at Phase E of `/new-post` and during any feature build that touches an interactive widget. When any rule here conflicts with a one-off design decision, this doc wins unless the conflict is explicitly resolved with the user.
 
@@ -16,30 +16,30 @@ Seven non-negotiables. If a proposal violates any of these, the proposal loses.
 2. **`prefers-reduced-motion: reduce` → audio off automatically.** No user override in v1. If the OS preference says quiet, we listen.
 3. **Sound is never the sole feedback channel.** Every wire-site already has a visual cue — sound layers onto an existing affordance, never replaces one.
 4. **Same action = same sound everywhere.** A button-press click sounds identical in every widget. Consistency over novelty.
-5. **Volume default subtle (~30–40% of upstream library).** Per-sound gain multipliers documented in §6. Calibrated by ear, refined in dogfooding.
+5. **Volume default subtle.** Per-sound gain values are calibrated at the patch level (see `.web-kits/core.ts`); a uniform 1.0 multiplier passes them through unattenuated. Documented in §6.
 6. **Pause when tab is hidden.** `document.visibilityState !== "visible"` → skip. Background tabs stay silent.
 7. **User-triggered only.** Autonomous animations (cover loops, off-screen widget motion, queue-drain hops, EC pop animations) do NOT play sounds.
 
 ## 2. Tier-1 — the 10 sounds we use
 
-| `SoundName`  | Patch source       | Use site |
+| `SoundName`     | Patch source         | Use site |
 |---|---|---|
-| `Copy`       | `minimal.copy`     | `<CopyButton>` after `navigator.clipboard.writeText` resolves. |
-| `Success`    | `minimal.success`  | `<Quiz>` on correct-answer reveal. |
-| `Error`      | `minimal.error`    | `<Quiz>` on wrong-answer reveal AND on "reveal answer" escape hatch. |
-| `Click`      | `minimal.click`    | `<WidgetNav>` (prev / play-pause / next). `<Quiz>` option-press. `MicrotaskStarvation` per-button presses (`+ micro`, `+ macro`, `+ self-sched`, `reset`). `CallStackECs` Step / Back / Run / Reset. |
-| `Pop`        | `minimal.pop`      | `CallStackECs` on EC push (stack length grows step-over-step). Also: first toggle-ON preview (iOS AudioContext unlock). |
-| `Slide`      | `minimal.slide`    | `MicrotaskStarvation` on user Run-click. ONE shot per click — internal queue-drain hops stay silent. |
-| `Toggle-On`  | `minimal.toggle-on`| Segmented controls — both directions of the binary toggle (no `Toggle-Off`). `DeclarationStates`, `WhyTwoPasses`, `RequestClassifier`, `PredictTheOutput` variant chooser. |
-| `Swoosh`     | `minimal.swoosh`   | `PredictTheStart` verdict reveal. Capped at one shot per page-load via a ref. |
-| `Page-Enter` | `minimal.page-enter`| `<NavigationSounds />` (mounted in `app/layout.tsx`) on every client-side route change. Fires ~120 ms after `Page-Exit` so the pair feels like the visual route change rather than a single muddled blip. First mount is silent (no autoplay on initial load). |
-| `Page-Exit`  | `minimal.page-exit` | `<NavigationSounds />` (mounted in `app/layout.tsx`) on every client-side route change. Fires immediately on path change. Paired with `Page-Enter`. |
+| `Progress-Tick` | `core.progress-tick` | `<WidgetNav>` (prev / play-pause / next). `CallStackECs` Step / Back / Run / Reset. `<Scrubber>` (drag-start + arrow-key advance). One-shot widget Run buttons that kick off a state machine: `HostilePageScan` start, `InfectiousJailbreak` play, `Polling` / `LongPoll` / `WebSocketStream` play, `KeyDerivation` regenerate, `TypingPause` play / keystroke / reset, `PredictReveal` reveal. |
+| `Click`         | `core.click`         | `<Quiz>` option-press. `MicrotaskStarvation` per-button presses (`+ micro`, `+ macro`, `+ self-sched`, `reset`). Click is reserved for **discrete pick / commit** — see the rule under §13. |
+| `Copy`          | `core.copy`          | `<CopyButton>` after `navigator.clipboard.writeText` resolves. |
+| `Radio`         | `core.radio`         | All binary state flips and segmented-control rows: `<ThemeToggle>`, `<AudioToggle>` (toggle-OFF — toggle-ON fires `Pop` for iOS unlock), `DefenceCoverage`, `ParseVsRender`, `RequestJourney`, `OriginMatrix`, `CostMatrix`, `CacheWalk`, `NetflixSplit`, `DeclarationStates`, `WhyTwoPasses`, `RequestClassifier` (all 3 sub-controls), `PredictTheOutput`. |
+| `Pop`           | `core.pop`           | `CallStackECs` on EC push (stack length grows step-over-step). Also: first toggle-ON preview (iOS AudioContext unlock + audible welcome). |
+| `Slide`         | `core.slide`         | `MicrotaskStarvation` on user Run-click. ONE shot per click — internal queue-drain hops stay silent. |
+| `Dropdown-Open` | `core.dropdown-open` | `<NavigationSounds />` (mounted in `app/layout.tsx`) on every client-side route change. Single beat per navigation. First mount is silent (no autoplay on initial load). |
+| `Success`       | `core.success`       | `<Quiz>` on correct-answer reveal. |
+| `Error`         | `core.error`         | `<Quiz>` on wrong-answer reveal AND on "reveal answer" escape hatch. |
+| `Swoosh`        | `core.swoosh`        | `PredictTheStart` verdict reveal. Capped at one shot per page-load via a ref. |
 
 **Total vocabulary = 10.** This is the cap. Adding an 11th sound requires shipping a new section here and surviving a `/grill-me` defending why an existing sound can't carry the meaning.
 
 ## 3. Tier-2 — deferred (revisit after dogfooding)
 
-No sounds are currently deferred. The original Tier-2 entries (`Page-Enter`, `Page-Exit`) were promoted to Tier-1 after the navigation transition feedback gap surfaced in dogfooding — they now ride `<NavigationSounds />` mounted in `app/layout.tsx`.
+No sounds are currently deferred. The original Tier-2 entries (`Page-Enter`, `Page-Exit`) were promoted to Tier-1 after the navigation transition feedback gap surfaced in dogfooding, then **retired entirely** in the 2026-04-26 minimal → core patch swap. Single-beat navigation now rides `Dropdown-Open` via `<NavigationSounds />` mounted in `app/layout.tsx`.
 
 If we ever defer a sound again, it lands here with criteria for promotion. Do not unilaterally enable.
 
@@ -51,8 +51,10 @@ The following sounds are **banned**. Reason cards sit next to each so future con
 |---|---|
 | `Hover` | Hover sounds train aversion. They fire on every micro-cursor twitch and never carry information the visual hover state doesn't already give. |
 | `Key-Press` | Keypress audio implies typing-as-feedback, which lainlog never does — readers don't author content here. |
-| `Tap` | Visually equivalent to `Click` in the Minimal patch, but lower gain and weaker punch. We use `Click` for tactile presses and let `Pop` carry the bigger "something landed" beat. |
-| `Toggle-Off` | We use `Toggle-On` for both directions of a binary switch. Two sounds for one toggle doubles the audio surface area without adding meaning. |
+| `Tap` | Visually equivalent to `Click` in the Core patch, but lower gain and weaker punch. We use `Click` for discrete picks and `Progress-Tick` for state-machine advance — Tap adds nothing. |
+| `Toggle-On`, `Toggle-Off` | Retired in the 2026-04-26 patch swap. `Radio` carries every binary flip in both directions — one sound, no off-sound, vocabulary stays tight. |
+| `Page-Enter`, `Page-Exit` | Retired in the 2026-04-26 patch swap. Single-beat `Dropdown-Open` carries client-side navigation. The `Page-Exit` half stays retired (single beat preserved per PR #64 dub-dub feedback). |
+| `Dropdown-Close` | We open dropdowns on click; we close them on click-outside or escape. The opening beat is the affordance — closing is autonomous. Adding a sound to it would double the audio surface area without adding meaning. |
 | `Notification`, `Info`, `Warning` | lainlog has no inbox, no toasts, no alerts. These belong to apps that interrupt. |
 | `Send`, `Delete`, `Undo`, `Tab-Switch`, `Checkbox`, `Select`, `Deselect`, `Collapse`, `Expand` | App-grammar sounds for chat / form / file-tree UIs. We're a reading site; we don't have these affordances. |
 
@@ -61,9 +63,9 @@ The following sounds are **banned**. Reason cards sit next to each so future con
 ```ts
 // lib/audio.ts
 export type SoundName =
-  | "Copy" | "Success" | "Error" | "Click"
-  | "Pop"  | "Slide"   | "Toggle-On" | "Swoosh"
-  | "Page-Enter" | "Page-Exit";
+  | "Progress-Tick" | "Click" | "Copy" | "Radio"
+  | "Pop"           | "Slide" | "Dropdown-Open"
+  | "Success"       | "Error" | "Swoosh";
 
 export function playSound(name: SoundName): void;
 ```
@@ -78,24 +80,26 @@ export function playSound(name: SoundName): void;
 
 Once gates pass, the throttle / decay rules in §7 apply, then the underlying `defineSound` voice fires through a lazily-created `AudioContext`.
 
-## 6. Per-sound gain multipliers
+## 6. Per-sound gain calibration
 
-These multiply the patch's own `gain` value at play time. Calibrated subtle: every sound fires below 65% of upstream Minimal, on top of an already-quiet patch (gains 0.035–0.12). Recalibrated 2026-04-26 (PR #64 fix pass) — first-round dogfooding flagged the original values as "too loud / too pingy", so the whole vocabulary moved into a quieter band. Page-Enter / Page-Exit also got a synthesis redesign (220–260 Hz musical-fourth pair, slower attack + longer decay) replacing the original 700–900 Hz "notification" sweeps.
+Calibration moved to the patch level in the 2026-04-26 minimal → core swap. The runtime multiplier in `lib/audio.ts` is a uniform `1.0` — the per-sound balancing is encoded in `.web-kits/core.ts`'s `gain` fields, where Click / Pop / Error / Radio / Copy were trimmed from the upstream Core defaults so the whole vocabulary lands at the same perceived loudness.
 
-| Sound | Multiplier | Why |
-|---|---|---|
-| `Copy`       | 0.55 | Quiet clipboard ack — must not break reading flow. |
-| `Success`    | 0.6  | C5+G5 chord — present but not celebratory. |
-| `Error`      | 0.5  | Low-300Hz pair reads heavy; soften further. |
-| `Click`      | 0.4  | Fires on EVERY WidgetNav press — sits in the background. |
-| `Pop`        | 0.45 | EC push repeats through a multi-step trace. |
-| `Slide`      | 0.5  | Run-click cue — one shot per click. |
-| `Toggle-On`  | 0.55 | Segmented controls AND theme toggle (both directions). |
-| `Swoosh`     | 0.65 | Once-per-page verdict reveal — still earns the lift. |
-| `Page-Enter` | 0.35 | Soft "settling" door-close, not a notification chime. |
-| `Page-Exit`  | 0.3  | Quietest of the pair — Enter reads as the "landed" beat. |
+| Sound           | Patch gain (`.web-kits/core.ts`) | Upstream default | Notes |
+|---|---:|---:|---|
+| `Progress-Tick` | 0.10 | 0.10 | Held at upstream — 1400 Hz tick is already small. |
+| `Click`         | 0.10 | 0.25 | **Trimmed.** Click fires on every Quiz option-press; sits in the background. |
+| `Copy`          | 0.08 / 0.07 (layers) | 0.16 / 0.14 | **Trimmed.** Quiet clipboard ack — must not break reading flow. |
+| `Radio`         | 0.10 | 0.20 | **Trimmed.** Fires on every binary flip and segmented row. |
+| `Pop`           | 0.10 | 0.25 | **Trimmed.** EC push repeats through multi-step traces; decay rule attenuates streaks but the first beat needs to match Click. |
+| `Slide`         | 0.07 | 0.07 | Held — bandpassed white-noise burst, already subtle. |
+| `Dropdown-Open` | 0.07 | 0.07 | Held — settling tap on navigation, intentionally smaller than widget cues. |
+| `Success`       | 0.16 / 0.14 / 0.15 (layers) | 0.16 / 0.14 / 0.15 | Held — once-per-quiz lift. |
+| `Error`         | 0.12 / 0.08 (layers) | 0.22 / 0.12 | **Trimmed.** Sawtooth + square pair already heavy; we don't need extra weight. |
+| `Swoosh`        | 0.12 | 0.12 | Held — once-per-page verdict reveal. |
 
-If you change a multiplier, update both `lib/audio.ts:GAIN_MULTIPLIER` and this table in the same commit.
+Runtime multiplier (`lib/audio.ts:UNIFORM_GAIN`) = **1.0**.
+
+If you change either the patch-level `gain` or `UNIFORM_GAIN`, update both this table and the source in the same commit.
 
 ## 7. Throttle + decay
 
@@ -131,19 +135,22 @@ The preview is also a deliberate confirmation — the user hears the system come
 
 ## 10. Vendoring audit notes
 
-**Source.** [`raphaelsalaja/audio`](https://github.com/raphaelsalaja/audio) @ `main` · 2026-04-26.
+**Source.** [`raphaelsalaja/audio`](https://github.com/raphaelsalaja/audio) @ `main` · re-fetched 2026-04-26.
 
-**License.** MIT (Raphael Salaja, 2026). Verified at `.web-kits/minimal.ts` header.
+**Patch JSON.** [`https://raw.githubusercontent.com/raphaelsalaja/audio/main/.web-kits/core.json`](https://raw.githubusercontent.com/raphaelsalaja/audio/main/.web-kits/core.json) — the `core` patch (`v3.1.0`). Earlier revisions used the `minimal` patch JSON at the same path stem (`.web-kits/minimal.json`).
 
-**Runtime.** `@web-kits/audio@0.1.0` (npm). Pure Web Audio synth. No analytics. No autoplay. Two `fetch` calls in the dist exist solely for sample-source URLs and convolver impulse-response URLs — neither code path fires for any Tier-1 sound (all are pure sine layers with envelopes; no `type: "sample"`, no `ConvolverEffect`).
+**License.** MIT (Raphael Salaja, 2026). Verified at `.web-kits/core.ts` header.
 
-**CLI bypass.** The upstream `npx @web-kits/audio add` CLI requires a TTY and triggers a `registerPatch()` POST to `audio.raphaelsalaja.com/api/patches` for telemetry. We bypassed the CLI: the patch JSON was downloaded directly from the repo and converted to the same `.web-kits/minimal.ts` shape the CLI's `generateModule()` produces. **Tier-2 / Tier-3 sounds were physically excluded from the file** — bundle weight is 8 `SoundDefinition` objects (~0.5 kB gz) instead of the upstream patch's 26.
+**Runtime.** `@web-kits/audio@0.1.0` (npm). Pure Web Audio synth. No analytics. No autoplay. Two `fetch` calls in the dist exist solely for sample-source URLs and convolver impulse-response URLs — neither code path fires for any Tier-1 sound (all 10 are procedural: sine / sawtooth / square / white-noise + biquad filter; no `type: "sample"`, no `ConvolverEffect`).
 
-**No patch updates without re-audit.** If you bump `@web-kits/audio` or refresh the patch JSON, re-run §10's audit checklist:
+**CLI bypass.** The upstream `npx @web-kits/audio add` CLI requires a TTY and triggers a `registerPatch()` POST to `audio.raphaelsalaja.com/api/patches` for telemetry. We bypassed the CLI: the patch JSON was downloaded directly from the repo and converted to the same `.web-kits/core.ts` shape the CLI's `generateModule()` produces. **Every sound not in §2's table was physically excluded from the file** — bundle weight is 10 `SoundDefinition` objects (~1.1 kB gz) instead of the upstream Core patch's 62.
+
+**No patch updates without re-audit.** If you bump `@web-kits/audio` or refresh the patch JSON, re-run this audit checklist:
 - License unchanged (MIT).
 - No new top-level `fetch` / `XMLHttpRequest` outside the existing sample / IR loaders.
 - No analytics injection.
 - No autoplay-on-mount changes in `context.ts`.
+- No new `type: "sample"` or `ConvolverEffect` in any of the 10 retained sounds.
 
 ## 11. First-visit prompt
 
@@ -173,12 +180,24 @@ The throttle + decay rules already make a session inside this budget feel pleasa
 
 When authoring an interactive widget, before opening the PR:
 
-- [ ] Decide which Tier-1 sound (if any) applies. Match by *user action*, not visual register: a "step forward" button is `Click` whether it's in `WidgetNav` or a bespoke control row.
+- [ ] Decide which Tier-1 sound (if any) applies. Match by *user action*, not visual register: a "step forward" button is `Progress-Tick` whether it's in `WidgetNav` or a bespoke control row.
+- [ ] Apply the **Click vs Progress-Tick rule** below.
 - [ ] Wire `playSound()` at the **user-trigger** event handler. Not in a `useEffect` watching state. Not in an animation completion callback.
 - [ ] Confirm autonomous motion is silent — auto-advance steppers, queue-drain hops, cover-loop ticks.
 - [ ] If your widget has both push and pop semantics (cards in / cards out), only the user-pushed direction plays sound. Pops ride the visual exit animation.
 - [ ] Verify the widget's existing visual cue still carries the meaning if audio is off (principle 3).
 - [ ] Add the new wire-site to §2's table in this doc.
+
+### Click vs Progress-Tick rule
+
+| Use `Progress-Tick`                                                 | Use `Click`                              |
+|---|---|
+| Advancing through a sequence (Step / Back / Run / Pause / Reset)    | Discrete pick / commit (Quiz option-press) |
+| Scrubber arrow-key advance + drag-start                             | `MicrotaskStarvation` add-buttons (one-shot adds, not progress)        |
+| One-shot Run buttons that kick off a state machine                  | — |
+| `PredictReveal` (the click advances the article state)              | — |
+
+The distinction is for **dev consistency**, not reader perception. Readers don't auditorily distinguish a Click from a Progress-Tick in any meaningful way — but having the rule keeps wire-sites self-similar across the codebase. Example call-sites: `<WidgetNav>`, `<Scrubber>`, `CallStackECs` Step/Back/Run/Reset, `Polling`/`LongPoll`/`WebSocketStream` play, `HostilePageScan` start, `InfectiousJailbreak` play, `KeyDerivation` regenerate, `TypingPause` play/keystroke/reset → all `Progress-Tick`. Quiz option presses → `Click`. `<CopyButton>` uses the dedicated `Copy` sound, not Click.
 
 ## 14. Anti-patterns
 
@@ -188,7 +207,8 @@ The following are recurring temptations. None of them ship.
 - **Autoplay on mount.** Audio fires only on a user gesture. Never on load, never on intersection, never on focus.
 - **Sound during autonomous animation.** A queue drain animating without a user click is autonomous. A cover SVG looping in the background is autonomous. Both stay silent.
 - **Sound as the sole feedback channel.** If you find yourself wanting a sound because the visual is too subtle, fix the visual. Audio reinforces; it doesn't substitute.
-- **Per-widget novel sounds.** New widget gets a new sound? No. Pick one of the eight or pick none.
-- **Loud accent sounds for routine actions.** Routine = `Click` at multiplier 0.7. The `Swoosh` lift is reserved for once-per-page reveal beats.
+- **Per-widget novel sounds.** New widget gets a new sound? No. Pick one of the ten or pick none.
+- **Wiring a new sound just because a new sound is available.** When the patch adds vocabulary (the 2026-04-26 minimal → core swap added `Progress-Tick`, `Radio`, `Dropdown-Open`), the temptation is to find places to spend it. Resist. The new sound only ships if it carries meaning the existing vocabulary doesn't — and the bar is the §2 table, not "this would be cute".
+- **Loud accent sounds for routine actions.** Routine = `Click` or `Progress-Tick`. The `Swoosh` lift is reserved for once-per-page reveal beats.
 - **Skipping the throttle.** Custom widgets that build their own play helper bypass the throttle and stack into noise. Always go through `playSound()`.
 - **Disabling the reduced-motion gate "just for delight".** Reduced-motion is non-negotiable. If a user has it on, they hear nothing.

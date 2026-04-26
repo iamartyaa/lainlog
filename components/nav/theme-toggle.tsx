@@ -21,10 +21,10 @@ export function ThemeToggle() {
   const next = resolvedTheme === "dark" ? "light" : "dark";
 
   const handleToggle = () => {
-    // Toggle-On for both directions of the theme switch — same sound for
-    // dark→light and light→dark, matching the segmented-control rule
-    // (no Toggle-Off in our vocabulary).
-    playSound("Toggle-On");
+    // Radio for both directions of the theme switch — same sound for
+    // dark→light and light→dark, matching the binary-flip rule (no
+    // separate "Toggle-Off" sound in our vocabulary).
+    playSound("Radio");
     // Set the attribute synchronously before flipping the theme, so the
     // accent-bridge keyframe in globals.css fires in the same frame as the
     // color-variable swap. A useEffect watching `resolvedTheme` would arrive

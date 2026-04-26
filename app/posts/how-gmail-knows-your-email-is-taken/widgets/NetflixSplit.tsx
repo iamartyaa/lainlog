@@ -67,7 +67,7 @@ export function NetflixSplit() {
                 key={i.id}
                 type="button"
                 onClick={() => {
-                  if (i.id !== pick) playSound("Toggle-On");
+                  if (i.id !== pick) playSound("Radio");
                   setPick(i.id);
                 }}
                 aria-pressed={active}
