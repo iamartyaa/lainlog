@@ -1,17 +1,17 @@
-# bytesize
+# lainlog
 
 A blog of long-form engineering essays on software and AI, each paired with interactive widgets embedded in the post.
 
-**Live at [bytesize.vercel.app](https://bytesize.vercel.app).**
+**Live at [lainlog.com](https://lainlog.com).**
 
 ## Posts
 
-- [**The function that remembered**](https://bytesize.vercel.app/posts/the-function-that-remembered) — how a function outlives the scope it was born in.
-- [**The browser stopped asking**](https://bytesize.vercel.app/posts/the-browser-stopped-asking) — real-time apps didn't teach the server to speak first; they taught the browser to stop hanging up.
-- [**Why `fetch` works in curl but the browser blocks it**](https://bytesize.vercel.app/posts/why-fetch-fails-only-in-browser) — the server answered; your browser is holding the response back from your JavaScript.
-- [**How Gmail knows your email is taken, instantly**](https://bytesize.vercel.app/posts/how-gmail-knows-your-email-is-taken) — the pipeline behind "already taken" before your finger lifts.
+- [**The function that remembered**](https://lainlog.com/posts/the-function-that-remembered) — how a function outlives the scope it was born in.
+- [**The browser stopped asking**](https://lainlog.com/posts/the-browser-stopped-asking) — real-time apps didn't teach the server to speak first; they taught the browser to stop hanging up.
+- [**Why `fetch` works in curl but the browser blocks it**](https://lainlog.com/posts/why-fetch-fails-only-in-browser) — the server answered; your browser is holding the response back from your JavaScript.
+- [**How Gmail knows your email is taken, instantly**](https://lainlog.com/posts/how-gmail-knows-your-email-is-taken) — the pipeline behind "already taken" before your finger lifts.
 
-Subscribe via [RSS](https://bytesize.vercel.app/rss.xml).
+Subscribe via [RSS](https://lainlog.com/rss.xml).
 
 ## Features
 
