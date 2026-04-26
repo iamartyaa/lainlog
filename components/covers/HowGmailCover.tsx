@@ -4,281 +4,215 @@ import { motion, useReducedMotion } from "motion/react";
 import { useCoverInView } from "./_CoverFrame";
 
 /**
- * HowGmailCover — bloom filter: an email pulse hashes into 3 lit cells.
+ * HowGmailCover — bloom filter, v6 calibration.
  *
- * One sentence (the user-named hero):
- *   An email input pulse fans through three hash arcs (each carrying a
- *   travelling sparkle) into a 4×3 bit-array grid; three cells flip terracotta
- *   in sequence and a verdict tick lands with a /delight sparkle.
+ * v6 concept (one sentence):
+ *   A quiet caret pings, three thin hash arcs draw down into a 10-cell linear
+ *   bit-array, three cells gently fill translucent terracotta, and a slim
+ *   verdict tick draws — calm, opacity-led.
  *
- * Composition (~14 load-bearing elements — at the budget cap):
- *  1.  Email input bubble (rounded-rect with caret)
- *  2.  Caret stub (terracotta, blinks via opacity)
- *  3.  Pulse dot (terracotta, emits from input)
- *  4-6. 3 hash arcs (curved bezier paths, pathLength draws + travelling sparkles)
- *  7.  Bit-array group (12 cells in 4×3 grid — counted as one composition element)
- *  8.  Lit-cell overlay 1 (terracotta fill that flips in)
- *  9.  Lit-cell overlay 2
- *  10. Lit-cell overlay 3
- *  11. Verdict tick (terracotta ✓ that draws after cells light, scales 0→1.4→1)
- *  12. Verdict halo (small accent ring around the tick)
- *  13. Sparkle 1 (delight beat — terracotta sparkle on tick arrival)
- *  14. Sparkle 2 (second sparkle, smaller)
+ * v5 → v6 register shift (rejected by user as "too bold"):
+ *  - 4×3 grid → single horizontal row of 10 cells (film-strip rhythm).
+ *  - Solid terracotta lit cells → translucent fills (color-mix 24%).
+ *  - Travelling sparkle dots on each arc → DROPPED. The arcs draw IS the gesture.
+ *  - Verdict tick scale 0 → 1.4 → 1 + halo + 2 sparkles → tick draws via
+ *    pathLength + a single faint terracotta-translucent shadow behind lit cells.
+ *  - Stroke widths 2.6–3.6 → 1.2–1.8.
+ *  - 5 s loop with phase-stagger pops → 6 s loop, opacity-led, single narrative.
  *
- * Note: 3 travelling-sparkle dots ride along arcs but are visually subordinate
- *  to the arcs themselves; counted within (4-6).
+ * Composition (10 load-bearing elements — at the 8–10 v6 target):
+ *  1.  Email input rounded-rect outline (thin)
+ *  2.  Caret stub (terracotta, opacity blink)
+ *  3-5. 3 hash arcs (thin curves, draw via pathLength)
+ *  6.  Bit-array group (10 cells in one row — counted as one composition unit)
+ *  7-9. 3 lit-cell overlays (translucent terracotta, soft fade-in)
+ *  10. Verdict tick (terracotta path, draws via pathLength)
+ *  + (delight) faint terracotta-translucent shadow under lit cells, one cycle.
  *
- * Motion (playbook §3, §4 — /overdrive applied):
- *  - 5s continuous loop, no idle gap > 600ms.
- *  - Phase 1 (0–0.18): caret blinks; pulse dot emits 0→1.4→0.9 scale, opacity.
- *  - Phase 2 (0.18–0.55): 3 hash arcs draw simultaneously (pathLength 0→1).
- *    A small terracotta sparkle rides along each arc from start to destination.
- *  - Phase 3 (0.55–0.80): cells flip in sequence (60ms apart), each scaling
- *    1 → 1.25 → 1 with a pop.
- *  - Phase 4 (0.80–0.94): verdict tick draws 0→1 + scales 0 → 1.4 → 1
- *    (committed; was subtle in v4). Halo ring expands. Sparkles fire (delight).
- *  - Phase 5 (0.94–1): hold then reset.
- *  - Hover amplifies via whileHover on the wrapping motion.g.
+ * Motion (playbook §3, §4):
+ *  - 6 s continuous loop.
+ *  - Phase 1 (0–18%): caret blinks; arcs hidden.
+ *  - Phase 2 (18–48%): 3 hash arcs draw simultaneously via pathLength 0→1.
+ *  - Phase 3 (48–72%): 3 cells fill via opacity 0→1, with a gentle delight
+ *    shadow easing in behind each.
+ *  - Phase 4 (72–94%): verdict tick draws via pathLength 0→1 with a 600 ms
+ *    fade-in. Held briefly.
+ *  - Phase 5 (94–100%): all fade out, ready for next cycle.
+ *  - Hover amplifies via whileHover on the wrapping motion.g (period 6→4 s).
  *
- * Frame-stability R6: only opacity / scale / pathLength animate. Tokens-only.
+ * Frame-stability R6: only opacity / pathLength animate. No scale on chrome.
  *
- * Reduced-motion end-state: 3 cells lit terracotta, verdict tick visible
- * scaled 1.0, halo at peak, sparkles at peak. The article's thesis lands
- * statically — "yes, taken."
+ * Reduced-motion end-state: caret static visible, arcs fully drawn, 3 cells
+ * filled translucent terracotta with delight-shadow visible, verdict tick fully
+ * drawn. The article's thesis lands statically — "yes, taken."
  */
 export function HowGmailCover() {
   const inView = useCoverInView();
   const reduced = useReducedMotion();
   const animate = inView && !reduced;
 
-  // ── Bit-array geometry — 4×3 grid for breathing room (was 1×12) ──
-  const cols = 4;
-  const rows = 3;
-  const cellW = 22;
-  const cellH = 14;
-  const cellGapX = 4;
-  const cellGapY = 4;
-  const arrayW = cols * cellW + (cols - 1) * cellGapX;
-  const arrayH = rows * cellH + (rows - 1) * cellGapY;
+  // ── Bit-array geometry: single row of 10 cells (film strip) ──
+  const cellCount = 10;
+  const cellW = 14;
+  const cellH = 18;
+  const cellGap = 3;
+  const arrayW = cellCount * cellW + (cellCount - 1) * cellGap;
   const arrayX = (200 - arrayW) / 2;
-  const arrayY = 116;
+  const arrayY = 130;
 
-  // 3 hash destinations — chosen to spread across the grid.
-  // Indexes: row 0 col 1, row 1 col 3, row 2 col 0
-  const litIndexes: Array<{ row: number; col: number }> = [
-    { row: 0, col: 1 },
-    { row: 1, col: 3 },
-    { row: 2, col: 0 },
-  ];
+  // 3 lit indexes — spread across the row.
+  const litIndexes = [1, 5, 8];
 
-  const cellAt = (row: number, col: number) => ({
-    x: arrayX + col * (cellW + cellGapX),
-    y: arrayY + row * (cellH + cellGapY),
-  });
-
-  const litCells = litIndexes.map((p) => ({
-    ...p,
-    ...cellAt(p.row, p.col),
-    cx: arrayX + p.col * (cellW + cellGapX) + cellW / 2,
-    cy: arrayY + p.row * (cellH + cellGapY) + cellH / 2,
+  const cells = Array.from({ length: cellCount }, (_, i) => ({
+    x: arrayX + i * (cellW + cellGap),
+    y: arrayY,
+    cx: arrayX + i * (cellW + cellGap) + cellW / 2,
+    cy: arrayY + cellH / 2,
+    lit: litIndexes.includes(i),
   }));
+
+  const litCells = cells.filter((c) => c.lit);
 
   // Input bubble center.
   const inputCx = 100;
-  const inputCy = 56;
   const inputBottomY = 70;
 
-  // Lit-cell flip schedule — staggered 60ms apart.
-  const litTimes: number[][] = [
-    [0, 0.5, 0.58, 0.66, 0.92, 1],
-    [0, 0.55, 0.64, 0.72, 0.92, 1],
-    [0, 0.6, 0.7, 0.78, 0.92, 1],
-  ];
+  // Translucent terracotta — ~24% mix of accent over surface.
+  const accentTranslucent = "color-mix(in oklab, var(--color-accent) 24%, transparent)";
+  const accentTranslucentSoft = "color-mix(in oklab, var(--color-accent) 12%, transparent)";
 
   return (
     <motion.g initial="idle" whileHover="hover">
-      {/* ─── Email input bubble at top ──────────────────────────── */}
-      <motion.g
-        initial={{ scale: 1 }}
-        animate={animate ? { scale: [1, 1.08, 1, 1, 1] } : { scale: 1 }}
+      {/* ─── Email input bubble at top — thin outline only ──────── */}
+      <rect
+        x={56}
+        y={40}
+        width={88}
+        height={28}
+        rx={7}
+        fill="none"
+        stroke="var(--color-text-muted)"
+        strokeWidth={1.2}
+        vectorEffect="non-scaling-stroke"
+      />
+      {/* "you@" stub glyphs — quiet */}
+      <rect x={64} y={52} width={4} height={4} rx={1} fill="var(--color-text-muted)" opacity={0.55} />
+      <rect x={71} y={52} width={4} height={4} rx={1} fill="var(--color-text-muted)" opacity={0.55} />
+      <rect x={78} y={52} width={4} height={4} rx={1} fill="var(--color-text-muted)" opacity={0.55} />
+      <circle cx={88} cy={54} r={2.4} fill="none" stroke="var(--color-text-muted)" strokeWidth={1} vectorEffect="non-scaling-stroke" />
+      <rect x={94} y={52} width={4} height={4} rx={1} fill="var(--color-text-muted)" opacity={0.4} />
+      <rect x={101} y={52} width={4} height={4} rx={1} fill="var(--color-text-muted)" opacity={0.4} />
+
+      {/* Caret — gentle opacity blink */}
+      <motion.rect
+        x={114}
+        y={48}
+        width={1.6}
+        height={12}
+        rx={0.5}
+        fill="var(--color-accent)"
+        initial={{ opacity: 1 }}
+        animate={animate ? { opacity: [1, 0.2, 1, 0.2, 1] } : { opacity: 1 }}
         transition={
           animate
             ? {
-                duration: 5,
+                duration: 6,
                 repeat: Infinity,
-                ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.08, 0.18, 0.92, 1],
+                ease: "easeInOut",
+                times: [0, 0.06, 0.12, 0.18, 0.24],
               }
             : undefined
         }
-        style={{ transformOrigin: `${inputCx}px ${inputCy}px`, transformBox: "fill-box" as const }}
-      >
+      />
+
+      {/* ─── 3 hash arcs (thin, opacity-led, draw via pathLength) ─── */}
+      {litCells.map((cell, i) => {
+        const startX = inputCx;
+        const startY = inputBottomY + 4;
+        const endX = cell.cx;
+        const endY = arrayY - 2;
+        const midX = (startX + endX) / 2;
+        const midY = startY + 24 + i * 5;
+        const d = `M ${startX} ${startY} Q ${midX} ${midY}, ${endX} ${endY}`;
+        return (
+          <motion.path
+            key={`arc-${i}`}
+            d={d}
+            fill="none"
+            stroke="var(--color-accent)"
+            strokeWidth={1.6}
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={
+              animate
+                ? {
+                    pathLength: [0, 0, 1, 1, 0],
+                    opacity: [0, 0, 0.8, 0.8, 0],
+                  }
+                : { pathLength: 1, opacity: 0.8 }
+            }
+            transition={
+              animate
+                ? {
+                    duration: 6,
+                    repeat: Infinity,
+                    ease: [0.22, 1, 0.36, 1],
+                    times: [0, 0.18, 0.48, 0.94, 1],
+                  }
+                : undefined
+            }
+          />
+        );
+      })}
+
+      {/* ─── Bit-array — 10 thin outlined cells, single row ──────── */}
+      {cells.map((c, i) => (
         <rect
-          x={48}
-          y={38}
-          width={104}
-          height={32}
-          rx={8}
-          fill="var(--color-surface)"
-          stroke="var(--color-text)"
-          strokeWidth={2.6}
+          key={`cell-${i}`}
+          x={c.x}
+          y={c.y}
+          width={cellW}
+          height={cellH}
+          rx={2}
+          fill="none"
+          stroke="var(--color-accent)"
+          strokeWidth={1.2}
+          opacity={c.lit ? 0.9 : 0.45}
           vectorEffect="non-scaling-stroke"
         />
-        {/* "you@" text-stub glyphs */}
-        <rect x={56} y={52} width={5} height={5} rx={1} fill="var(--color-text-muted)" opacity={0.85} />
-        <rect x={64} y={52} width={5} height={5} rx={1} fill="var(--color-text-muted)" opacity={0.85} />
-        <rect x={72} y={52} width={5} height={5} rx={1} fill="var(--color-text-muted)" opacity={0.85} />
-        {/* @ symbol */}
-        <circle cx={84} cy={54.5} r={3} fill="none" stroke="var(--color-text-muted)" strokeWidth={1.4} vectorEffect="non-scaling-stroke" />
-        <circle cx={84} cy={54.5} r={1} fill="var(--color-text-muted)" />
-        {/* domain glyphs */}
-        <rect x={92} y={52} width={5} height={5} rx={1} fill="var(--color-text-muted)" opacity={0.65} />
-        <rect x={100} y={52} width={5} height={5} rx={1} fill="var(--color-text-muted)" opacity={0.65} />
-        <rect x={108} y={52} width={5} height={5} rx={1} fill="var(--color-text-muted)" opacity={0.5} />
+      ))}
 
-        {/* Caret — blinks */}
+      {/* ─── Delight shadow under lit cells (gentle, one ease-in) ── */}
+      {litCells.map((cell, i) => (
         <motion.rect
-          x={120}
-          y={48}
-          width={2}
-          height={14}
-          rx={0.5}
-          fill="var(--color-accent)"
-          initial={{ opacity: 1 }}
-          animate={animate ? { opacity: [1, 0, 1, 0, 1] } : { opacity: 1 }}
+          key={`shadow-${i}`}
+          x={cell.x - 1.5}
+          y={cell.y - 1.5}
+          width={cellW + 3}
+          height={cellH + 3}
+          rx={2.5}
+          fill={accentTranslucentSoft}
+          initial={{ opacity: 0 }}
+          animate={
+            animate
+              ? { opacity: [0, 0, 0, 0.9, 0.9, 0] }
+              : { opacity: 0.9 }
+          }
           transition={
             animate
               ? {
-                  duration: 5,
+                  duration: 6,
                   repeat: Infinity,
-                  ease: "linear",
-                  times: [0, 0.12, 0.24, 0.36, 0.48],
+                  ease: [0.22, 1, 0.36, 1],
+                  times: [0, 0.5, 0.55, 0.7, 0.94, 1],
                 }
               : undefined
           }
         />
-      </motion.g>
+      ))}
 
-      {/* ─── Pulse dot (emitted from input bottom) ──────────────── */}
-      <motion.circle
-        cx={inputCx}
-        cy={inputBottomY + 4}
-        r={4.5}
-        fill="var(--color-accent)"
-        initial={{ scale: 0, opacity: 0 }}
-        animate={
-          animate
-            ? {
-                scale: [0, 1.5, 1, 0, 0],
-                opacity: [0, 1, 0.85, 0, 0],
-              }
-            : { scale: 0, opacity: 0 }
-        }
-        transition={
-          animate
-            ? {
-                duration: 5,
-                repeat: Infinity,
-                ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.08, 0.18, 0.28, 1],
-              }
-            : undefined
-        }
-        style={{ transformOrigin: `${inputCx}px ${inputBottomY + 4}px`, transformBox: "fill-box" as const }}
-      />
-
-      {/* ─── 3 hash arcs (the fan-out) + travelling sparkles ───── */}
-      {litCells.map((cell, i) => {
-        const startX = inputCx;
-        const startY = inputBottomY + 6;
-        const endX = cell.cx;
-        const endY = cell.y - 1;
-        const midX = (startX + endX) / 2;
-        const midY = startY + 22 + i * 4; // gentle dip
-        const d = `M ${startX} ${startY} Q ${midX} ${midY}, ${endX} ${endY}`;
-        return (
-          <g key={`arc-${i}`}>
-            {/* Arc path */}
-            <motion.path
-              d={d}
-              fill="none"
-              stroke="var(--color-accent)"
-              strokeWidth={2.2}
-              strokeLinecap="round"
-              vectorEffect="non-scaling-stroke"
-              initial={{ pathLength: 0, opacity: 0.3 }}
-              animate={
-                animate
-                  ? {
-                      pathLength: [0, 0, 1, 1, 0, 0],
-                      opacity: [0.3, 0.3, 0.95, 0.7, 0.3, 0.3],
-                    }
-                  : { pathLength: 1, opacity: 0.85 }
-              }
-              transition={
-                animate
-                  ? {
-                      duration: 5,
-                      repeat: Infinity,
-                      ease: [0.4, 0, 0.2, 1],
-                      times: [0, 0.18, 0.5, 0.88, 0.95, 1],
-                    }
-                  : undefined
-              }
-            />
-            {/* Travelling sparkle along the arc — opacity gates entry/exit;
-                position interpolated between start, mid, end. */}
-            <motion.circle
-              r={2}
-              fill="var(--color-accent)"
-              initial={{ opacity: 0 }}
-              animate={
-                animate
-                  ? {
-                      cx: [startX, startX, midX, endX, endX],
-                      cy: [startY, startY, midY, endY, endY],
-                      opacity: [0, 0, 1, 1, 0],
-                      scale: [0.6, 0.6, 1.3, 1, 0.6],
-                    }
-                  : { cx: endX, cy: endY, opacity: 0, scale: 1 }
-              }
-              transition={
-                animate
-                  ? {
-                      duration: 5,
-                      repeat: Infinity,
-                      ease: [0.4, 0, 0.2, 1],
-                      times: [0, 0.18, 0.36, 0.5, 0.55],
-                    }
-                  : undefined
-              }
-            />
-          </g>
-        );
-      })}
-
-      {/* ─── Bit-array (4×3 grid) — neutral cells ───────────────── */}
-      {Array.from({ length: rows }, (_, r) =>
-        Array.from({ length: cols }, (_, c) => {
-          const { x, y } = cellAt(r, c);
-          return (
-            <rect
-              key={`cell-${r}-${c}`}
-              x={x}
-              y={y}
-              width={cellW}
-              height={cellH}
-              rx={2.5}
-              fill="var(--color-surface)"
-              stroke="var(--color-text)"
-              strokeWidth={2}
-              vectorEffect="non-scaling-stroke"
-            />
-          );
-        }),
-      )}
-
-      {/* ─── Lit-cell overlays (3 cells flip terracotta) ────────── */}
+      {/* ─── Lit-cell translucent fills (opacity-led) ───────────── */}
       {litCells.map((cell, i) => (
         <motion.rect
           key={`lit-${i}`}
@@ -286,196 +220,95 @@ export function HowGmailCover() {
           y={cell.y}
           width={cellW}
           height={cellH}
-          rx={2.5}
-          fill="var(--color-accent)"
-          initial={{ opacity: 0, scale: 1 }}
+          rx={2}
+          fill={accentTranslucent}
+          initial={{ opacity: 0 }}
           animate={
             animate
-              ? {
-                  opacity: [0, 0, 1, 1, 0, 0],
-                  scale: [1, 1, 1.25, 1, 1, 1],
-                }
-              : { opacity: 1, scale: 1 }
+              ? { opacity: [0, 0, 1, 1, 0] }
+              : { opacity: 1 }
           }
           transition={
             animate
               ? {
-                  duration: 5,
+                  duration: 6,
                   repeat: Infinity,
-                  ease: [0.4, 0, 0.2, 1],
-                  times: litTimes[i],
+                  ease: [0.22, 1, 0.36, 1],
+                  times: [0, 0.5 + i * 0.04, 0.62 + i * 0.04, 0.94, 1],
                 }
               : undefined
           }
-          style={{
-            transformOrigin: `${cell.cx}px ${cell.cy}px`,
-            transformBox: "fill-box" as const,
-          }}
         />
       ))}
 
-      {/* ─── Verdict halo (small ring around the tick) ──────────── */}
-      <motion.circle
-        cx={170}
-        cy={88}
-        r={14}
+      {/* ─── Verdict tick (slim, draws via pathLength) ──────────── */}
+      <motion.path
+        d="M 162 102 L 168 108 L 180 94"
         fill="none"
         stroke="var(--color-accent)"
-        strokeWidth={1.6}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
-        initial={{ opacity: 0, scale: 0.4 }}
+        initial={{ pathLength: 0, opacity: 0 }}
         animate={
           animate
-            ? { opacity: [0, 0, 0.7, 0, 0], scale: [0.4, 0.4, 1, 1.6, 1.6] }
-            : { opacity: 0.6, scale: 1 }
+            ? {
+                pathLength: [0, 0, 1, 1, 0],
+                opacity: [0, 0, 1, 1, 0],
+              }
+            : { pathLength: 1, opacity: 1 }
         }
         transition={
           animate
             ? {
-                duration: 5,
+                duration: 6,
                 repeat: Infinity,
-                ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.78, 0.86, 0.96, 1],
+                ease: [0.22, 1, 0.36, 1],
+                times: [0, 0.72, 0.86, 0.94, 1],
               }
             : undefined
         }
-        style={{ transformOrigin: "170px 88px", transformBox: "fill-box" as const }}
-      />
-
-      {/* ─── Verdict tick (committed scale: 0 → 1.4 → 1) ────────── */}
-      <motion.g
-        initial={{ scale: 0, opacity: 0 }}
-        animate={
-          animate
-            ? {
-                scale: [0, 0, 1.4, 1, 1, 0],
-                opacity: [0, 0, 1, 1, 1, 0],
-              }
-            : { scale: 1, opacity: 1 }
-        }
-        transition={
-          animate
-            ? {
-                duration: 5,
-                repeat: Infinity,
-                ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.78, 0.86, 0.92, 0.96, 1],
-              }
-            : undefined
-        }
-        style={{ transformOrigin: "170px 88px", transformBox: "fill-box" as const }}
-      >
-        <motion.path
-          d="M 162 90 L 168 96 L 180 82"
-          fill="none"
-          stroke="var(--color-accent)"
-          strokeWidth={3.6}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          vectorEffect="non-scaling-stroke"
-          initial={{ pathLength: 0 }}
-          animate={
-            animate
-              ? { pathLength: [0, 0, 1, 1, 1, 0] }
-              : { pathLength: 1 }
-          }
-          transition={
-            animate
-              ? {
-                  duration: 5,
-                  repeat: Infinity,
-                  ease: [0.4, 0, 0.2, 1],
-                  times: [0, 0.78, 0.86, 0.92, 0.96, 1],
-                }
-              : undefined
-          }
-        />
-      </motion.g>
-
-      {/* ─── Sparkle 1 (delight beat) ──────────────────────────── */}
-      <motion.circle
-        cx={184}
-        cy={78}
-        r={2}
-        fill="var(--color-accent)"
-        initial={{ opacity: 0, scale: 0 }}
-        animate={
-          animate
-            ? { opacity: [0, 0, 0, 1, 0, 0], scale: [0, 0, 0, 1.6, 0, 0] }
-            : { opacity: 1, scale: 1.2 }
-        }
-        transition={
-          animate
-            ? {
-                duration: 5,
-                repeat: Infinity,
-                ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.82, 0.86, 0.9, 0.94, 1],
-              }
-            : undefined
-        }
-        style={{ transformOrigin: "184px 78px", transformBox: "fill-box" as const }}
-      />
-      {/* ─── Sparkle 2 (small companion) ───────────────────────── */}
-      <motion.circle
-        cx={158}
-        cy={100}
-        r={1.4}
-        fill="var(--color-accent)"
-        initial={{ opacity: 0, scale: 0 }}
-        animate={
-          animate
-            ? { opacity: [0, 0, 0, 0.85, 0, 0], scale: [0, 0, 0, 1.4, 0, 0] }
-            : { opacity: 0.85, scale: 1 }
-        }
-        transition={
-          animate
-            ? {
-                duration: 5,
-                repeat: Infinity,
-                ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.84, 0.88, 0.92, 0.96, 1],
-              }
-            : undefined
-        }
-        style={{ transformOrigin: "158px 100px", transformBox: "fill-box" as const }}
       />
     </motion.g>
   );
 }
 
 /**
- * HowGmailCoverStatic — Satori-safe pure-JSX export of the reduced-motion
- * end-state. Bit-array fully resolved with 3 cells lit terracotta and the
- * verdict tick visible. Used by the /og share-preview route.
+ * HowGmailCoverStatic — Satori-safe pure-JSX export of the v6 reduced-motion
+ * end-state. Pure JSX, hex palette inline. No motion.*, no hooks, no color-mix.
  *
- * Hex constants inline because Satori has limited CSS-variable support;
- * see components/covers/static-registry.ts for the canonical palette.
+ * End-state: input visible, arcs fully drawn, all 10 cells outlined with 3
+ * lit (translucent terracotta fill), delight shadow visible behind lit cells,
+ * verdict tick fully drawn.
  */
 export function HowGmailCoverStatic() {
   const ACCENT = "#d97341";
-  const TEXT = "#f8f5f0";
   const MUTED = "#7a7570";
-  const SURFACE = "#1a1714";
+  // Translucent terracotta over BG — pre-mixed (accent ~24% over BG #0e1114).
+  const ACCENT_FILL_24 = "#4a2a22";
+  // Lighter wash for delight shadow (~12%).
+  const ACCENT_FILL_12 = "#23191b";
 
-  const cellCount = 12;
-  const cellW = 12;
-  const cellH = 16;
-  const cellGap = 2;
+  // 10-cell linear bit-array geometry, mirrors animated.
+  const cellCount = 10;
+  const cellW = 14;
+  const cellH = 18;
+  const cellGap = 3;
   const arrayW = cellCount * cellW + (cellCount - 1) * cellGap;
   const arrayX = (200 - arrayW) / 2;
-  const arrayY = 140;
+  const arrayY = 130;
+  const litIndexes = [1, 5, 8];
+  const inputCx = 100;
+  const inputBottomY = 70;
 
   const cells = Array.from({ length: cellCount }, (_, i) => ({
     x: arrayX + i * (cellW + cellGap),
-    y: arrayY,
-    lit: i === 1 || i === 5 || i === 9,
+    cx: arrayX + i * (cellW + cellGap) + cellW / 2,
+    lit: litIndexes.includes(i),
   }));
 
-  const litCenters = cells.filter((c) => c.lit).map((c) => c.x + cellW / 2);
-
-  const inputCx = 100;
-  const inputCy = 56;
+  const litCells = cells.filter((c) => c.lit);
 
   return (
     <svg
@@ -485,23 +318,23 @@ export function HowGmailCoverStatic() {
       height="100%"
     >
       {/* Input bubble */}
-      <rect x={56} y={36} width={88} height={28} rx={8} fill={SURFACE} stroke={TEXT} strokeWidth={2.4} />
-      <rect x={64} y={48} width={4} height={4} rx={1} fill={MUTED} opacity={0.7} />
-      <rect x={72} y={48} width={4} height={4} rx={1} fill={MUTED} opacity={0.7} />
-      <rect x={80} y={48} width={4} height={4} rx={1} fill={MUTED} opacity={0.7} />
-      <rect x={88} y={48} width={4} height={4} rx={1} fill={MUTED} opacity={0.7} />
-      <rect x={96} y={48} width={4} height={4} rx={1} fill={MUTED} opacity={0.55} />
-      <rect x={104} y={48} width={4} height={4} rx={1} fill={MUTED} opacity={0.55} />
-      <rect x={112} y={48} width={4} height={4} rx={1} fill={MUTED} opacity={0.55} />
-      <circle cx={124} cy={50} r={2.4} fill="none" stroke={MUTED} strokeWidth={1.4} />
+      <rect x={56} y={40} width={88} height={28} rx={7} fill="none" stroke={MUTED} strokeWidth={1.2} />
+      <rect x={64} y={52} width={4} height={4} rx={1} fill={MUTED} opacity={0.55} />
+      <rect x={71} y={52} width={4} height={4} rx={1} fill={MUTED} opacity={0.55} />
+      <rect x={78} y={52} width={4} height={4} rx={1} fill={MUTED} opacity={0.55} />
+      <circle cx={88} cy={54} r={2.4} fill="none" stroke={MUTED} strokeWidth={1} />
+      <rect x={94} y={52} width={4} height={4} rx={1} fill={MUTED} opacity={0.4} />
+      <rect x={101} y={52} width={4} height={4} rx={1} fill={MUTED} opacity={0.4} />
+      <rect x={114} y={48} width={1.6} height={12} rx={0.5} fill={ACCENT} />
 
       {/* 3 hash arcs (fully drawn) */}
-      {litCenters.map((endX, i) => {
+      {litCells.map((cell, i) => {
         const startX = inputCx;
-        const startY = inputCy + 12;
+        const startY = inputBottomY + 4;
+        const endX = cell.cx;
         const endY = arrayY - 2;
         const midX = (startX + endX) / 2;
-        const midY = startY + 30 + i * 4;
+        const midY = startY + 24 + i * 5;
         const d = `M ${startX} ${startY} Q ${midX} ${midY}, ${endX} ${endY}`;
         return (
           <path
@@ -509,45 +342,62 @@ export function HowGmailCoverStatic() {
             d={d}
             fill="none"
             stroke={ACCENT}
-            strokeWidth={2.2}
+            strokeWidth={1.6}
             strokeLinecap="round"
-            opacity={0.85}
+            opacity={0.8}
           />
         );
       })}
 
-      {/* Bit-array cells */}
+      {/* Delight shadow behind lit cells */}
+      {litCells.map((cell, i) => (
+        <rect
+          key={`shadow-${i}`}
+          x={cell.x - 1.5}
+          y={arrayY - 1.5}
+          width={cellW + 3}
+          height={cellH + 3}
+          rx={2.5}
+          fill={ACCENT_FILL_12}
+          opacity={0.9}
+        />
+      ))}
+
+      {/* Cell outlines */}
       {cells.map((c, i) => (
-        <g key={`cell-${i}`}>
-          <rect
-            x={c.x}
-            y={c.y}
-            width={cellW}
-            height={cellH}
-            rx={2}
-            fill={SURFACE}
-            stroke={TEXT}
-            strokeWidth={2}
-          />
-          {c.lit && (
-            <rect
-              x={c.x}
-              y={c.y}
-              width={cellW}
-              height={cellH}
-              rx={2}
-              fill={ACCENT}
-            />
-          )}
-        </g>
+        <rect
+          key={`cell-${i}`}
+          x={c.x}
+          y={arrayY}
+          width={cellW}
+          height={cellH}
+          rx={2}
+          fill="none"
+          stroke={ACCENT}
+          strokeWidth={1.2}
+          opacity={c.lit ? 0.9 : 0.45}
+        />
+      ))}
+
+      {/* Lit-cell translucent fills */}
+      {litCells.map((cell, i) => (
+        <rect
+          key={`lit-${i}`}
+          x={cell.x}
+          y={arrayY}
+          width={cellW}
+          height={cellH}
+          rx={2}
+          fill={ACCENT_FILL_24}
+        />
       ))}
 
       {/* Verdict tick */}
       <path
-        d="M 154 92 L 162 100 L 178 84"
+        d="M 162 102 L 168 108 L 180 94"
         fill="none"
         stroke={ACCENT}
-        strokeWidth={3.5}
+        strokeWidth={1.8}
         strokeLinecap="round"
         strokeLinejoin="round"
       />

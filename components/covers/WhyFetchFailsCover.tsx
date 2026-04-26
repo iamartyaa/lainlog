@@ -4,361 +4,229 @@ import { motion, useReducedMotion } from "motion/react";
 import { useCoverInView } from "./_CoverFrame";
 
 /**
- * WhyFetchFailsCover — fetch() comet meets the CORS wall.
+ * WhyFetchFailsCover — comet hits the CORS wall, v6 calibration.
  *
- * One sentence:
- *   A terracotta comet streaks across the page, slams into a thick CORS wall
- *   labelled `ACAO`, the wall flexes outward, and three echo-rings emanate
- *   from the impact point as the comet rebounds dim.
+ * v6 concept (one sentence):
+ *   A single thin comet glides toward a slim CORS wall, fades to dim on
+ *   impact and reverses direction; one elegant ring draws as it rebounds.
  *
- * Composition (~13 load-bearing elements):
- *  1.  Browser silhouette (rounded-rect with chrome bar + 3 dots, right of wall)
- *  2.  Wall column (thicker rounded-rect, the load-bearing barrier)
- *  3.  ACAO label glyph (3 small terracotta tick-marks, on the wall)
- *  4.  ✕ reject mark on the wall
- *  5-8. 4-segment comet trail (head + 3 fading dots)
- *  9.  Comet head (rounded square, terracotta hero)
- *  10. Impact spark (small terracotta starburst at the moment of contact)
- *  11. Echo ring 1 (small, fastest)
- *  12. Echo ring 2 (mid)
- *  13. Echo ring 3 (large, slowest)
+ * v5 → v6 register shift:
+ *  - Browser silhouette → DROPPED. The wall + comet + ring carry the metaphor.
+ *  - Comet rounded-square + 4-segment trail → thin curved comet body with
+ *    2-segment trail (opacity-only).
+ *  - Wall flex (scaleX 1 → 1.7 → 1) → DROPPED. Comet itself fades + reverses.
+ *  - 3 echo rings → 1 elegant ring (drawn via pathLength on rebound).
+ *  - Impact spark starburst → DROPPED.
+ *  - Loop period 5 s, snappy → 6 s, opacity-led.
+ *  - Stroke widths 1.4–2.6 → 1.0–1.8.
+ *
+ * Composition (8 load-bearing elements — at v6 target):
+ *  1.  Wall column (thin rounded-rect outline, terracotta border, no fill)
+ *  2.  ACAO label (3 small muted tick-marks, top of wall)
+ *  3.  ✕ reject mark on wall center
+ *  4.  Comet trail segment 1 (small fading dot, opacity-only)
+ *  5.  Comet trail segment 2 (smaller fading dot, opacity-only)
+ *  6.  Comet head (small terracotta dot — translates across)
+ *  7.  Echo ring (single ring, drawn via pathLength on rebound)
+ *  8.  Comet head opacity-flicker on rebound (delight beat — same element)
  *
  * Motion (playbook §3, §4):
- *  - 5s continuous loop, no idle gap > 600ms.
- *  - Phase A (0–0.42): comet glides left→wall, ~95 viewBox-units of translateX
- *    (47% of viewBox — well above the §3 threshold). Trail dots follow with
- *    offsets so velocity is felt.
- *  - Phase B (0.42–0.55): wall flexes scaleX 1 → 1.7 → 1 — committed flex.
- *    Impact spark scales 0 → 1.4 → 0. Echo rings emanate (scale 0.4 → 3.6,
- *    pathLength full, opacity gates).
- *  - Phase C (0.55–0.78): comet retreats dim (opacity 0.35), trail follows.
- *  - Phase D (0.78–1): brief reset, no idle > 0.4s.
- *  - Hover amplifies idle motion via whileHover on the wrapping motion.g.
+ *  - 6 s continuous loop.
+ *  - Phase A (0–42%): comet glides cometStart → cometImpact (~80 viewBox-units
+ *    of translate, 40% of viewBox — well above the §3 threshold).
+ *  - Phase B (42–58%): comet at impact, trail compresses (slides forward and
+ *    stacks briefly via opacity), then comet fades to opacity 0.4 and reverses
+ *    direction.
+ *  - Phase C (58–94%): echo ring draws via pathLength as comet rebounds.
+ *    Comet head flickers (opacity 1 → 0.4 → 0.7) — delight beat.
+ *  - Phase D (94–100%): brief reset.
+ *  - Hover amplifies via whileHover (period 6→4 s).
  *
  * Frame-stability R6: only transform / opacity / pathLength animate.
  *
- * Reduced-motion end-state: comet at impact, 3 rings frozen mid-expansion,
- * wall flexed (scaleX 1.4), spark visible. The static frame conveys "rejected."
+ * Reduced-motion end-state: comet at impact position (dim) with 2-segment
+ * trail at decreasing opacity, wall fully drawn with ACAO label, echo ring
+ * fully drawn — the post-impact "settled" frame.
  */
 export function WhyFetchFailsCover() {
   const inView = useCoverInView();
   const reduced = useReducedMotion();
   const animate = inView && !reduced;
 
-  // Geometry — wall sits ~62% across the viewBox.
-  const wallX = 124;
-  const wallTop = 36;
-  const wallH = 128;
-  const wallW = 12;
+  // Geometry — wall at ~62% across.
+  const wallX = 134;
+  const wallTop = 46;
+  const wallH = 108;
+  const wallW = 8;
   const impactX = wallX - wallW / 2;
   const beamY = 100;
 
-  // Comet travel path — from far-left (x=18) to just before wall (impactX - 16).
-  const cometStart = 18;
-  const cometImpact = impactX - 16;
-  const cometRetreat = 36;
-
-  // Hover variants: amplify the wall flex and ring scale.
-  const groupVariants = {
-    idle: {},
-    hover: {},
-  };
+  const cometStart = 22;
+  const cometImpact = impactX - 12;
 
   return (
-    <motion.g
-      initial="idle"
-      whileHover="hover"
-      variants={groupVariants}
-    >
-      {/* ─── Browser silhouette (right of wall, static muted) ────── */}
-      <g opacity={0.55}>
-        <rect
-          x={140}
-          y={48}
-          width={50}
-          height={104}
-          rx={6}
-          fill="var(--color-surface)"
-          stroke="var(--color-text-muted)"
-          strokeWidth={1.8}
-          vectorEffect="non-scaling-stroke"
-        />
-        {/* Chrome bar */}
-        <line
-          x1={140}
-          y1={62}
-          x2={190}
-          y2={62}
-          stroke="var(--color-text-muted)"
-          strokeWidth={1.4}
-          vectorEffect="non-scaling-stroke"
-        />
-        {/* 3 chrome dots */}
-        <circle cx={146} cy={55} r={1.6} fill="var(--color-text-muted)" />
-        <circle cx={152} cy={55} r={1.6} fill="var(--color-text-muted)" opacity={0.8} />
-        <circle cx={158} cy={55} r={1.6} fill="var(--color-text-muted)" opacity={0.65} />
-        {/* Address-bar stub */}
-        <rect
-          x={146}
-          y={72}
-          width={38}
-          height={3.2}
-          rx={1.6}
-          fill="var(--color-text-muted)"
-          opacity={0.5}
-        />
-        {/* Page-content stubs */}
-        <rect x={146} y={86} width={32} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.45} />
-        <rect x={146} y={94} width={26} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.4} />
-        <rect x={146} y={102} width={34} height={2} rx={1} fill="var(--color-text-muted)" opacity={0.4} />
-      </g>
-
-      {/* ─── The wall (hero gesture — thick, flexes hard on impact) ─ */}
-      <motion.g
-        variants={{
-          idle: { scaleX: [1, 1, 1.7, 1, 1] },
-          hover: { scaleX: [1, 1, 2, 1, 1] },
-        }}
-        animate={animate ? "idle" : undefined}
-        initial={false}
-        transition={
-          animate
-            ? {
-                duration: 5,
-                repeat: Infinity,
-                ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.4, 0.48, 0.62, 1],
-              }
-            : undefined
-        }
-        style={{ transformOrigin: `${wallX}px ${beamY}px`, transformBox: "fill-box" as const }}
-      >
-        {/* Wall body — terracotta-edged */}
-        <rect
-          x={wallX - wallW / 2}
-          y={wallTop}
-          width={wallW}
-          height={wallH}
-          rx={4}
-          fill="var(--color-text)"
-          stroke="var(--color-accent)"
-          strokeWidth={1.4}
-          vectorEffect="non-scaling-stroke"
-        />
-        {/* ACAO label — three small terracotta marks, top of wall */}
-        <line x1={wallX - 3} y1={48} x2={wallX + 3} y2={48} stroke="var(--color-accent)" strokeWidth={1.4} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        <line x1={wallX - 3} y1={54} x2={wallX + 3} y2={54} stroke="var(--color-accent)" strokeWidth={1.4} strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.75} />
-        <line x1={wallX - 3} y1={60} x2={wallX + 3} y2={60} stroke="var(--color-accent)" strokeWidth={1.4} strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.5} />
-
-        {/* ✕ reject mark — center of wall */}
-        <line x1={wallX - 6} y1={beamY - 6} x2={wallX + 6} y2={beamY + 6} stroke="var(--color-accent)" strokeWidth={2.6} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        <line x1={wallX - 6} y1={beamY + 6} x2={wallX + 6} y2={beamY - 6} stroke="var(--color-accent)" strokeWidth={2.6} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-
-        {/* Bottom dashes — bricks */}
-        <line x1={wallX - 3} y1={140} x2={wallX + 3} y2={140} stroke="var(--color-accent)" strokeWidth={1.2} strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.5} />
-        <line x1={wallX - 3} y1={148} x2={wallX + 3} y2={148} stroke="var(--color-accent)" strokeWidth={1.2} strokeLinecap="round" vectorEffect="non-scaling-stroke" opacity={0.4} />
-      </motion.g>
-
-      {/* ─── Echo ring 1 (small, fastest) ──────────────────────── */}
-      <motion.circle
-        cx={impactX}
-        cy={beamY}
-        r={6}
-        fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth={2.2}
-        vectorEffect="non-scaling-stroke"
-        initial={{ opacity: 0, scale: 0.4 }}
-        animate={
-          animate
-            ? { opacity: [0, 0, 1, 0, 0], scale: [0.4, 0.4, 1.1, 2.4, 2.4] }
-            : { opacity: 0.7, scale: 1.6 }
-        }
-        transition={
-          animate
-            ? {
-                duration: 5,
-                repeat: Infinity,
-                ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.42, 0.5, 0.72, 1],
-              }
-            : undefined
-        }
-        style={{ transformOrigin: `${impactX}px ${beamY}px`, transformBox: "fill-box" as const }}
-      />
-      {/* ─── Echo ring 2 (mid) ─────────────────────────────────── */}
-      <motion.circle
-        cx={impactX}
-        cy={beamY}
-        r={6}
-        fill="none"
-        stroke="var(--color-accent)"
-        strokeWidth={1.8}
-        vectorEffect="non-scaling-stroke"
-        initial={{ opacity: 0, scale: 0.4 }}
-        animate={
-          animate
-            ? { opacity: [0, 0, 0.85, 0, 0], scale: [0.4, 0.4, 1.6, 3, 3] }
-            : { opacity: 0.5, scale: 2.2 }
-        }
-        transition={
-          animate
-            ? {
-                duration: 5,
-                repeat: Infinity,
-                ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.44, 0.54, 0.78, 1],
-              }
-            : undefined
-        }
-        style={{ transformOrigin: `${impactX}px ${beamY}px`, transformBox: "fill-box" as const }}
-      />
-      {/* ─── Echo ring 3 (large, slowest) ──────────────────────── */}
-      <motion.circle
-        cx={impactX}
-        cy={beamY}
-        r={6}
+    <motion.g initial="idle" whileHover="hover">
+      {/* ─── CORS wall — thin outlined rounded-rect, no fill ────── */}
+      <rect
+        x={wallX - wallW / 2}
+        y={wallTop}
+        width={wallW}
+        height={wallH}
+        rx={3}
         fill="none"
         stroke="var(--color-accent)"
         strokeWidth={1.4}
         vectorEffect="non-scaling-stroke"
-        initial={{ opacity: 0, scale: 0.4 }}
+      />
+      {/* ACAO label — three small muted tick-marks, top of wall */}
+      <line x1={wallX - 2.5} y1={56} x2={wallX + 2.5} y2={56} stroke="var(--color-text-muted)" strokeWidth={1} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+      <line x1={wallX - 2.5} y1={62} x2={wallX + 2.5} y2={62} stroke="var(--color-text-muted)" strokeWidth={1} strokeLinecap="round" opacity={0.75} vectorEffect="non-scaling-stroke" />
+      <line x1={wallX - 2.5} y1={68} x2={wallX + 2.5} y2={68} stroke="var(--color-text-muted)" strokeWidth={1} strokeLinecap="round" opacity={0.5} vectorEffect="non-scaling-stroke" />
+
+      {/* ✕ reject mark — center of wall */}
+      <line x1={wallX - 5} y1={beamY - 5} x2={wallX + 5} y2={beamY + 5} stroke="var(--color-accent)" strokeWidth={1.6} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+      <line x1={wallX - 5} y1={beamY + 5} x2={wallX + 5} y2={beamY - 5} stroke="var(--color-accent)" strokeWidth={1.6} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+
+      {/* ─── Echo ring (single, draws via pathLength on rebound) ── */}
+      <motion.circle
+        cx={impactX}
+        cy={beamY}
+        r={14}
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth={1.2}
+        vectorEffect="non-scaling-stroke"
+        initial={{ pathLength: 0, opacity: 0 }}
         animate={
           animate
-            ? { opacity: [0, 0, 0.6, 0, 0], scale: [0.4, 0.4, 2.2, 3.6, 3.6] }
-            : { opacity: 0.35, scale: 2.8 }
+            ? {
+                pathLength: [0, 0, 1, 1, 0],
+                opacity: [0, 0, 0.7, 0.7, 0],
+              }
+            : { pathLength: 1, opacity: 0.7 }
         }
         transition={
           animate
             ? {
-                duration: 5,
+                duration: 6,
                 repeat: Infinity,
-                ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.46, 0.6, 0.84, 1],
+                ease: [0.22, 1, 0.36, 1],
+                times: [0, 0.58, 0.78, 0.94, 1],
               }
             : undefined
         }
-        style={{ transformOrigin: `${impactX}px ${beamY}px`, transformBox: "fill-box" as const }}
       />
 
-      {/* ─── Impact spark (small starburst at moment of contact) ─── */}
-      <motion.g
-        initial={{ opacity: 0, scale: 0 }}
-        animate={
-          animate
-            ? { opacity: [0, 0, 1, 0, 0], scale: [0, 0, 1.4, 0, 0] }
-            : { opacity: 1, scale: 1 }
-        }
-        transition={
-          animate
-            ? {
-                duration: 5,
-                repeat: Infinity,
-                ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.4, 0.46, 0.56, 1],
-              }
-            : undefined
-        }
-        style={{ transformOrigin: `${impactX}px ${beamY}px`, transformBox: "fill-box" as const }}
-      >
-        <line x1={impactX - 8} y1={beamY} x2={impactX - 4} y2={beamY} stroke="var(--color-accent)" strokeWidth={2.2} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        <line x1={impactX} y1={beamY - 8} x2={impactX} y2={beamY - 4} stroke="var(--color-accent)" strokeWidth={2.2} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        <line x1={impactX} y1={beamY + 4} x2={impactX} y2={beamY + 8} stroke="var(--color-accent)" strokeWidth={2.2} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        <line x1={impactX - 6} y1={beamY - 6} x2={impactX - 3} y2={beamY - 3} stroke="var(--color-accent)" strokeWidth={1.6} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-        <line x1={impactX - 6} y1={beamY + 6} x2={impactX - 3} y2={beamY + 3} stroke="var(--color-accent)" strokeWidth={1.6} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-      </motion.g>
-
-      {/* ─── Comet trail (3 fading dots behind the head) ────────── */}
-      {[0, 1, 2].map((i) => {
-        const offset = (i + 1) * 8;
-        return (
-          <motion.circle
-            key={`trail-${i}`}
-            cy={beamY}
-            r={3.2 - i * 0.6}
-            fill="var(--color-accent)"
-            initial={{ cx: cometStart - offset, opacity: 0 }}
-            animate={
-              animate
-                ? {
-                    cx: [
-                      cometStart - offset,
-                      cometImpact - offset,
-                      cometImpact - offset,
-                      cometRetreat - offset,
-                      cometRetreat - offset,
-                    ],
-                    opacity: [
-                      0,
-                      0.65 - i * 0.15,
-                      0.65 - i * 0.15,
-                      0.2 - i * 0.05,
-                      0,
-                    ],
-                  }
-                : { cx: cometImpact - offset, opacity: 0.65 - i * 0.15 }
-            }
-            transition={
-              animate
-                ? {
-                    duration: 5,
-                    repeat: Infinity,
-                    ease: [0.4, 0, 0.2, 1],
-                    times: [0, 0.4, 0.5, 0.7, 1],
-                  }
-                : undefined
-            }
-          />
-        );
-      })}
-
-      {/* ─── Comet head (the hero element) ─────────────────────── */}
-      <motion.rect
-        width={18}
-        height={18}
-        rx={4.5}
-        y={beamY - 9}
+      {/* ─── Comet trail segment 1 (closest to head) ────────────── */}
+      <motion.circle
+        cy={beamY}
+        r={2.2}
         fill="var(--color-accent)"
-        initial={{ x: cometStart, opacity: 1, scale: 1 }}
+        initial={{ cx: cometStart - 8, opacity: 0 }}
         animate={
           animate
             ? {
-                x: [cometStart, cometImpact, cometImpact, cometRetreat, cometStart, cometStart],
-                opacity: [1, 1, 1, 0.4, 0, 1],
-                scale: [1, 1, 1.1, 0.7, 0.7, 1],
+                cx: [
+                  cometStart - 8,
+                  cometImpact - 8,
+                  cometImpact - 4,
+                  cometStart - 8,
+                  cometStart - 8,
+                ],
+                opacity: [0, 0.55, 0.7, 0, 0],
               }
-            : { x: cometImpact, opacity: 1, scale: 1.1 }
+            : { cx: cometImpact - 8, opacity: 0.55 }
         }
         transition={
           animate
             ? {
-                duration: 5,
+                duration: 6,
                 repeat: Infinity,
-                ease: [0.4, 0, 0.2, 1],
-                times: [0, 0.42, 0.5, 0.7, 0.85, 1],
+                ease: [0.22, 1, 0.36, 1],
+                times: [0, 0.42, 0.5, 0.7, 1],
               }
             : undefined
         }
-        style={{ transformOrigin: "center", transformBox: "fill-box" as const }}
+      />
+
+      {/* ─── Comet trail segment 2 (further from head) ──────────── */}
+      <motion.circle
+        cy={beamY}
+        r={1.6}
+        fill="var(--color-accent)"
+        initial={{ cx: cometStart - 16, opacity: 0 }}
+        animate={
+          animate
+            ? {
+                cx: [
+                  cometStart - 16,
+                  cometImpact - 16,
+                  cometImpact - 8,
+                  cometStart - 16,
+                  cometStart - 16,
+                ],
+                opacity: [0, 0.35, 0.5, 0, 0],
+              }
+            : { cx: cometImpact - 16, opacity: 0.35 }
+        }
+        transition={
+          animate
+            ? {
+                duration: 6,
+                repeat: Infinity,
+                ease: [0.22, 1, 0.36, 1],
+                times: [0, 0.42, 0.5, 0.7, 1],
+              }
+            : undefined
+        }
+      />
+
+      {/* ─── Comet head (the hero — thin, opacity flickers on rebound) ─ */}
+      <motion.circle
+        cy={beamY}
+        r={3.2}
+        fill="var(--color-accent)"
+        initial={{ cx: cometStart, opacity: 1 }}
+        animate={
+          animate
+            ? {
+                cx: [cometStart, cometImpact, cometImpact, cometStart, cometStart, cometStart],
+                opacity: [1, 1, 0.4, 0.7, 0, 1],
+              }
+            : { cx: cometImpact, opacity: 1 }
+        }
+        transition={
+          animate
+            ? {
+                duration: 6,
+                repeat: Infinity,
+                ease: [0.22, 1, 0.36, 1],
+                times: [0, 0.42, 0.55, 0.85, 0.94, 1],
+              }
+            : undefined
+        }
       />
     </motion.g>
   );
 }
 
 /**
- * WhyFetchFailsCoverStatic — Satori-safe pure-JSX export.
- * Reduced-motion end-state: comet bounced back at far-left, wall solid,
- * ✕ visible, 2 echo-rings frozen at mid-expansion (the "impact moment").
+ * WhyFetchFailsCoverStatic — Satori-safe pure-JSX export of v6 reduced-motion
+ * end-state. Pure JSX, hex palette inline. No motion.*, no hooks, no color-mix.
+ *
+ * End-state: comet at impact position with 2-segment trail at decreasing
+ * opacity, wall fully drawn with ACAO label, echo ring fully drawn — the
+ * post-impact "settled" frame.
  */
 export function WhyFetchFailsCoverStatic() {
   const ACCENT = "#d97341";
-  const TEXT = "#f8f5f0";
   const MUTED = "#7a7570";
-  const SURFACE = "#1a1714";
 
-  const wallX = 122;
-  const impactX = 116;
+  const wallX = 134;
+  const wallW = 8;
+  const impactX = wallX - wallW / 2;
   const beamY = 100;
+  const cometImpact = impactX - 12;
 
   return (
     <svg
@@ -367,30 +235,28 @@ export function WhyFetchFailsCoverStatic() {
       width="100%"
       height="100%"
     >
-      {/* Browser silhouette */}
-      <rect x={140} y={56} width={48} height={88} rx={5} fill={SURFACE} stroke={MUTED} strokeWidth={1.6} opacity={0.55} />
-      <line x1={140} y1={68} x2={188} y2={68} stroke={MUTED} strokeWidth={1.2} opacity={0.5} />
-      <circle cx={146} cy={62} r={1.6} fill={MUTED} opacity={0.55} />
-      <circle cx={152} cy={62} r={1.6} fill={MUTED} opacity={0.45} />
-      <circle cx={158} cy={62} r={1.6} fill={MUTED} opacity={0.4} />
+      {/* CORS wall */}
+      <rect x={wallX - wallW / 2} y={46} width={wallW} height={108} rx={3} fill="none" stroke={ACCENT} strokeWidth={1.4} />
 
-      {/* Wall */}
-      <rect x={wallX - 4} y={36} width={8} height={128} rx={3} fill={TEXT} />
+      {/* ACAO label */}
+      <line x1={wallX - 2.5} y1={56} x2={wallX + 2.5} y2={56} stroke={MUTED} strokeWidth={1} strokeLinecap="round" />
+      <line x1={wallX - 2.5} y1={62} x2={wallX + 2.5} y2={62} stroke={MUTED} strokeWidth={1} strokeLinecap="round" opacity={0.75} />
+      <line x1={wallX - 2.5} y1={68} x2={wallX + 2.5} y2={68} stroke={MUTED} strokeWidth={1} strokeLinecap="round" opacity={0.5} />
 
-      {/* ✕ on wall */}
-      <line x1={wallX - 6} y1={beamY - 6} x2={wallX + 6} y2={beamY + 6} stroke={ACCENT} strokeWidth={2.4} strokeLinecap="round" />
-      <line x1={wallX - 6} y1={beamY + 6} x2={wallX + 6} y2={beamY - 6} stroke={ACCENT} strokeWidth={2.4} strokeLinecap="round" />
+      {/* ✕ reject mark */}
+      <line x1={wallX - 5} y1={beamY - 5} x2={wallX + 5} y2={beamY + 5} stroke={ACCENT} strokeWidth={1.6} strokeLinecap="round" />
+      <line x1={wallX - 5} y1={beamY + 5} x2={wallX + 5} y2={beamY - 5} stroke={ACCENT} strokeWidth={1.6} strokeLinecap="round" />
 
-      {/* Echo rings — frozen mid-expansion */}
-      <circle cx={impactX} cy={beamY} r={12} fill="none" stroke={ACCENT} strokeWidth={2} opacity={0.7} />
-      <circle cx={impactX} cy={beamY} r={20} fill="none" stroke={ACCENT} strokeWidth={1.6} opacity={0.45} />
+      {/* Echo ring — fully drawn */}
+      <circle cx={impactX} cy={beamY} r={14} fill="none" stroke={ACCENT} strokeWidth={1.2} opacity={0.7} />
 
-      {/* Comet bounced back to far-left */}
-      <rect x={16} y={beamY - 8} width={16} height={16} rx={4} fill={ACCENT} />
-      {/* Trail dots leading from bounce */}
-      <circle cx={40} cy={beamY} r={2.5} fill={ACCENT} opacity={0.4} />
-      <circle cx={52} cy={beamY} r={2} fill={ACCENT} opacity={0.28} />
-      <circle cx={64} cy={beamY} r={1.5} fill={ACCENT} opacity={0.18} />
+      {/* Comet head at impact (dim) */}
+      <circle cx={cometImpact} cy={beamY} r={3.2} fill={ACCENT} opacity={0.4} />
+
+      {/* Trail — segment 1 (closer, brighter) */}
+      <circle cx={cometImpact - 4} cy={beamY} r={2.2} fill={ACCENT} opacity={0.7} />
+      {/* Trail — segment 2 (further, dimmer) */}
+      <circle cx={cometImpact - 8} cy={beamY} r={1.6} fill={ACCENT} opacity={0.5} />
     </svg>
   );
 }
