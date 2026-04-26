@@ -21,5 +21,14 @@ export const SITE_TAGLINE = "notes from the wired.";
 export const SITE_ABOUT =
   "Engineering writing for people who'd rather pry the abstraction open than read about it. One question per post. Ten minutes of prose, twenty of widgets you can poke at.";
 
-/** GoatCounter subdomain for the analytics account backing the reader counter. */
-export const GOATCOUNTER_CODE = "lainlog";
+/**
+ * GoatCounter subdomain for the analytics account backing the reader counter.
+ * Held at the original `bytesize` value across the lainlog rebrand: GoatCounter
+ * accounts are domain-agnostic (the tracking script just pings the configured
+ * subdomain regardless of where the site is hosted), and the internal name
+ * never surfaces to readers. Renaming the account to `lainlog` is a tidiness
+ * change the user can make in the GoatCounter Settings UI later — keeping
+ * `bytesize` here preserves the existing analytics history with zero risk
+ * of dropped pageviews during the brand transition.
+ */
+export const GOATCOUNTER_CODE = "bytesize";
