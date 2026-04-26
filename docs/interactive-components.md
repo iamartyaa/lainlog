@@ -20,7 +20,7 @@ Every widget we've shipped collapses to one of seven shapes. Pick the shape that
 | **Scan / reveal** | "What the human saw vs what the agent saw" (unmask) | `HostilePageScan`, `ParseVsRender` | transform-based sweep OR segmented toggle |
 | **Propagation network** | "One signal becomes many" / contagion | `InfectiousJailbreak` | SVG graph + tick-based state spread |
 | **Coverage matrix** | "This defence reaches these stages, not those" | `DefenceCoverage` | CSS grid with intensity-coded cells |
-| **Premise quiz** | "Predict X — most readers fail, here's why" | `PredictTheStart` (event-loop post) | code snippet + multiple-choice + verdict |
+| **Premise quiz** | "Predict X — most readers fail, here's why" | `PredictTheStart` (event-loop post) | `<Quiz>` (see §2) wrapping the snippet + options |
 
 **Rule**: if a proposed widget doesn't fit one of these, ask whether the teaching claim is actually one claim. Most "doesn't fit" widgets are two claims in a trench coat.
 
@@ -132,6 +132,34 @@ It was first slotted into the gmail post's normalisation widget. That widget was
 - **Cadence**: `scrambleSpeed={60}` matches the §9 60 ms stagger grid. Defaults to 60. Do not go below 40 — characters blur together.
 - **Alphabet**: scoped per-article. For email/identifier reveals, use `characters="abcdefghijklmnopqrstuvwxyz0123456789.@+"` (this is the local file's default). Never a glyph-soup alphabet with symbols that can't legally appear in the target string.
 - **Budget**: one per article max — twice reads as decoration. Must teach "decode" or "normalise"; if the payload is a literal that the reader didn't type and doesn't know, don't use this primitive.
+
+### `Quiz` (✅ shipped — premise-quiz wrapper)
+
+`components/widgets/Quiz.tsx`. Reusable wrapper for any *predict / pick the right answer* widget. Renders the question (prose, code, anything), a randomised option list, and a verdict that flips on pick. Replaces the bespoke "code snippet + multiple-choice + verdict" assemblage from `PredictTheStart` with one primitive that any future quiz can lean on.
+
+- **API**: `question`, `options: { id, label }[]`, `correctId`, `onAnswered?(correct, chosenId)`, `randomize` (default `true`), `rightVerdict`, `wrongVerdict`, `revealable` (default `true`). The caller owns the question content — the wrapper does not impose a code-block layout.
+- **When to use**: the *Premise quiz* shape from §1. Open an article whose teaching is a non-obvious *order*, *outcome*, or *output*, and you want the reader's wrong intuition to create demand for the explanation.
+- **Anti-uses**: *not* a comprehension check at the end of an article (interrupts reading flow), *not* a poll (no right answer), *not* a tutorial step gate.
+- **Randomisation**: Fisher–Yates on mount via lazy `useState`. Order is stable across re-renders; only re-shuffles on a fresh page load. The `id` is preserved across the shuffle so correctness checks survive.
+- **Right path**: chosen option pulses (`scale 1 → 1.04 → 1`, ~250 ms) and emits a small terracotta spark burst via `<ClickSpark>` wrapped around the correct option. Border + background highlight to terracotta. `rightVerdict` reveals beneath.
+- **Wrong path**: chosen option does a one-shot keyframe nod (`x: [0, -6, 6, -4, 4, 0]`, ~350 ms) and gets a desaturated muted-grey border + slight `filter: saturate(0.4)`. The CORRECT option *also* highlights so the reader still leaves with the answer. `wrongVerdict` reveals beneath.
+- **Reveal-answer escape hatch**: a `reveal answer` text-button below the options routes to the wrong-path verdict (no shake) and highlights the correct option. Disable with `revealable={false}` for cases where guessing is the whole point.
+- **One-accent discipline**: terracotta is the only colour with semantic load. *Wrong* reads via desaturation + the nod + verdict copy — never a red. *Right* reads via the highlight + pulse + sparks — never a green. (DESIGN.md §3 / §10.)
+- **Frame-stability**: the verdict slot reserves `min-height: 2.5em` before any answer is given so the container does not reflow on pick. R6 from `docs/svg-cover-playbook.md` applies to widgets too.
+- **Reduced motion**: nod + pulse collapse to opacity-only feedback; `<ClickSpark>` becomes a pure pass-through (no canvas, no rAF). Verdict still reveals.
+- **Mobile-first**: options stack as a 1-col grid on narrow widths, flip to 2-col at `@container quiz (min-width: 480px)`. Tap targets ≥ 44 px.
+- **Accessibility**: `role="radiogroup"`, each option `role="radio"` with `aria-checked`. Roving `tabindex`. ArrowDown / ArrowRight → next, ArrowUp / ArrowLeft → prev. Enter / Space invokes the button. Verdict region is `aria-live="polite"`.
+- **Migration note**: `PredictTheStart` is **not** migrated to `<Quiz>` yet. The wrapper is intentionally a separate primitive first; the migration is a future pass.
+
+### `ClickSpark` (✅ shipped — internal to `<Quiz>`)
+
+`components/fancy/click-spark.tsx`. Vendored from [React Bits](https://reactbits.dev/animations/click-spark). Canvas-based radial spark burst on click — N short lines fan out from the click point, each travelling `sparkRadius` px before fading.
+
+- **Use case**: correct-answer celebration inside `<Quiz>`. Not for general decoration. Don't sprinkle this on buttons across the site.
+- **Bytesize override**: default `sparkColor` is `var(--color-accent)` (terracotta) instead of upstream `'#fff'`. Bytesize is dark-canvas-default and the accent is the only semantic colour.
+- **Reduced motion**: renders as a no-op (children only, no canvas, no rAF, no click hook). DESIGN.md §9.
+- **Layering**: the wrapper is a `position: relative; display: inline-block; width: 100%` span; the canvas overlays at `inset: 0` with `pointer-events: none` so it doesn't intercept clicks on the wrapped subtree.
+- **Don't reach for it directly**. If you need a celebration that isn't a quiz answer, write the moment from primitives (a one-shot scale + a `TextHighlighter` + a verdict line) before reaching for sparks. Sparks-as-decoration violates §9.
 
 ## 2.5. The full Fancy library — curation for bytesize
 
