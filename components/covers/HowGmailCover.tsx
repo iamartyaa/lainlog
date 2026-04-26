@@ -310,3 +310,114 @@ export function HowGmailCover() {
     </g>
   );
 }
+
+/**
+ * HowGmailCoverStatic — Satori-safe pure-JSX export of the reduced-motion
+ * end-state. Bit-array fully resolved with 3 cells lit terracotta and the
+ * verdict tick visible. Used by the /og share-preview route.
+ *
+ * Hex constants inline because Satori has limited CSS-variable support;
+ * see components/covers/static-registry.ts for the canonical palette.
+ */
+export function HowGmailCoverStatic() {
+  const ACCENT = "#d97341";
+  const TEXT = "#f8f5f0";
+  const MUTED = "#7a7570";
+  const SURFACE = "#1a1714";
+
+  const cellCount = 12;
+  const cellW = 12;
+  const cellH = 16;
+  const cellGap = 2;
+  const arrayW = cellCount * cellW + (cellCount - 1) * cellGap;
+  const arrayX = (200 - arrayW) / 2;
+  const arrayY = 140;
+
+  const cells = Array.from({ length: cellCount }, (_, i) => ({
+    x: arrayX + i * (cellW + cellGap),
+    y: arrayY,
+    lit: i === 1 || i === 5 || i === 9,
+  }));
+
+  const litCenters = cells.filter((c) => c.lit).map((c) => c.x + cellW / 2);
+
+  const inputCx = 100;
+  const inputCy = 56;
+
+  return (
+    <svg
+      viewBox="0 0 200 200"
+      xmlns="http://www.w3.org/2000/svg"
+      width="100%"
+      height="100%"
+    >
+      {/* Input bubble */}
+      <rect x={56} y={36} width={88} height={28} rx={8} fill={SURFACE} stroke={TEXT} strokeWidth={2.4} />
+      <rect x={64} y={48} width={4} height={4} rx={1} fill={MUTED} opacity={0.7} />
+      <rect x={72} y={48} width={4} height={4} rx={1} fill={MUTED} opacity={0.7} />
+      <rect x={80} y={48} width={4} height={4} rx={1} fill={MUTED} opacity={0.7} />
+      <rect x={88} y={48} width={4} height={4} rx={1} fill={MUTED} opacity={0.7} />
+      <rect x={96} y={48} width={4} height={4} rx={1} fill={MUTED} opacity={0.55} />
+      <rect x={104} y={48} width={4} height={4} rx={1} fill={MUTED} opacity={0.55} />
+      <rect x={112} y={48} width={4} height={4} rx={1} fill={MUTED} opacity={0.55} />
+      <circle cx={124} cy={50} r={2.4} fill="none" stroke={MUTED} strokeWidth={1.4} />
+
+      {/* 3 hash arcs (fully drawn) */}
+      {litCenters.map((endX, i) => {
+        const startX = inputCx;
+        const startY = inputCy + 12;
+        const endY = arrayY - 2;
+        const midX = (startX + endX) / 2;
+        const midY = startY + 30 + i * 4;
+        const d = `M ${startX} ${startY} Q ${midX} ${midY}, ${endX} ${endY}`;
+        return (
+          <path
+            key={`arc-${i}`}
+            d={d}
+            fill="none"
+            stroke={ACCENT}
+            strokeWidth={2.2}
+            strokeLinecap="round"
+            opacity={0.85}
+          />
+        );
+      })}
+
+      {/* Bit-array cells */}
+      {cells.map((c, i) => (
+        <g key={`cell-${i}`}>
+          <rect
+            x={c.x}
+            y={c.y}
+            width={cellW}
+            height={cellH}
+            rx={2}
+            fill={SURFACE}
+            stroke={TEXT}
+            strokeWidth={2}
+          />
+          {c.lit && (
+            <rect
+              x={c.x}
+              y={c.y}
+              width={cellW}
+              height={cellH}
+              rx={2}
+              fill={ACCENT}
+            />
+          )}
+        </g>
+      ))}
+
+      {/* Verdict tick */}
+      <path
+        d="M 154 92 L 162 100 L 178 84"
+        fill="none"
+        stroke={ACCENT}
+        strokeWidth={3.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

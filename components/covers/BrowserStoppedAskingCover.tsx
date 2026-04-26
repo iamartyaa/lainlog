@@ -195,3 +195,51 @@ export function BrowserStoppedAskingCover() {
     </g>
   );
 }
+
+/**
+ * BrowserStoppedAskingCoverStatic — Satori-safe pure-JSX export.
+ * Reduced-motion end-state: beam fully drawn, two packets sit at midpoint,
+ * endpoint pulse-rings at rest scale.
+ */
+export function BrowserStoppedAskingCoverStatic() {
+  const ACCENT = "#d97341";
+  const TEXT = "#f8f5f0";
+  const MUTED = "#7a7570";
+  const SURFACE = "#1a1714";
+
+  const beamY = 100;
+  const leftX = 56;
+  const rightX = 144;
+
+  return (
+    <svg
+      viewBox="0 0 200 200"
+      xmlns="http://www.w3.org/2000/svg"
+      width="100%"
+      height="100%"
+    >
+      {/* Client tile */}
+      <rect x={20} y={76} width={48} height={48} rx={8} fill={SURFACE} stroke={TEXT} strokeWidth={2.4} />
+      <circle cx={32} cy={88} r={2} fill={MUTED} opacity={0.7} />
+      <rect x={28} y={104} width={32} height={2} rx={1} fill={MUTED} opacity={0.5} />
+      <rect x={28} y={110} width={20} height={2} rx={1} fill={MUTED} opacity={0.5} />
+
+      {/* Server tile */}
+      <rect x={132} y={76} width={48} height={48} rx={8} fill={SURFACE} stroke={TEXT} strokeWidth={2.4} />
+      <line x1={142} y1={88} x2={170} y2={88} stroke={MUTED} strokeWidth={1.6} strokeLinecap="round" />
+      <line x1={142} y1={100} x2={170} y2={100} stroke={MUTED} strokeWidth={1.6} strokeLinecap="round" />
+      <line x1={142} y1={112} x2={170} y2={112} stroke={MUTED} strokeWidth={1.6} strokeLinecap="round" />
+
+      {/* Endpoint pulse rings (at rest) */}
+      <circle cx={leftX - 12} cy={beamY} r={28} fill="none" stroke={ACCENT} strokeWidth={2} opacity={0.25} />
+      <circle cx={rightX + 12} cy={beamY} r={28} fill="none" stroke={ACCENT} strokeWidth={2} opacity={0.25} />
+
+      {/* Beam */}
+      <line x1={leftX} y1={beamY} x2={rightX} y2={beamY} stroke={ACCENT} strokeWidth={5} strokeLinecap="round" opacity={0.9} />
+
+      {/* Packets at midpoint — show one going each direction, both visible */}
+      <circle cx={88} cy={beamY} r={5} fill={TEXT} stroke={ACCENT} strokeWidth={2.5} />
+      <circle cx={112} cy={beamY} r={5} fill={TEXT} stroke={ACCENT} strokeWidth={2.5} />
+    </svg>
+  );
+}

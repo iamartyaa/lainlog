@@ -334,3 +334,131 @@ export function LineThatWaitsItsTurnCover() {
     </motion.g>
   );
 }
+
+/**
+ * LineThatWaitsItsTurnCoverStatic — Satori-safe pure-JSX export.
+ * Reduced-motion end-state: indicator at far right of micro lane, all 4
+ * micros faded (drained — the article's thesis), one macro chip in
+ * fade-state.
+ *
+ * Note: color-mix() is replaced with hex equivalents because Satori
+ * doesn't resolve color-mix. Tinted lane is approximated as a low-alpha
+ * accent layered over the canvas.
+ */
+export function LineThatWaitsItsTurnCoverStatic() {
+  const ACCENT = "#d97341";
+  const MUTED = "#7a7570";
+  const SURFACE = "#1a1714";
+  const RULE = "#2a2622";
+  // Approximation of color-mix(accent 12% + transparent) over BG #0e1114
+  const ACCENT_TINT = "#23191b";
+  const ACCENT_TINT_STROKE = "#56342a";
+  const ACCENT_WASH = "#3b2620";
+
+  const laneX = 24;
+  const laneW = 152;
+  const microY = 64;
+  const macroY = 124;
+  const laneH = 36;
+
+  const microChips = [
+    { x: laneX + 8 },
+    { x: laneX + 38 },
+    { x: laneX + 68 },
+    { x: laneX + 98 },
+  ];
+  const macroChips = [
+    { x: laneX + 18 },
+    { x: laneX + 78 },
+  ];
+  const chipW = 22;
+  const chipH = 18;
+
+  // Indicator parks at the rightmost micro chip's center (drained position).
+  const indicatorX = microChips[3].x + chipW / 2;
+  const indicatorY = microY + laneH / 2 - 2;
+
+  return (
+    <svg
+      viewBox="0 0 200 200"
+      xmlns="http://www.w3.org/2000/svg"
+      width="100%"
+      height="100%"
+    >
+      {/* Micro lane (terracotta-tinted) */}
+      <rect x={laneX} y={microY} width={laneW} height={laneH} rx={8} fill={ACCENT_TINT} stroke={ACCENT_TINT_STROKE} strokeWidth={1.4} />
+      {/* Macro lane (muted) */}
+      <rect x={laneX} y={macroY} width={laneW} height={laneH} rx={8} fill={SURFACE} stroke={RULE} strokeWidth={1.4} />
+
+      {/* Lane label dots */}
+      <circle cx={laneX - 10} cy={microY + laneH / 2} r={2.4} fill={ACCENT} />
+      <circle cx={laneX - 10} cy={macroY + laneH / 2} r={2.4} fill={MUTED} />
+
+      {/* Loop track curve */}
+      <path
+        d={`M ${laneX + laneW + 4} ${microY + laneH / 2} C ${laneX + laneW + 22} ${microY + laneH / 2}, ${laneX + laneW + 22} ${macroY + laneH / 2}, ${laneX + laneW + 4} ${macroY + laneH / 2}`}
+        fill="none"
+        stroke={RULE}
+        strokeWidth={1.4}
+        strokeLinecap="round"
+        opacity={0.6}
+      />
+      {/* Tail back to left */}
+      <path
+        d={`M ${laneX + laneW + 4} ${macroY + laneH / 2} L ${laneX + laneW + 14} ${macroY + laneH / 2} L ${laneX + laneW + 14} ${microY - 18} L ${laneX - 10} ${microY - 18} L ${laneX - 10} ${microY + laneH / 2 - 14}`}
+        fill="none"
+        stroke={RULE}
+        strokeWidth={1.2}
+        strokeLinecap="round"
+        strokeDasharray="3 3"
+        opacity={0.55}
+      />
+
+      {/* Micro chips — all drained (faded) */}
+      {microChips.map((c, i) => (
+        <rect
+          key={`micro-${i}`}
+          x={c.x}
+          y={microY + (laneH - chipH) / 2}
+          width={chipW}
+          height={chipH}
+          rx={3}
+          fill={ACCENT}
+          stroke={ACCENT}
+          strokeWidth={1.4}
+          opacity={0}
+        />
+      ))}
+
+      {/* Macro chip 0 — in fade-state (firing) */}
+      <rect
+        x={macroChips[0].x}
+        y={macroY + (laneH - chipH) / 2}
+        width={chipW}
+        height={chipH}
+        rx={3}
+        fill={SURFACE}
+        stroke={MUTED}
+        strokeWidth={1.6}
+        opacity={0.2}
+      />
+      {/* Macro chip 1 — static, waiting */}
+      <rect
+        x={macroChips[1].x}
+        y={macroY + (laneH - chipH) / 2}
+        width={chipW}
+        height={chipH}
+        rx={3}
+        fill={SURFACE}
+        stroke={MUTED}
+        strokeWidth={1.6}
+      />
+
+      {/* Indicator at far right of micro lane */}
+      <g transform={`translate(${indicatorX} ${indicatorY})`}>
+        <circle cx={0} cy={0} r={16} fill={ACCENT_WASH} opacity={0.7} />
+        <path d="M -5 -16 L 5 -16 L 0 -8 Z" fill={ACCENT} />
+      </g>
+    </svg>
+  );
+}

@@ -485,3 +485,117 @@ export function HowJavascriptReadsItsOwnFutureCover() {
     </motion.g>
   );
 }
+
+/**
+ * HowJavascriptReadsItsOwnFutureCoverStatic — Satori-safe pure-JSX export.
+ * Reduced-motion end-state per playbook §8: creation-pass wave at bottom
+ * (complete, faded), all 4 declaration glyphs activated, execution caret
+ * at midpoint over line 2, with line-2 wash highlighted.
+ *
+ * color-mix() values replaced with hex approximations for Satori.
+ */
+export function HowJavascriptReadsItsOwnFutureCoverStatic() {
+  const ACCENT = "#d97341";
+  const TEXT = "#f8f5f0";
+  const MUTED = "#7a7570";
+  const SURFACE = "#1a1714";
+  const RULE = "#2a2622";
+  // color-mix(accent 22% + transparent) ~= low-alpha terracotta
+  const ACCENT_WASH = "#3b2620";
+  // color-mix(accent 35% + transparent) — glyph fill
+  const ACCENT_FILL_LIGHT = "#4a2a22";
+
+  const stripX = 36;
+  const stripY = 48;
+  const stripW = 128;
+  const stripH = 132;
+
+  const lines = [
+    { y: stripY + 18, w: 88 },
+    { y: stripY + 40, w: 70 },
+    { y: stripY + 62, w: 76 },
+    { y: stripY + 84, w: 64 },
+    { y: stripY + 106, w: 92 },
+  ];
+
+  const lineX = stripX + 14;
+  const glyphX = stripX + stripW - 16;
+
+  // Caret midpoint between caretYStart=stripY+4 and caretYEnd=stripY+stripH-8
+  const caretMidY = (stripY + 4 + stripY + stripH - 8) / 2;
+
+  return (
+    <svg
+      viewBox="0 0 200 200"
+      xmlns="http://www.w3.org/2000/svg"
+      width="100%"
+      height="100%"
+    >
+      {/* Engine-eye */}
+      <circle cx={100} cy={28} r={9} fill="none" stroke={ACCENT} strokeWidth={1.8} opacity={0.95} />
+      <circle cx={100} cy={28} r={3} fill={ACCENT} />
+
+      {/* Code strip */}
+      <rect x={stripX} y={stripY} width={stripW} height={stripH} rx={6} fill={SURFACE} stroke={TEXT} strokeWidth={2} />
+      {/* Gutter rule */}
+      <line x1={stripX + 8} y1={stripY + 6} x2={stripX + 8} y2={stripY + stripH - 6} stroke={RULE} strokeWidth={0.8} opacity={0.6} />
+
+      {/* Line wash on line 2 (midpoint, where caret sits) */}
+      <rect x={stripX + 4} y={lines[2].y - 6} width={stripW - 8} height={12} rx={3} fill={ACCENT_WASH} opacity={0.7} />
+
+      {/* Code-line stubs */}
+      {lines.map((ln, i) => (
+        <rect
+          key={`line-${i}`}
+          x={lineX}
+          y={ln.y - 1.5}
+          width={ln.w}
+          height={3}
+          rx={1.5}
+          fill={MUTED}
+          opacity={0.78}
+        />
+      ))}
+
+      {/* Declaration glyphs — all 4 activated */}
+      {/* Line 0: function ƒ */}
+      <g opacity={0.85}>
+        <circle cx={glyphX} cy={lines[0].y} r={5.5} fill={ACCENT_FILL_LIGHT} stroke={ACCENT} strokeWidth={1.4} />
+        <path d={`M ${glyphX - 1} ${lines[0].y + 3} L ${glyphX + 1} ${lines[0].y - 3}`} stroke={ACCENT} strokeWidth={1.6} strokeLinecap="round" />
+        <line x1={glyphX - 2.5} y1={lines[0].y - 0.5} x2={glyphX + 1.5} y2={lines[0].y - 0.5} stroke={ACCENT} strokeWidth={1.2} strokeLinecap="round" />
+      </g>
+
+      {/* Line 1: let TDZ */}
+      <g opacity={0.85}>
+        <rect x={glyphX - 5.5} y={lines[1].y - 5} width={11} height={10} rx={1.5} fill="none" stroke={ACCENT} strokeWidth={1.4} />
+        <line x1={glyphX - 4} y1={lines[1].y + 4} x2={glyphX + 4} y2={lines[1].y - 4} stroke={ACCENT} strokeWidth={1} strokeLinecap="round" />
+        <line x1={glyphX - 4} y1={lines[1].y - 1} x2={glyphX + 1} y2={lines[1].y - 5} stroke={ACCENT} strokeWidth={1} strokeLinecap="round" opacity={0.7} />
+      </g>
+
+      {/* Line 2: const TDZ */}
+      <g opacity={0.85}>
+        <rect x={glyphX - 5.5} y={lines[2].y - 5} width={11} height={10} rx={1.5} fill="none" stroke={ACCENT} strokeWidth={1.4} />
+        <line x1={glyphX - 4} y1={lines[2].y + 4} x2={glyphX + 4} y2={lines[2].y - 4} stroke={ACCENT} strokeWidth={1} strokeLinecap="round" />
+        <line x1={glyphX - 1} y1={lines[2].y + 4} x2={glyphX + 4} y2={lines[2].y} stroke={ACCENT} strokeWidth={1} strokeLinecap="round" opacity={0.7} />
+      </g>
+
+      {/* Line 3: var undefined-dot */}
+      <g opacity={0.85}>
+        <circle cx={glyphX} cy={lines[3].y} r={4} fill="none" stroke={MUTED} strokeWidth={1.4} strokeDasharray="2 2" />
+        <circle cx={glyphX} cy={lines[3].y} r={1.4} fill={MUTED} />
+      </g>
+
+      {/* Creation-pass wave at bottom — visible-but-fading position */}
+      <g opacity={0.4} transform={`translate(0 ${stripY + stripH + 8})`}>
+        <line x1={stripX + 2} y1={0} x2={stripX + stripW - 2} y2={0} stroke={ACCENT} strokeWidth={2.4} strokeLinecap="round" />
+        <line x1={stripX + 6} y1={-3} x2={stripX + stripW - 6} y2={-3} stroke={ACCENT} strokeWidth={1.4} strokeLinecap="round" opacity={0.45} />
+      </g>
+
+      {/* Execution caret at midpoint */}
+      <g transform={`translate(0 ${caretMidY})`}>
+        <path d={`M ${stripX - 6} -4 L ${stripX - 1} 0 L ${stripX - 6} 4 Z`} fill={ACCENT} />
+        <line x1={stripX - 14} y1={0} x2={stripX - 7} y2={0} stroke={ACCENT} strokeWidth={1.6} strokeLinecap="round" opacity={0.7} />
+      </g>
+    </svg>
+  );
+}
