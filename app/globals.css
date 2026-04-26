@@ -159,19 +159,36 @@ body {
 
 /* ---------------------------------------------------------------------------
    Shiki dual-theme CSS-variable switching.
-   Shiki emits each token with its light color inline + `--shiki-dark` set
-   to the dark color. Under data-theme="dark" we promote the dark variable.
+
+   `lib/shiki.ts` calls `codeToHtml` with `defaultColor: false`, which means
+   Shiki emits BOTH theme colors as CSS variables on every token span
+   (`--shiki-light` and `--shiki-dark`) and never sets `color` inline. We
+   promote ONE of those variables to `color` per active theme:
+
+   - LIGHT (default): paint with `--shiki-light` so token colors appear in
+     the github-light palette. Without this rule, light-mode spans inherit
+     the prose foreground and code looks unhighlighted.
+   - DARK: an `[data-theme="dark"]` override promotes `--shiki-dark`. The
+     `!important` guard preserves precedence against any future inline
+     color a Shiki upgrade might emit.
+
+   Background is intentionally left unpainted on .shiki and its spans —
+   Shiki's theme backgrounds (a cool #22272e dark / off-white light) would
+   clash with our warm --color-surface. The outer <CodeBlock> owns the
+   canvas; transparent spans let it show through cleanly.
 --------------------------------------------------------------------------- */
 .shiki,
 .shiki span {
   font-family: var(--font-mono) !important;
 }
 
-/* Dark-theme token colors: promote the --shiki-dark variable to `color` on
-   each span. Crucially we DO NOT paint a background on .shiki or its spans —
-   Shiki's theme background (a cool #22272e) would clash with our warm
-   --color-surface and read as a tint on the code body. Transparent spans
-   let the outer container's surface show through cleanly. */
+/* Light theme (default): promote the --shiki-light variable to `color`. */
+.shiki,
+.shiki span {
+  color: var(--shiki-light);
+}
+
+/* Dark theme override: promote --shiki-dark. */
 [data-theme="dark"] .shiki,
 [data-theme="dark"] .shiki span {
   color: var(--shiki-dark) !important;

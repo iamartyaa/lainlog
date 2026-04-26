@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { TextHighlighter } from "@/components/fancy";
 import { SPRING, PRESS } from "@/lib/motion";
 import { WidgetShell } from "@/components/viz/WidgetShell";
+import { Quiz } from "@/components/widgets/Quiz";
 
 const HL_COLOR = "color-mix(in oklab, var(--color-accent) 28%, transparent)";
 const HL_TX = { type: "spring" as const, duration: 0.9, bounce: 0 };
@@ -26,6 +27,11 @@ function CaptionCue({ children }: { children: React.ReactNode }) {
  * Three variants. None reproduces Archibald's `script start / promise1 /
  * promise2 / setTimeout / script end` example. Different identifiers,
  * different log strings, different microtask counts.
+ *
+ * As of PR #58 the predict-and-reveal interaction is delegated to the shared
+ * <Quiz> wrapper. Each variant feeds <Quiz> its own option set + correct id,
+ * and the wrapper's verdict slot renders the queue-source-annotated reveal
+ * strip (replacing the bespoke verdict text we used to render here).
  * --------------------------------------------------------------------------*/
 
 type Source = "sync" | "task" | "micro";
@@ -35,12 +41,10 @@ type Variant = {
   label: string;
   /** Human one-liner shown in the row above the variant tabs. */
   blurb: string;
-  /** Code lines (mono). */
-  code: string[];
-  /** Four candidate orderings shown to the reader. */
-  options: string[];
-  /** The correct ordering (one of the options). */
-  correctIndex: number;
+  /** Four candidate orderings shown to the reader. Each id matches `tokens`. */
+  options: { id: string; tokens: string[] }[];
+  /** Which option.id is correct. */
+  correctId: string;
   /** The reveal: list of (letter, source) pairs in actual run order. */
   reveal: { letter: string; source: Source }[];
   /** A one-line caption for the reveal panel. */
@@ -52,14 +56,13 @@ const VARIANTS: Variant[] = [
     id: "alpha",
     label: "α · baseline",
     blurb: "setTimeout vs Promise.then with two synchronous logs.",
-    code: [
-      `console.log("A");`,
-      `setTimeout(() => console.log("B"), 0);`,
-      `Promise.resolve().then(() => console.log("C"));`,
-      `console.log("D");`,
+    options: [
+      { id: "abcd", tokens: ["A", "B", "C", "D"] },
+      { id: "adbc", tokens: ["A", "D", "B", "C"] },
+      { id: "adcb", tokens: ["A", "D", "C", "B"] },
+      { id: "acdb", tokens: ["A", "C", "D", "B"] },
     ],
-    options: ["A B C D", "A D B C", "A D C B", "A C D B"],
-    correctIndex: 2,
+    correctId: "adcb",
     reveal: [
       { letter: "A", source: "sync" },
       { letter: "D", source: "sync" },
@@ -78,15 +81,13 @@ const VARIANTS: Variant[] = [
     id: "beta",
     label: "β · microtasks spawn microtasks",
     blurb: "A .then whose body schedules another .then.",
-    code: [
-      `setTimeout(() => console.log("T"), 0);`,
-      `Promise.resolve().then(() => {`,
-      `  console.log("P1");`,
-      `  Promise.resolve().then(() => console.log("P2"));`,
-      `});`,
+    options: [
+      { id: "tp1p2", tokens: ["T", "P1", "P2"] },
+      { id: "p1tp2", tokens: ["P1", "T", "P2"] },
+      { id: "p1p2t", tokens: ["P1", "P2", "T"] },
+      { id: "tp2p1", tokens: ["T", "P2", "P1"] },
     ],
-    options: ["T P1 P2", "P1 T P2", "P1 P2 T", "T P2 P1"],
-    correctIndex: 2,
+    correctId: "p1p2t",
     reveal: [
       { letter: "P1", source: "micro" },
       { letter: "P2", source: "micro" },
@@ -104,17 +105,13 @@ const VARIANTS: Variant[] = [
     id: "gamma",
     label: "γ · task scheduled first",
     blurb: "setTimeout(0) called before any Promise. Microtask still wins.",
-    code: [
-      `setTimeout(() => console.log("first?"), 0);`,
-      `Promise.resolve().then(() => console.log("second?"));`,
-    ],
     options: [
-      `"first?" "second?"`,
-      `"second?" "first?"`,
-      `nondeterministic`,
-      `only one prints`,
+      { id: "first-second", tokens: [`"first?"`, `"second?"`] },
+      { id: "second-first", tokens: [`"second?"`, `"first?"`] },
+      { id: "nondet", tokens: ["nondeterministic"] },
+      { id: "only-one", tokens: ["only one prints"] },
     ],
-    correctIndex: 1,
+    correctId: "second-first",
     reveal: [
       { letter: '"second?"', source: "micro" },
       { letter: '"first?"', source: "task" },
@@ -155,10 +152,7 @@ const SOURCE_STROKE: Record<Source, string> = {
 
 function RevealStrip({ reveal }: { reveal: Variant["reveal"] }) {
   return (
-    <div
-      className="flex flex-wrap items-center gap-[var(--spacing-xs)]"
-      style={{ minHeight: "5.5em" }}
-    >
+    <div className="flex flex-wrap items-center gap-[var(--spacing-xs)]">
       {reveal.map((item, i) => (
         <motion.div
           key={i}
@@ -199,25 +193,26 @@ function RevealStrip({ reveal }: { reveal: Variant["reveal"] }) {
   );
 }
 
-// Per-variant code text lives in `./snippets.ts` (a non-client module)
-// so the RSC `page.tsx` can pre-render each block through `<CodeBlock>`
-// and pass the highlighted elements back in via `codeSlots`.
+const SEP = "·";
+function tokensToLine(tokens: string[]) {
+  return tokens.join(` ${SEP} `);
+}
 
 /**
  * PredictTheOutput (W2) — three selectable variants. Reader picks an
- * ordering, then taps "reveal" to see the actual run with queue-source
- * annotations.
+ * ordering, and the shared <Quiz> wrapper handles the pulse / nod / sparkle
+ * + verdict reveal. The verdict slot itself renders our queue-source-annotated
+ * reveal strip plus the per-variant revealNote.
  *
  * One verb: predict (predict → reveal). Variant chooser is parameter
  * selection, not a competing verb (carve-out documented in widgets.md).
  *
- * Frame stability (R6): variant chooser, code pane, predict options, and
- * reveal strip share a single fixed-rectangle canvas. The reveal strip has
- * `min-height` so the card doesn't grow when it appears.
+ * Frame stability (R6): variant chooser, code pane, and <Quiz> share a
+ * single shell. <Quiz>'s verdict-slot min-height keeps the canvas stable.
  *
  * Code rendering: Shiki-highlighted code panes (one per variant) are
  * pre-rendered by the article's RSC `page.tsx` and passed in as
- * `codeSlots`, keyed by variant id. Keeps Shiki out of the client bundle.
+ * `codeSlots`, keyed by variant id.
  */
 type Props = {
   /** One pre-rendered Shiki block per variant. */
@@ -226,14 +221,14 @@ type Props = {
 
 export function PredictTheOutput({ codeSlots }: Props) {
   const [variantId, setVariantId] = useState<Variant["id"]>("alpha");
-  const [picked, setPicked] = useState<number | null>(null);
-  const [revealed, setRevealed] = useState(false);
+  // Caption-state mirror — driven by Quiz.onAnswered. Resets on variant
+  // change (the Quiz remounts via `key={variantId}`, so it self-resets).
+  const [answered, setAnswered] = useState<null | { correct: boolean }>(null);
   const variant = VARIANTS.find((v) => v.id === variantId)!;
 
   function selectVariant(id: Variant["id"]) {
     setVariantId(id);
-    setPicked(null);
-    setRevealed(false);
+    setAnswered(null);
   }
 
   return (
@@ -241,14 +236,9 @@ export function PredictTheOutput({ codeSlots }: Props) {
       title="predict the output"
       measurements={variant.label}
       caption={
-        revealed ? (
+        answered ? (
           <>
             <CaptionCue>Revealed.</CaptionCue> {variant.revealNote}
-          </>
-        ) : picked !== null ? (
-          <>
-            <CaptionCue>Locked in.</CaptionCue> Tap{" "}
-            <em>play it</em> to run the program with queue annotations.
           </>
         ) : (
           <>
@@ -258,43 +248,6 @@ export function PredictTheOutput({ codeSlots }: Props) {
         )
       }
       captionTone="prominent"
-      controls={
-        <div className="flex items-center justify-center gap-[var(--spacing-sm)] w-full">
-          {picked !== null && !revealed ? (
-            <motion.button
-              type="button"
-              onClick={() => setRevealed(true)}
-              className="font-sans rounded-[var(--radius-md)] px-[var(--spacing-md)] py-[var(--spacing-2xs)] min-h-[44px]"
-              style={{
-                fontSize: "var(--text-ui)",
-                background: "var(--color-accent)",
-                color: "var(--color-bg)",
-              }}
-              {...PRESS}
-            >
-              play it ▸
-            </motion.button>
-          ) : null}
-          {revealed ? (
-            <motion.button
-              type="button"
-              onClick={() => {
-                setPicked(null);
-                setRevealed(false);
-              }}
-              className="font-sans rounded-[var(--radius-md)] px-[var(--spacing-md)] py-[var(--spacing-2xs)] min-h-[44px]"
-              style={{
-                fontSize: "var(--text-ui)",
-                color: "var(--color-text-muted)",
-                border: "1px solid var(--color-rule)",
-              }}
-              {...PRESS}
-            >
-              try again
-            </motion.button>
-          ) : null}
-        </div>
-      }
     >
       <div className="flex flex-col gap-[var(--spacing-sm)]">
         {/* Variant chooser — segmented control above the canvas. */}
@@ -333,78 +286,33 @@ export function PredictTheOutput({ codeSlots }: Props) {
 
         {codeSlots[variantId]}
 
-        {/* Predict / reveal area — fixed-rectangle, shares min-height. */}
-        <div style={{ minHeight: "9em" }}>
-          <AnimatePresence mode="wait" initial={false}>
-            {!revealed ? (
-              <motion.div
-                key="predict"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={SPRING.snappy}
-                className="grid gap-[var(--spacing-2xs)]"
+        {/* The shared Quiz wrapper. Keyed by variantId so swapping variant
+            cleanly remounts the wrapper (= resets shuffle / chosen / revealed
+            in one go). The verdict slot renders the queue-source-annotated
+            reveal strip — same data the bespoke implementation rendered. */}
+        <Quiz
+          key={variantId}
+          question={null}
+          options={variant.options.map((opt) => ({
+            id: opt.id,
+            label: (
+              <span
+                className="font-mono"
                 style={{
-                  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                  fontSize: 12,
+                  letterSpacing: "0.02em",
                 }}
               >
-                {variant.options.map((opt, i) => {
-                  const isPicked = picked === i;
-                  return (
-                    <motion.button
-                      key={i}
-                      type="button"
-                      onClick={() => setPicked(i)}
-                      className="font-mono rounded-[var(--radius-sm)] min-h-[44px] text-left"
-                      style={{
-                        padding: "10px 12px",
-                        fontSize: 12,
-                        background: isPicked
-                          ? "color-mix(in oklab, var(--color-accent) 18%, transparent)"
-                          : "color-mix(in oklab, var(--color-surface) 60%, transparent)",
-                        color: "var(--color-text)",
-                        border: `1.5px solid ${
-                          isPicked ? "var(--color-accent)" : "var(--color-rule)"
-                        }`,
-                      }}
-                      {...PRESS}
-                    >
-                      {opt}
-                    </motion.button>
-                  );
-                })}
-              </motion.div>
-            ) : (
-              <motion.div
-                key="reveal"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={SPRING.snappy}
-                className="flex flex-col gap-[var(--spacing-xs)]"
-              >
-                <motion.div
-                  className="font-sans"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={SPRING.snappy}
-                  style={{
-                    fontSize: "var(--text-small)",
-                    color:
-                      picked === variant.correctIndex
-                        ? "var(--color-accent)"
-                        : "var(--color-text-muted)",
-                  }}
-                >
-                  {picked === variant.correctIndex
-                    ? "Correct — here's why."
-                    : `Actual run order (your pick: ${variant.options[picked ?? 0]}):`}
-                </motion.div>
-                <RevealStrip reveal={variant.reveal} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                {tokensToLine(opt.tokens)}
+              </span>
+            ),
+          }))}
+          correctId={variant.correctId}
+          onAnswered={(correct) => setAnswered({ correct })}
+          rightVerdict={<RevealStrip reveal={variant.reveal} />}
+          wrongVerdict={<RevealStrip reveal={variant.reveal} />}
+          randomize
+        />
       </div>
     </WidgetShell>
   );
