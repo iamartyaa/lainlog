@@ -50,14 +50,15 @@ export function AboutColumn({ readerCount }: AboutColumnProps) {
         </h1>
 
         {/* Mobile-only inline WanderingEyes — sits to the right of the
-            heading. Smaller (h-7 / 28×63 px) so it reads as an ornament
-            beside heading-sized type rather than competing with it. */}
+            heading. Sized just below the heading's visual block (heading
+            font is clamp(3rem, …, 4.5rem); cap-height ~70%, so h-9 ≈ 36 px
+            sits a touch smaller than the ~38 px mobile letter block). */}
         <div className="block lg:hidden shrink-0">
           <WanderingEyes
             aria-label=""
             aria-hidden
             role="presentation"
-            className="h-7 w-[63px] [--eye-color:#ffffff] [--pupil-color:#000000] [--eye-outline-color:#000000] [--eye-outline-width:1px]"
+            className="h-9 w-[81px] [--eye-color:#ffffff] [--pupil-color:#000000] [--eye-outline-color:#000000] [--eye-outline-width:1px]"
             style={{
               "--duration": "8s",
             } as React.CSSProperties}
@@ -79,17 +80,18 @@ export function AboutColumn({ readerCount }: AboutColumnProps) {
       </p>
 
       {/* Desktop-only WanderingEyes slot — between subtitle and meta row.
-          Sized at h-12 / 108×48 px on lg+ per the 9:4 aspect ratio so it
-          stays an ornament rather than a hero. White eye disc with a 1 px
-          black outline (so it reads on the near-white light theme) and a
-          solid black pupil. 8s cadence sits in the editorial-calm register
-          from svg-cover-playbook §14. */}
+          Sized at h-14 / 126×56 px on lg+ per the 9:4 aspect ratio. The lg
+          heading is ~72 px font with a ~58 px visual block; h-14 sits just
+          below it, matching the mobile relationship. White eye disc with a
+          1 px black outline (so it reads on the near-white light theme)
+          and a solid black pupil. 8s cadence sits in the editorial-calm
+          register from svg-cover-playbook §14. */}
       <div className="mt-[var(--spacing-lg)] hidden lg:flex items-center">
         <WanderingEyes
           aria-label=""
           aria-hidden
           role="presentation"
-          className="h-12 w-[108px] [--eye-color:#ffffff] [--pupil-color:#000000] [--eye-outline-color:#000000] [--eye-outline-width:1px]"
+          className="h-14 w-[126px] [--eye-color:#ffffff] [--pupil-color:#000000] [--eye-outline-color:#000000] [--eye-outline-width:1px]"
           style={{
             // CSS custom property consumed by the upstream component to
             // pace both keyframe loops (move + blink).
