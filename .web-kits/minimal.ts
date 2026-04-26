@@ -7,8 +7,10 @@
 // TIER-1 ONLY. We physically removed every sound that's not in the lainlog
 // audio playbook (`docs/audio-playbook.md`) — Hover, Tap, Key-Press,
 // Toggle-Off, Notification, Info, Warning, Send, Delete, Undo, Tab-Switch,
-// Checkbox, Select, Deselect, Collapse, Expand, Page-Enter, Page-Exit.
-// Bundle weight = 8 SoundDefinition objects (~0.5 kB gz). The runtime
+// Checkbox, Select, Deselect, Collapse, Expand. Page-Enter / Page-Exit
+// were originally deferred (Tier-2) but are now Tier-1 — wired through
+// `<NavigationSounds />` mounted in `app/layout.tsx`.
+// Bundle weight = 10 SoundDefinition objects (~0.6 kB gz). The runtime
 // never decodes audio files; sounds are synthesised live via Web Audio.
 
 import type { SoundDefinition, SoundPatch } from "@web-kits/audio";
@@ -101,6 +103,18 @@ export const slide: SoundDefinition = {
   gain: 0.05,
 };
 
+export const pageEnter: SoundDefinition = {
+  source: { type: "sine", frequency: { start: 700, end: 900 } },
+  envelope: { attack: 0.003, decay: 0.04, sustain: 0, release: 0.015 },
+  gain: 0.05,
+};
+
+export const pageExit: SoundDefinition = {
+  source: { type: "sine", frequency: { start: 900, end: 700 } },
+  envelope: { attack: 0, decay: 0.04, sustain: 0, release: 0.015 },
+  gain: 0.04,
+};
+
 export const _patch: SoundPatch = {
   name: "Minimal",
   author: "Raphael Salaja",
@@ -116,5 +130,7 @@ export const _patch: SoundPatch = {
     pop,
     swoosh,
     slide,
+    "page-enter": pageEnter,
+    "page-exit": pageExit,
   },
 };

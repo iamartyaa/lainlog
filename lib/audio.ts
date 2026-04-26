@@ -29,7 +29,18 @@
  */
 
 import { defineSound, type SoundDefinition } from "@web-kits/audio";
-import { click, copy, error, pop, slide, success, swoosh, toggleOn } from "@/.web-kits/minimal";
+import {
+  click,
+  copy,
+  error,
+  pageEnter,
+  pageExit,
+  pop,
+  slide,
+  success,
+  swoosh,
+  toggleOn,
+} from "@/.web-kits/minimal";
 
 export type SoundName =
   | "Copy"
@@ -39,7 +50,9 @@ export type SoundName =
   | "Pop"
   | "Slide"
   | "Toggle-On"
-  | "Swoosh";
+  | "Swoosh"
+  | "Page-Enter"
+  | "Page-Exit";
 
 /**
  * Per-sound gain multipliers applied AFTER the patch's own `gain`. Values
@@ -47,6 +60,11 @@ export type SoundName =
  * upstream Minimal patch is already quiet (gains 0.05–0.12), so these
  * multipliers stay close to 1.0 for most — we're trimming the loud ones
  * (Pop, Click) and lifting Swoosh which is a once-per-page reveal.
+ *
+ * Page-Enter / Page-Exit deliberately sit BELOW the others (0.55 / 0.5).
+ * They fire on every client-side route change — pair-wise, ~120ms apart —
+ * so they need to feel ambient, not punchy. The exit is the quieter of
+ * the two so the enter reads as the "landed" beat.
  *
  * If you change a value here, also update the table in audio-playbook.md.
  */
@@ -59,6 +77,8 @@ const GAIN_MULTIPLIER: Record<SoundName, number> = {
   Slide: 1.0, // already at 0.05; let it breathe
   "Toggle-On": 0.85, // segmented controls
   Swoosh: 1.1, // verdict reveal, once per page-load — earn the lift
+  "Page-Enter": 0.55, // navigation arrival — ambient, paired with Exit
+  "Page-Exit": 0.5, // navigation departure — quietest of the pair
 };
 
 /**
@@ -74,6 +94,8 @@ const PATCH_DEF: Record<SoundName, SoundDefinition> = {
   Slide: slide,
   "Toggle-On": toggleOn,
   Swoosh: swoosh,
+  "Page-Enter": pageEnter,
+  "Page-Exit": pageExit,
 };
 
 const THROTTLE_MS = 100;

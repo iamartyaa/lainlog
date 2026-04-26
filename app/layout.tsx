@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Header } from "@/components/nav/Header";
 import { Footer } from "@/components/nav/Footer";
 import { CozyFrame } from "@/components/nav/CozyFrame";
+import { NavigationSounds } from "@/components/nav/NavigationSounds";
 import { MotionConfigProvider } from "@/components/providers/motion-config";
 import { GoatCounter } from "@/components/analytics/GoatCounter";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
@@ -88,6 +89,7 @@ export default function RootLayout({
           enableSystem
         >
           <MotionConfigProvider>
+            <NavigationSounds />
             <CozyFrame>
               <Header />
               <main className="flex-1">{children}</main>
