@@ -13,6 +13,7 @@ The canonical reference set for authoring, reviewing, and shipping bytesize post
 ## Secondary references
 
 - **[`mobile-first-verification.md`](./mobile-first-verification.md)** — the mobile-first migration trace. Useful for container-query rules.
+- **[`svg-paths-primer.md`](./svg-paths-primer.md)** — SVG paths reference — read before authoring complex SVG paths.
 - **[`../DESIGN.md`](../DESIGN.md)** — the design-system spec. Tokens, motion, type, absolute bans.
 - **[`../AGENTS.md`](../AGENTS.md)** — Next.js 16 breaking-changes notice.
 
