@@ -1,229 +1,284 @@
 "use client";
 
 /**
- * <CourseOutline> — the hero serpentine timeline for course pages.
+ * <CourseOutline> — the snake-and-ladders course board.
  *
- * Pattern: a single winding SVG path drawn with a stacked stroke stack
- * (outer rule outline / dark spine / inner accent wash / dashed stitching),
- * with milestone cards and a numbered marker placed along the path. The
- * path is original geometry; every visual layer obeys lainlog's
- * terracotta-only token palette (DESIGN.md §3).
+ * Rebuilt for PR #67. The earlier serpentine attempts felt visually
+ * trash, too compact, and lacked character. This version throws out the
+ * Bezier-rope-with-floating-cards pattern entirely. The board is now a
+ * tall, scrolling neo-brutalist game board:
  *
- * PR #67 rebuild iteration:
- *  - Path simplified from a four-traversal self-intersecting Bezier to a
- *    clean THREE-traversal serpent: top L→R, middle R→L, bottom L→R. No
- *    segment crosses another. Single continuous Bezier; gentle U-turns on
- *    the right and left edges connect the traversals.
- *  - viewBox grew from 1166×716 to 1200×900 — taller canvas gives every
- *    traversal a comfortable horizontal stripe and a card-shaped gap above.
- *  - Numbered-marker anchor coordinates are now derived at mount-time from
- *    `getPointAtLength` on a hidden invisible measurement path. Markers
- *    are mathematically ON the rope, not eyeballed beside it.
- *  - Card placement choreographed by traversal: every card sits ABOVE its
- *    stop, in the gap toward the previous traversal (or the top of canvas).
- *    No card overlaps another card or the rope, by construction.
- *  - Per-stop polaroid tilts removed; cards align cleanly horizontal.
- *  - Decoration count trimmed to 6 and repositioned into genuinely empty
- *    canvas regions.
+ *   - 7 rows × 5 columns of cells (35 total).
+ *   - Boustrophedon path: row 0 L→R, row 1 R→L, row 2 L→R, …
+ *   - Cards are INSIDE cells; the path passes between cell centres.
+ *   - Modules (Foundations / Core / Application) are bold coloured row
+ *     spans behind the cells.
+ *   - Snakes-and-ladders flourishes (1 ladder, 1 snake) drawn as
+ *     decorative SVG overlays.
+ *   - START button at the top, FINISH banner under the last row.
  *
- * Layers (outer → inner):
- *   1. shadow stroke   — width 84, --color-rule
- *   2. dark spine      — width 80, --color-text
- *   3. inner wash × 5  — width 70, accent 8% → 24% via dash-window stepping
- *   4. stitching       — width 1.5, dashed, drawn in via pathLength
+ * Brutalist treatments:
+ *   - 2 px hard black borders on every cell (var(--color-text)).
+ *   - 4 px chunky outer frame around the whole board.
+ *   - Each cell has an offset duplicate <rect> for tactile "depth"
+ *     instead of a CSS box-shadow (DESIGN.md §12 bans drop-shadows).
+ *   - Bold uppercase module headers and START / FINISH labels.
+ *   - Numbered cells in a Plex-Mono badge top-left of each cell.
+ *
+ * Course-surface palette (DESIGN.md §3 register exception):
+ *   The course page is a distinct surface from articles. Articles
+ *   stay editorial-calm with one terracotta accent. The course page
+ *   is anchored to terracotta but uses two supporting hues (warm
+ *   ochre and muted sage) from the same warm-earth family. Tokens
+ *   are scoped to [data-surface="course"] and never leak globally.
  *
  * Animation:
- *   - On scroll-in (`useInView`, once: true) the stitching pathLength
- *     animates 0 → 1 over a SPRING.dramatic. Markers, decorations, and
- *     stop cards stagger in alongside.
+ *   - On scroll-in (`useInView`, once: true) the path stroke draws
+ *     itself in via pathLength. Cells fade up in stagger.
  *   - Reduced-motion: render the final state instantly.
  *
- * Frame-stability (R6): the SVG container has a fixed aspect ratio so the
- * canvas can't reflow during animation. Cards are absolutely positioned
- * relative to the same wrapper.
+ * Frame-stability (R6): the SVG and the cell grid share an aspect
+ * ratio container, so the canvas can't reflow during the animation.
  *
- * Mobile fallback: at container widths below 720 px the SVG is dropped
- * and a vertical-timeline of stacked CourseStop cards renders instead.
- *
- * One-accent rule: every visual variation is opacity / saturation of
- * --color-accent + neutrals. No new hues (DESIGN.md §3).
+ * Mobile fallback (<720 px container): the SVG board collapses to a
+ * single-column vertical stack — one cell per row, full-width, with
+ * a vertical line connecting them. Module colours preserved.
  */
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import { motion, useInView, useReducedMotion } from "motion/react";
 import { SPRING } from "@/lib/motion";
-import type { CourseSection } from "@/content/courses-manifest";
+import type {
+  CourseModule,
+  CourseSection,
+} from "@/content/courses-manifest";
 import { CourseStop } from "./CourseStop";
 
-/**
- * Serpentine path geometry — three clean traversals across a 1200×900
- * canvas. Each traversal is a horizontal stripe at a different y; gentle
- * U-turns on the right and left edges connect them without crossing any
- * earlier stroke.
+/* ────────────────────────────────────────────────────────────────────
+ * BOARD GEOMETRY
  *
- *   top traversal     y ≈ 240    (100, 240)  → (1080, 240)       L → R
- *   right U-turn                 (1080, 240) → (1040, 490)
- *   middle traversal  y ≈ 490    (1040, 490) → (120, 490)        R → L
- *   left U-turn                  (120, 490)  → (180, 740)
- *   bottom traversal  y ≈ 740    (180, 740)  → (1100, 740)       L → R
+ * The board lives inside an SVG with a fixed viewBox. Coordinates are
+ * derived from a small set of constants so the geometry stays in sync
+ * with itself and can be retuned by editing one row.
  *
- * The traversals sit ~250 viewBox units apart, leaving each row a
- * card-shaped gap above it (cards live in the gap between this traversal
- * and the previous one — or the canvas top, for stop 1).
+ * Layout (in viewBox units):
+ *   - PAD             — outer board padding
+ *   - HEADER_H        — vertical space at the top reserved for the
+ *                        START button banner
+ *   - FOOTER_H        — bottom space reserved for the FINISH banner
+ *   - CELL_W / CELL_H — single cell's width / height
+ *   - GAP             — gap between adjacent cells
+ *   - ROWS / COLS     — board dimensions
  *
- * Mental trace: top stripe, smooth dip down the right edge, middle stripe,
- * smooth dip down the left edge, bottom stripe. No segment crosses another.
- */
-const SERPENTINE_D =
-  "M 100 240 " +
-  "C 320 200, 700 200, 1080 240 " +
-  // right-edge U-turn from top to middle (stays right of x=1080)
-  "C 1180 260, 1200 400, 1140 460 " +
-  "C 1110 485, 1080 490, 1040 490 " +
-  // middle traversal R → L
-  "C 720 510, 380 470, 120 490 " +
-  // left-edge U-turn from middle to bottom (stays left of x=180)
-  "C 40 510, 20 660, 80 710 " +
-  "C 110 735, 140 740, 180 740 " +
-  // bottom traversal L → R
-  "C 480 760, 800 760, 1100 740";
+ * Cells are 1-indexed in path order (1..ROWS*COLS). cellRect(idx)
+ * returns the (x, y, row, col) of cell `idx`, accounting for
+ * boustrophedon traversal.
+ * ──────────────────────────────────────────────────────────────────── */
+
+const PAD = 40;
+const HEADER_H = 180;
+const FOOTER_H = 100;
+const CELL_W = 200;
+const CELL_H = 160;
+const GAP = 18;
+const ROWS = 7;
+const COLS = 5;
+
+const VB_W = PAD * 2 + COLS * CELL_W + (COLS - 1) * GAP;
+const VB_H = PAD * 2 + HEADER_H + ROWS * CELL_H + (ROWS - 1) * GAP + FOOTER_H;
+
+/** Inner brutalist border around the play area (between header / footer). */
+const PLAY_X = PAD;
+const PLAY_Y = PAD + HEADER_H;
+const PLAY_W = VB_W - PAD * 2;
+const PLAY_H = ROWS * CELL_H + (ROWS - 1) * GAP;
 
 /**
- * Inner-wash segmentation. Five sub-paths share `d` and use a normalized
- * `pathLength=100` plus a 20-unit dash window with marching offsets to
- * split the rope into five tonal bands without using an SVG gradient
- * (DESIGN.md §12 ban). The 0.5-unit overlap on each side prevents
- * hairline gaps at seams.
+ * Boustrophedon cell rect for a 1-indexed cell.
+ *
+ * Row 0 traverses L→R; row 1 traverses R→L; etc. The path enters at
+ * the START button above row 0 and exits at FINISH below row 6.
+ *
+ *   cell  1 → row 0 col 0          (top-left)
+ *   cell  5 → row 0 col 4
+ *   cell  6 → row 1 col 4
+ *   cell 10 → row 1 col 0
+ *   cell 35 → row 6 col 4          (bottom-right) — FINISH cell
  */
-type WashSegment = {
-  /** opacity of var(--color-accent) in color-mix, 0–100 */
-  pct: number;
-  /** strokeDashoffset (negative) — shifts the visible 20u window */
-  offset: number;
+function cellRect(idx: number) {
+  const i = idx - 1;
+  const row = Math.floor(i / COLS);
+  const within = i % COLS;
+  const col = row % 2 === 0 ? within : COLS - 1 - within;
+  const x = PLAY_X + col * (CELL_W + GAP);
+  const y = PLAY_Y + row * (CELL_H + GAP);
+  return { x, y, row, col };
+}
+
+/** Centre of a cell — used as a path anchor and a marker pin. */
+function cellCenter(idx: number) {
+  const r = cellRect(idx);
+  return { cx: r.x + CELL_W / 2, cy: r.y + CELL_H / 2, row: r.row, col: r.col };
+}
+
+const TOTAL_CELLS = ROWS * COLS;
+
+/* ────────────────────────────────────────────────────────────────────
+ * MODULE GROUPING
+ *
+ * Each module spans a contiguous range of rows. The renderer uses these
+ * ranges to draw the coloured row-span backgrounds AND to tag cells
+ * with their owning module so sub-segment shading works.
+ *
+ * 7 rows / 3 modules:
+ *   foundations  → rows 0–1   (cells 1–10)
+ *   core         → rows 2–4   (cells 11–25)
+ *   application  → rows 5–6   (cells 26–35)
+ * ──────────────────────────────────────────────────────────────────── */
+
+type ModuleSpec = {
+  id: CourseModule;
+  label: string;
+  rowFrom: number;
+  rowTo: number; // inclusive
 };
-const WASH_SEGMENTS: WashSegment[] = [
-  { pct: 8, offset: 0 },
-  { pct: 12, offset: -20 },
-  { pct: 16, offset: -40 },
-  { pct: 20, offset: -60 },
-  { pct: 24, offset: -80 },
+
+const MODULES: ModuleSpec[] = [
+  { id: "foundations", label: "Foundations", rowFrom: 0, rowTo: 1 },
+  { id: "core", label: "Core mechanics", rowFrom: 2, rowTo: 4 },
+  { id: "application", label: "Application", rowFrom: 5, rowTo: 6 },
 ];
 
-/**
- * Anchor placement strategy.
+function moduleForRow(row: number): ModuleSpec {
+  return MODULES.find((m) => row >= m.rowFrom && row <= m.rowTo) ?? MODULES[0];
+}
+
+/* ────────────────────────────────────────────────────────────────────
+ * THE PATH
  *
- * Numbered-marker (x, y) coordinates are derived at mount-time via
- * `getPointAtLength` on a hidden measurement path — they're guaranteed to
- * sit ON the rope. The fractions below were chosen for clusters-and-gaps
- * rhythm across the three traversals:
+ * A boustrophedon zig-zag from cell 1's centre to cell 35's centre.
+ * For each row:
+ *   - draw a horizontal segment along the row's centre y from the
+ *     entry-side cell centre to the exit-side cell centre,
+ *   - then drop down to the next row's centre y with a tight cubic
+ *     bend at the row end (a single C with control points placed to
+ *     curve cleanly over the GAP between rows).
  *
- *   ~0.05  stop 1 — early on top traversal (left)
- *   ~0.18  stop 2 — middle of top traversal
- *   ~0.30  stop 3 — late top traversal (just before the right U-turn)
- *   ~0.50  stop 4 — middle of middle traversal
- *   ~0.62  stop 5 — late middle traversal (just before the left U-turn)
- *   ~0.80  stop 6 — middle of bottom traversal
- *   ~0.96  stop 7 — destination at the right end of bottom traversal
+ * The path begins one cell-height above row 0 (so the START button
+ * area connects into the first cell), and ends at the FINISH banner.
  *
- * Card placement direction is fixed per stop: every card sits ABOVE its
- * marker. With three traversals stacked vertically, this puts each card
- * in the gap toward the PREVIOUS traversal (or the canvas top for stop 1).
- * No card collides with another card or with the rope, by construction.
+ * Output is a single `d` string, built once at module-load.
+ * ──────────────────────────────────────────────────────────────────── */
+
+function buildBoardPath(): string {
+  const segments: string[] = [];
+
+  // Anchor for the START button — sits centred horizontally above row 0.
+  const startX = VB_W / 2;
+  const startY = PAD + HEADER_H - 30;
+
+  // Centre of cell 1 (top-left when row 0 is L→R).
+  const c1 = cellCenter(1);
+  segments.push(`M ${startX} ${startY}`);
+  // Drop the path from the START button down into cell 1's centre with
+  // a gentle Bezier rather than a bare line — gives the entry a hint
+  // of mechanical curve.
+  segments.push(
+    `C ${startX} ${(startY + c1.cy) / 2}, ${c1.cx} ${(startY + c1.cy) / 2}, ${c1.cx} ${c1.cy}`
+  );
+
+  for (let row = 0; row < ROWS; row++) {
+    const firstCell = row * COLS + 1;
+    const lastCell = row * COLS + COLS;
+    const fc = cellCenter(firstCell);
+    const lc = cellCenter(lastCell);
+
+    // Horizontal traversal along this row.
+    segments.push(`L ${lc.cx} ${lc.cy}`);
+
+    // If there's a next row, drop down with a 90°-style cubic bend.
+    // Boustrophedon means the next row's first cell sits at the SAME
+    // column as the current row's last cell, so the drop is a pure
+    // vertical. Pushing the first control point outward (off the
+    // canvas edge of the ending row) gives the corner a little hook
+    // that reads as a real turn instead of a hairpin.
+    if (row < ROWS - 1) {
+      const nextFirst = (row + 1) * COLS + 1;
+      const nf = cellCenter(nextFirst);
+      const goingRight = row % 2 === 0; // row L→R ends on the right edge
+      const hookOut = goingRight ? 60 : -60;
+      const c1x = lc.cx + hookOut;
+      const c1y = lc.cy + (nf.cy - lc.cy) * 0.35;
+      const c2x = nf.cx + hookOut;
+      const c2y = lc.cy + (nf.cy - lc.cy) * 0.65;
+      segments.push(`C ${c1x} ${c1y}, ${c2x} ${c2y}, ${nf.cx} ${nf.cy}`);
+    }
+  }
+
+  // Run the path past the last cell into the FINISH banner area.
+  const lastCenter = cellCenter(TOTAL_CELLS);
+  const finishY = VB_H - PAD - FOOTER_H / 2;
+  segments.push(
+    `C ${lastCenter.cx} ${(lastCenter.cy + finishY) / 2}, ${VB_W / 2} ${(lastCenter.cy + finishY) / 2}, ${VB_W / 2} ${finishY}`
+  );
+
+  return segments.join(" ");
+}
+
+const BOARD_D = buildBoardPath();
+
+/* ────────────────────────────────────────────────────────────────────
+ * DECORATIVE SNAKE & LADDER
  *
- * cardDx/cardDy are in viewBox units relative to the marker. The card's
- * top-left corner lands at (anchor.x + cardDx, anchor.y + cardDy).
- */
-const STOP_FRACTIONS: Record<number, number> = {
-  1: 0.05,
-  2: 0.18,
-  3: 0.3,
-  4: 0.5,
-  5: 0.62,
-  6: 0.8,
-  7: 0.96,
+ * One snake (terracotta cubic from a higher cell back to a lower cell)
+ * and one ladder (parallel verticals + rungs between two cells in the
+ * same column). Decorative only — no semantics.
+ *
+ * Hand-tuned to fall in visually empty zones of the board so they
+ * don't fight cells. Anchors are cell indices.
+ * ──────────────────────────────────────────────────────────────────── */
+
+const SNAKE = {
+  // Snake from cell 22 (row 4, mid-board) back down to cell 33
+  // (row 6) — a graceful S-curve down and to the left.
+  fromCell: 22,
+  toCell: 33,
 };
 
-type CardOffset = {
-  /** Card position offset from marker, in viewBox units. */
-  cardDx: number;
-  cardDy: number;
+const LADDER = {
+  // Ladder linking cell 7 (row 1, col 3) up to cell 14 (row 2, col 3)
+  // — same column, so the ladder rails sit cleanly vertical.
+  fromCell: 14,
+  toCell: 7,
 };
 
-/**
- * Card offsets per stop — all cards sit ABOVE their marker in the gap
- * toward the previous traversal (or the canvas top for stop 1).
+/* ────────────────────────────────────────────────────────────────────
+ * STOP → CELL MAPPING
  *
- * cardDx pulls the card horizontally so it doesn't overhang the U-turn
- * or the canvas edge. cardDy is uniform at -200 so every card sits the
- * same distance above its marker.
+ * The 7 manifest stops map onto active cells distributed across the
+ * 7 rows. One active cell per row keeps the journey legible:
  *
- * Card width is `min(24%, 280px)` → up to 288 viewBox units; height
- * varies with display size but tops out around 160 viewBox-y units. With
- * these offsets, no card overlaps another or its marker:
+ *   stop 1 → cell  1  (row 0, leftmost)   — Foundations
+ *   stop 2 → cell  6  (row 1, rightmost)  — Foundations
+ *   stop 3 → cell 11  (row 2, leftmost)   — Core
+ *   stop 4 → cell 18  (row 3, middle)     — Core
+ *   stop 5 → cell 23  (row 4, middle)     — Core
+ *   stop 6 → cell 28  (row 5, middle)     — Application
+ *   stop 7 → cell 35  (row 6, rightmost)  — Application (FINISH)
  *
- *   stop 1 (top, x≈160)    card x≈70..360,    y≈40..200    [gap to marker 22]
- *   stop 2 (top, x≈580)    card x≈440..730,   y≈40..200
- *   stop 3 (top, x≈970)    card x≈820..1110,  y≈40..200
- *   stop 4 (middle, x≈700) card x≈560..850,   y≈290..450
- *   stop 5 (middle, x≈340) card x≈180..470,   y≈290..450
- *   stop 6 (bottom, x≈580) card x≈420..710,   y≈540..700
- *   stop 7 (bottom, x≈1080) card x≈880..1170, y≈540..700
- *
- * Inter-card horizontal gaps on each traversal: 80–110 viewBox-x units.
- */
-const CARD_OFFSETS: Record<number, CardOffset> = {
-  // Top traversal — cards above, in y≈40–200 region
-  1: { cardDx: -90, cardDy: -200 },
-  2: { cardDx: -140, cardDy: -200 },
-  3: { cardDx: -150, cardDy: -200 },
-  // Middle traversal — cards above, in y≈290–450 region
-  4: { cardDx: -140, cardDy: -200 },
-  5: { cardDx: -160, cardDy: -200 },
-  // Bottom traversal — cards above, in y≈540–700 region
-  6: { cardDx: -160, cardDy: -200 },
-  7: { cardDx: -200, cardDy: -200 },
+ * The remaining 28 cells are "transit" cells — they show only a
+ * numbered marker and the path passing through.
+ * ──────────────────────────────────────────────────────────────────── */
+
+const STOP_TO_CELL: Record<number, number> = {
+  1: 1,
+  2: 6,
+  3: 11,
+  4: 18,
+  5: 23,
+  6: 28,
+  7: 35,
 };
-
-/**
- * Decorative stickers — terracotta-only flavor placed in genuinely empty
- * canvas regions (not overlapping cards or the rope). Trimmed from 8 to 6.
- *
- * Verified empty zones:
- *   - between stop-1 cards and stop-2 cards (top, between x=200 and x=380)
- *   - upper-right corner above the right U-turn
- *   - middle-row gap between stop-4 card and stop-3 marker right side
- *   - left-edge zone below middle traversal
- *   - bottom-left between bottom-traversal start and stop-6 card area
- *   - bottom-right empty patch below bottom traversal
- */
-type DecoKind = "dot-cluster" | "stitch" | "asterisk" | "milestone";
-type Deco = {
-  id: string;
-  kind: DecoKind;
-  x: number;
-  y: number;
-  rot?: number;
-  delay: number;
-};
-
-const DECORATIONS: Deco[] = [
-  // top-row gap between card 1 (ends ~x=360) and card 2 (starts ~x=440)
-  { id: "d1", kind: "dot-cluster", x: 400, y: 110, delay: 0.35 },
-  // top-row gap between card 2 (ends ~x=730) and card 3 (starts ~x=820)
-  { id: "d2", kind: "asterisk", x: 770, y: 100, rot: -10, delay: 0.55 },
-  // middle-row gap between card 5 (ends ~x=470) and card 4 (starts ~x=560)
-  { id: "d3", kind: "stitch", x: 510, y: 360, rot: 8, delay: 0.75 },
-  // middle-row right of card 4, before right U-turn enters this y region
-  { id: "d4", kind: "milestone", x: 940, y: 360, delay: 0.95 },
-  // bottom-row gap between card 6 (ends ~x=710) and card 7 (starts ~x=880)
-  { id: "d5", kind: "dot-cluster", x: 800, y: 600, delay: 1.1 },
-  // below the bottom traversal — empty canvas-floor patch
-  { id: "d6", kind: "asterisk", x: 600, y: 850, rot: 4, delay: 1.3 },
-];
-
-/** viewBox dimensions — kept as constants so aspect ratio stays in sync. */
-const VB_W = 1200;
-const VB_H = 900;
 
 type Props = {
   outline: CourseSection[];
@@ -231,71 +286,31 @@ type Props = {
 
 export function CourseOutline({ outline }: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const measurePathRef = useRef<SVGPathElement | null>(null);
   const reduced = useReducedMotion() ?? false;
 
-  // amount: 0.25 — start drawing once a quarter of the canvas is on-screen.
-  // once: true — the path draws once per page-load, never again on re-scroll.
-  const inView = useInView(wrapperRef, { amount: 0.25, once: true });
+  // Start drawing once a sliver of the board is on-screen.
+  const inView = useInView(wrapperRef, { amount: 0.05, once: true });
 
-  // Sort stops by their `stop` index so the markers and cards render in path order.
+  // Sort stops by their `stop` index so renders stay in path order.
   const sortedStops = useMemo(
     () => [...outline].sort((a, b) => a.stop - b.stop),
     [outline]
   );
 
-  /**
-   * Marker coordinates derived from `getPointAtLength` on a hidden
-   * measurement path. Computed once at mount; `null` until the layout
-   * effect runs. The fallback during the first paint is a small set of
-   * approximate coordinates so SSR / first-render aren't blank.
-   */
-  const [anchors, setAnchors] = useState<Record<number, { x: number; y: number }>>(
-    () => {
-      // Approximate fallback positions matching the path geometry — used
-      // until getPointAtLength runs on the client. These are close to the
-      // measured values; the layout effect snaps them to exact-on-path
-      // coordinates a tick later.
-      return {
-        1: { x: 175, y: 230 },
-        2: { x: 580, y: 210 },
-        3: { x: 970, y: 230 },
-        4: { x: 700, y: 490 },
-        5: { x: 340, y: 482 },
-        6: { x: 580, y: 750 },
-        7: { x: 1080, y: 742 },
-      };
+  // Build a fast cell-index → stop lookup for active cells.
+  const stopByCell: Record<number, CourseSection> = useMemo(() => {
+    const map: Record<number, CourseSection> = {};
+    for (const s of sortedStops) {
+      const cell = STOP_TO_CELL[s.stop];
+      if (cell) map[cell] = s;
     }
-  );
-
-  useLayoutEffect(() => {
-    const path = measurePathRef.current;
-    if (!path) return;
-    const total = path.getTotalLength();
-    const next: Record<number, { x: number; y: number }> = {};
-    for (const [stop, fraction] of Object.entries(STOP_FRACTIONS)) {
-      const pt = path.getPointAtLength(fraction * total);
-      next[Number(stop)] = { x: pt.x, y: pt.y };
-    }
-    setAnchors(next);
-  }, []);
-
-  /**
-   * Stagger the stop reveals so the marker scales in just as the path
-   * reaches it. The path tween runs ~1.4s; spread N stops across that
-   * window with a small padding so the last stop pops just after the
-   * rope finishes.
-   */
-  const stopDelay = (stop: number, total: number): number => {
-    if (total <= 1) return 0.4;
-    const t = (stop - 1) / (total - 1); // 0 → 1
-    return 0.2 + t * 1.1;
-  };
+    return map;
+  }, [sortedStops]);
 
   return (
-    <div ref={wrapperRef} className="bs-course-outline">
-      {/* ───────────── Desktop / wide: serpentine SVG with cards above each stop ───────────── */}
-      <div className="bs-course-outline-wide relative w-full">
+    <div ref={wrapperRef} className="bs-course-board" data-surface="course">
+      {/* ───────────── DESKTOP / WIDE: snake-and-ladders SVG board ───────────── */}
+      <div className="bs-course-board-wide">
         <div
           className="relative w-full"
           style={{ aspectRatio: `${VB_W} / ${VB_H}` }}
@@ -305,68 +320,134 @@ export function CourseOutline({ outline }: Props) {
             width="100%"
             height="100%"
             preserveAspectRatio="xMidYMid meet"
+            style={{ position: "absolute", inset: 0, display: "block" }}
             aria-hidden
             focusable={false}
-            style={{ position: "absolute", inset: 0 }}
           >
-            {/* Hidden measurement path — getPointAtLength reads this once at
-                mount to derive marker coordinates. Stroke is invisible. */}
-            <path
-              ref={measurePathRef}
-              d={SERPENTINE_D}
-              fill="none"
-              stroke="none"
-              style={{ pointerEvents: "none" }}
+            {/* ------ Outer board frame: chunky 4 px brutalist border ------ */}
+            <rect
+              x={PAD / 2}
+              y={PAD / 2}
+              width={VB_W - PAD}
+              height={VB_H - PAD}
+              fill="var(--color-bg)"
+              stroke="var(--color-text)"
+              strokeWidth={4}
             />
 
-            {/* Layer 1 — shadow stroke (soft outline) */}
-            <path
-              d={SERPENTINE_D}
-              fill="none"
-              stroke="var(--color-rule)"
-              strokeWidth={84}
-              strokeMiterlimit={10}
-              strokeLinecap="round"
-            />
-            {/* Layer 2 — dark spine (the rope body) */}
-            <path
-              d={SERPENTINE_D}
+            {/* ------ Module backgrounds: bold coloured row-spans ------ */}
+            {MODULES.map((m, mi) => {
+              const yTop = PLAY_Y + m.rowFrom * (CELL_H + GAP) - GAP / 2;
+              const yBottom =
+                PLAY_Y + (m.rowTo + 1) * CELL_H + m.rowTo * GAP + GAP / 2;
+              return (
+                <g key={`mod-${m.id}`}>
+                  <rect
+                    x={PLAY_X - GAP / 2}
+                    y={yTop}
+                    width={PLAY_W + GAP}
+                    height={yBottom - yTop}
+                    fill={`var(--course-mod-${mi + 1})`}
+                  />
+                </g>
+              );
+            })}
+
+            {/* ------ Sub-segment cell shading: alternating tints within
+                each module. Even cells in path order get the lighter
+                tint, odd cells get the darker. Not a gradient — solid
+                fills only. ------ */}
+            {Array.from({ length: TOTAL_CELLS }, (_, k) => {
+              const idx = k + 1;
+              const r = cellRect(idx);
+              const m = moduleForRow(r.row);
+              const mi = MODULES.indexOf(m) + 1;
+              const tone = idx % 2 === 0 ? "alt" : "base";
+              return (
+                <rect
+                  key={`tone-${idx}`}
+                  x={r.x}
+                  y={r.y}
+                  width={CELL_W}
+                  height={CELL_H}
+                  fill={`var(--course-mod-${mi}-${tone})`}
+                />
+              );
+            })}
+
+            {/* ------ Cell brutalist offsets: a duplicate "shadow" rect
+                4 px down-and-right from each cell, stroked black, no
+                fill — creates the tactile depth without a CSS shadow. ------ */}
+            {Array.from({ length: TOTAL_CELLS }, (_, k) => {
+              const idx = k + 1;
+              const r = cellRect(idx);
+              return (
+                <rect
+                  key={`shadow-${idx}`}
+                  x={r.x + 4}
+                  y={r.y + 4}
+                  width={CELL_W}
+                  height={CELL_H}
+                  fill="var(--color-text)"
+                />
+              );
+            })}
+
+            {/* ------ Cell faces: 2 px black border, fill-on-top of the
+                tone tint so the brutalist offset peeks through. ------ */}
+            {Array.from({ length: TOTAL_CELLS }, (_, k) => {
+              const idx = k + 1;
+              const r = cellRect(idx);
+              const m = moduleForRow(r.row);
+              const mi = MODULES.indexOf(m) + 1;
+              const tone = idx % 2 === 0 ? "alt" : "base";
+              return (
+                <rect
+                  key={`cell-${idx}`}
+                  x={r.x}
+                  y={r.y}
+                  width={CELL_W}
+                  height={CELL_H}
+                  fill={`var(--course-mod-${mi}-${tone})`}
+                  stroke="var(--color-text)"
+                  strokeWidth={2}
+                />
+              );
+            })}
+
+            {/* ------ DECORATIVE LADDER (cells 7 ↔ 13) ------ */}
+            <DecoLadder fromCell={LADDER.fromCell} toCell={LADDER.toCell} />
+
+            {/* ------ The path: a wider "drop ink" shadow under a 6 px
+                black stroke. Stroke draws in via pathLength on view. ------ */}
+            <motion.path
+              d={BOARD_D}
               fill="none"
               stroke="var(--color-text)"
-              strokeWidth={80}
-              strokeMiterlimit={10}
+              strokeOpacity={0.18}
+              strokeWidth={12}
               strokeLinecap="round"
-            />
-            {/* Layer 3 — segmented inner wash (5 sub-paths, accent 8% → 24%) */}
-            {WASH_SEGMENTS.map((seg) => (
-              <path
-                key={`wash-${seg.pct}`}
-                d={SERPENTINE_D}
-                fill="none"
-                stroke={`color-mix(in oklab, var(--color-accent) ${seg.pct}%, var(--color-surface))`}
-                strokeWidth={70}
-                strokeMiterlimit={10}
-                strokeLinecap="butt"
-                pathLength={100}
-                strokeDasharray="20.5 79.5"
-                strokeDashoffset={seg.offset}
-              />
-            ))}
-            {/* Layer 4 — dashed stitching, drawn-in via pathLength */}
-            <motion.path
-              d={SERPENTINE_D}
-              fill="none"
-              stroke="var(--color-text-muted)"
-              strokeWidth={1.5}
-              strokeDasharray="0 0 2.01 80.58"
-              strokeMiterlimit={10}
+              strokeLinejoin="round"
               initial={reduced ? { pathLength: 1 } : { pathLength: 0 }}
               animate={
+                reduced || inView ? { pathLength: 1 } : { pathLength: 0 }
+              }
+              transition={
                 reduced
-                  ? { pathLength: 1 }
-                  : inView
-                    ? { pathLength: 1 }
-                    : { pathLength: 0 }
+                  ? { duration: 0.001 }
+                  : { ...SPRING.dramatic, restDelta: 0.001 }
+              }
+            />
+            <motion.path
+              d={BOARD_D}
+              fill="none"
+              stroke="var(--color-text)"
+              strokeWidth={6}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              initial={reduced ? { pathLength: 1 } : { pathLength: 0 }}
+              animate={
+                reduced || inView ? { pathLength: 1 } : { pathLength: 0 }
               }
               transition={
                 reduced
@@ -375,216 +456,437 @@ export function CourseOutline({ outline }: Props) {
               }
             />
 
-            {/* Decorative stickers — terracotta-only flavor, in empty regions */}
-            {DECORATIONS.map((d) => (
-              <motion.g
-                key={d.id}
-                initial={
-                  reduced ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.7 }
-                }
-                animate={
-                  reduced
-                    ? { opacity: 1, scale: 1 }
-                    : inView
-                      ? { opacity: 1, scale: 1 }
-                      : { opacity: 0, scale: 0.7 }
-                }
-                transition={
-                  reduced
-                    ? { duration: 0.001 }
-                    : { ...SPRING.gentle, delay: d.delay }
-                }
-                style={{
-                  transformOrigin: `${d.x}px ${d.y}px`,
-                  transformBox: "fill-box",
-                }}
-              >
-                <Decoration kind={d.kind} x={d.x} y={d.y} rot={d.rot ?? 0} />
-              </motion.g>
-            ))}
+            {/* ------ DECORATIVE SNAKE (cells 22 ↔ 33) — drawn after
+                the path so it sits visually above the ink line. ------ */}
+            <DecoSnake fromCell={SNAKE.fromCell} toCell={SNAKE.toCell} />
 
-            {/* Numbered markers — terracotta discs pinned to the rope. Coordinates
-                are mathematically ON the path (getPointAtLength). */}
-            {sortedStops.map((s) => {
-              const anchor = anchors[s.stop];
-              if (!anchor) return null;
-              const delay = stopDelay(s.stop, sortedStops.length);
+            {/* ------ START button: top centre, terracotta fill,
+                chunky black border. ------ */}
+            <StartButton x={VB_W / 2} y={PAD + 60} />
+
+            {/* ------ FINISH banner: bottom centre. ------ */}
+            <FinishBanner x={VB_W / 2} y={VB_H - PAD - 30} />
+
+            {/* ------ Module labels — bold uppercase down the left
+                margin against each module band. ------ */}
+            {MODULES.map((m, mi) => {
+              const yTop = PLAY_Y + m.rowFrom * (CELL_H + GAP);
+              const yBottom =
+                PLAY_Y + (m.rowTo + 1) * CELL_H + m.rowTo * GAP;
+              const yMid = (yTop + yBottom) / 2;
               return (
-                <motion.g
-                  key={`marker-${s.id}`}
-                  initial={
-                    reduced ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }
-                  }
-                  animate={
-                    reduced
-                      ? { scale: 1, opacity: 1 }
-                      : inView
-                        ? { scale: 1, opacity: 1 }
-                        : { scale: 0, opacity: 0 }
-                  }
-                  transition={
-                    reduced ? { duration: 0.001 } : { ...SPRING.snappy, delay }
-                  }
-                  style={{
-                    transformOrigin: `${anchor.x}px ${anchor.y}px`,
-                    transformBox: "fill-box",
-                  }}
-                >
-                  <circle
-                    cx={anchor.x}
-                    cy={anchor.y}
-                    r={18}
-                    fill="var(--color-accent)"
-                    stroke="var(--color-bg)"
-                    strokeWidth={3}
-                  />
+                <g key={`mod-label-${m.id}`}>
                   <text
-                    x={anchor.x}
-                    y={anchor.y}
-                    textAnchor="middle"
-                    dominantBaseline="central"
+                    x={PAD + 12}
+                    y={yTop + 16}
                     fontFamily="var(--font-mono)"
-                    fontSize={16}
-                    fontWeight={500}
-                    fill="var(--color-bg)"
+                    fontSize={12}
+                    fontWeight={600}
+                    fill="var(--color-text)"
+                    style={{ letterSpacing: "0.12em" }}
                   >
-                    {s.stop}
+                    {`MODULE 0${mi + 1}`}
                   </text>
-                </motion.g>
+                  <text
+                    x={PAD + 12}
+                    y={yTop + 32}
+                    fontFamily="var(--font-sans)"
+                    fontSize={18}
+                    fontWeight={700}
+                    fill="var(--color-text)"
+                    style={{ textTransform: "uppercase", letterSpacing: "0.04em" }}
+                  >
+                    {m.label}
+                  </text>
+                  {/* invisible — keeps yMid referenced for future label */}
+                  <text x={-9999} y={yMid} fontSize={0}>
+                    {""}
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* ------ Numbered cell badges + transit markers ------ */}
+            {Array.from({ length: TOTAL_CELLS }, (_, k) => {
+              const idx = k + 1;
+              const r = cellRect(idx);
+              const isActive = stopByCell[idx] !== undefined;
+              return (
+                <g key={`num-${idx}`}>
+                  {/* Cell number — Plex Mono, top-left of every cell. */}
+                  <text
+                    x={r.x + 10}
+                    y={r.y + 18}
+                    fontFamily="var(--font-mono)"
+                    fontSize={11}
+                    fontWeight={500}
+                    fill="var(--color-text)"
+                    style={{ letterSpacing: "0.04em" }}
+                  >
+                    {String(idx).padStart(2, "0")}
+                  </text>
+                  {/* Transit-cell centre marker: small circle at cell
+                      centre when no card lives here. Active cells get
+                      their card in the foreign-object below. */}
+                  {!isActive ? (
+                    <circle
+                      cx={r.x + CELL_W / 2}
+                      cy={r.y + CELL_H / 2}
+                      r={6}
+                      fill="var(--color-text)"
+                    />
+                  ) : null}
+                </g>
+              );
+            })}
+
+            {/* ------ Active-cell card content via foreignObject ------ */}
+            {sortedStops.map((s) => {
+              const cellIdx = STOP_TO_CELL[s.stop];
+              if (!cellIdx) return null;
+              const r = cellRect(cellIdx);
+              const m = moduleForRow(r.row);
+              const mi = MODULES.indexOf(m) + 1;
+              return (
+                <foreignObject
+                  key={`fo-${s.id}`}
+                  x={r.x + 8}
+                  y={r.y + 26}
+                  width={CELL_W - 16}
+                  height={CELL_H - 34}
+                >
+                  <CourseStop
+                    title={s.title}
+                    type={s.type}
+                    description={s.description}
+                    icon={s.icon}
+                    moduleIndex={mi}
+                  />
+                </foreignObject>
               );
             })}
           </svg>
-
-          {/* Stop cards — absolutely positioned over the SVG. cardDx/cardDy are in
-              viewBox units, then converted to percentages so cards scale with the
-              responsive aspect-ratio container. */}
-          {sortedStops.map((s) => {
-            const anchor = anchors[s.stop];
-            const offset = CARD_OFFSETS[s.stop];
-            if (!anchor || !offset) return null;
-            const delay = stopDelay(s.stop, sortedStops.length);
-            const cardX = anchor.x + offset.cardDx;
-            const cardY = anchor.y + offset.cardDy;
-            return (
-              <div
-                key={`card-${s.id}`}
-                style={{
-                  position: "absolute",
-                  left: `${(cardX / VB_W) * 100}%`,
-                  top: `${(cardY / VB_H) * 100}%`,
-                  width: "min(24%, 280px)",
-                }}
-              >
-                <CourseStop
-                  number={s.stop}
-                  title={s.title}
-                  type={s.type}
-                  description={s.description}
-                  icon={s.icon}
-                  delay={delay + 0.05}
-                  reduced={reduced}
-                />
-              </div>
-            );
-          })}
         </div>
       </div>
 
-      {/* ───────────── Mobile / narrow: stacked vertical-timeline ───────────── */}
-      <div className="bs-course-outline-stack relative">
-        {/* Continuous vertical rule — the rope, simplified. */}
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            left: 18,
-            top: 0,
-            bottom: 0,
-            width: 2,
-            background:
-              "color-mix(in oklab, var(--color-accent) 30%, var(--color-rule))",
-          }}
-        />
-        <ol
-          style={{
-            listStyle: "none",
-            margin: 0,
-            padding: 0,
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--spacing-md)",
-          }}
-        >
-          {sortedStops.map((s) => {
-            const delay = stopDelay(s.stop, sortedStops.length);
+      {/* ───────────── MOBILE / NARROW: single-column vertical stack ─────────── */}
+      <div className="bs-course-board-stack">
+        <StartButtonHTML />
+        <ol className="bs-board-list">
+          {Array.from({ length: TOTAL_CELLS }, (_, k) => {
+            const idx = k + 1;
+            const r = cellRect(idx);
+            const m = moduleForRow(r.row);
+            const mi = MODULES.indexOf(m) + 1;
+            const stop = stopByCell[idx];
+            const tone = idx % 2 === 0 ? "alt" : "base";
+
+            // Row breaks: render a module header above the FIRST cell
+            // of each module.
+            const showModuleHeader =
+              idx === MODULES[0].rowFrom * COLS + 1 ||
+              MODULES.some((mod) => mod.rowFrom === r.row && r.col === 0 && idx % COLS === 1);
+
             return (
-              <li
-                key={`stack-${s.id}`}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "38px 1fr",
-                  gap: "var(--spacing-sm)",
-                  alignItems: "start",
-                }}
-              >
-                <motion.div
-                  initial={
-                    reduced ? { scale: 1, opacity: 1 } : { scale: 0, opacity: 0 }
-                  }
-                  whileInView={{ scale: 1, opacity: 1 }}
-                  viewport={{ once: true, amount: 0.4 }}
-                  transition={
-                    reduced
-                      ? { duration: 0.001 }
-                      : { ...SPRING.snappy, delay: 0.08 }
-                  }
+              <li key={`stack-${idx}`} className="bs-board-li">
+                {showModuleHeader && r.col === 0 && (
+                  <ModuleHeaderHTML
+                    label={m.label}
+                    index={MODULES.indexOf(m) + 1}
+                  />
+                )}
+                <div
+                  className="bs-board-cell-stack"
                   style={{
-                    width: 38,
-                    height: 38,
-                    borderRadius: "50%",
-                    background: "var(--color-accent)",
-                    color: "var(--color-bg)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: "var(--text-small)",
-                    fontWeight: 500,
-                    border: "3px solid var(--color-bg)",
-                    position: "relative",
-                    zIndex: 1,
+                    background: `var(--course-mod-${mi}-${tone})`,
                   }}
-                  aria-hidden
                 >
-                  {s.stop}
-                </motion.div>
-                <CourseStop
-                  number={s.stop}
-                  title={s.title}
-                  type={s.type}
-                  description={s.description}
-                  icon={s.icon}
-                  delay={delay}
-                  reduced={reduced}
-                  stacked
-                />
+                  <span className="bs-board-cell-num">
+                    {String(idx).padStart(2, "0")}
+                  </span>
+                  {stop ? (
+                    <CourseStop
+                      title={stop.title}
+                      type={stop.type}
+                      description={stop.description}
+                      icon={stop.icon}
+                      moduleIndex={mi}
+                      stacked
+                    />
+                  ) : (
+                    <span className="bs-board-transit" aria-hidden>
+                      ·
+                    </span>
+                  )}
+                </div>
               </li>
             );
           })}
         </ol>
+        <FinishBannerHTML />
       </div>
 
-      {/* Container-query toggle — wide above 720px, stacked below. */}
+      {/* ────── Course-surface palette + container-query toggle ────── */}
       <style>{`
-        .bs-course-outline {
+        .bs-course-board {
           container-type: inline-size;
-          container-name: course;
+          container-name: courseboard;
+          /* Course-surface register: terracotta + ochre + sage. Scoped
+             to this component / data-surface=course only — DESIGN.md §3
+             allows the wider palette here as a deliberate exception
+             from the editorial-calm article register. */
+          --course-mod-1: oklch(0.92 0.06 55);            /* terracotta wash */
+          --course-mod-1-base: oklch(0.95 0.04 55);
+          --course-mod-1-alt:  oklch(0.90 0.07 55);
+
+          --course-mod-2: oklch(0.91 0.08 80);            /* warm ochre */
+          --course-mod-2-base: oklch(0.94 0.05 80);
+          --course-mod-2-alt:  oklch(0.88 0.10 80);
+
+          --course-mod-3: oklch(0.91 0.05 130);           /* muted sage */
+          --course-mod-3-base: oklch(0.94 0.03 130);
+          --course-mod-3-alt:  oklch(0.88 0.06 130);
         }
-        .bs-course-outline-wide { display: none; }
-        .bs-course-outline-stack { display: block; }
-        @container course (min-width: 720px) {
-          .bs-course-outline-wide { display: block; }
-          .bs-course-outline-stack { display: none; }
+        :root[data-theme="dark"] .bs-course-board {
+          --course-mod-1: oklch(0.40 0.06 55);
+          --course-mod-1-base: oklch(0.36 0.05 55);
+          --course-mod-1-alt:  oklch(0.44 0.07 55);
+          --course-mod-2: oklch(0.42 0.07 80);
+          --course-mod-2-base: oklch(0.38 0.06 80);
+          --course-mod-2-alt:  oklch(0.46 0.08 80);
+          --course-mod-3: oklch(0.40 0.04 130);
+          --course-mod-3-base: oklch(0.36 0.03 130);
+          --course-mod-3-alt:  oklch(0.44 0.05 130);
+        }
+        .bs-course-board-wide { display: none; }
+        .bs-course-board-stack { display: block; }
+        .bs-board-list {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+          position: relative;
+        }
+        .bs-board-list::before {
+          /* Vertical connector line that runs the length of the stack
+             — the mobile equivalent of the path. */
+          content: "";
+          position: absolute;
+          left: 50%;
+          top: 0;
+          bottom: 0;
+          width: 4px;
+          margin-left: -2px;
+          background: var(--color-text);
+          z-index: 0;
+        }
+        .bs-board-li {
+          position: relative;
+          z-index: 1;
+        }
+        .bs-board-cell-stack {
+          position: relative;
+          border: 2px solid var(--color-text);
+          padding: var(--spacing-sm) var(--spacing-md);
+          margin-bottom: var(--spacing-sm);
+          min-height: 88px;
+          display: flex;
+          flex-direction: column;
+          gap: var(--spacing-3xs);
+        }
+        .bs-board-cell-stack::before {
+          /* Brutalist 4 px offset duplicate — pure border, no shadow. */
+          content: "";
+          position: absolute;
+          inset: 4px -4px -4px 4px;
+          background: var(--color-text);
+          z-index: -1;
+        }
+        .bs-board-cell-num {
+          font-family: var(--font-mono);
+          font-size: 11px;
+          letter-spacing: 0.06em;
+          color: var(--color-text);
+          font-weight: 500;
+        }
+        .bs-board-transit {
+          font-family: var(--font-mono);
+          color: var(--color-text-muted);
+          font-size: 14px;
+        }
+        @container courseboard (min-width: 720px) {
+          .bs-course-board-wide { display: block; }
+          .bs-course-board-stack { display: none; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+/* ────────────────────────────────────────────────────────────────────
+ * Sub-components — chunky brutalist primitives.
+ * ──────────────────────────────────────────────────────────────────── */
+
+function StartButton({ x, y }: { x: number; y: number }) {
+  // Pill-button geometry: 220 wide × 60 tall, centred on (x, y).
+  const w = 240;
+  const h = 64;
+  const bx = x - w / 2;
+  const by = y - h / 2;
+  return (
+    <g>
+      {/* Brutalist offset shadow */}
+      <rect
+        x={bx + 6}
+        y={by + 6}
+        width={w}
+        height={h}
+        fill="var(--color-text)"
+      />
+      {/* Button face */}
+      <rect
+        x={bx}
+        y={by}
+        width={w}
+        height={h}
+        fill="var(--color-accent)"
+        stroke="var(--color-text)"
+        strokeWidth={4}
+      />
+      <text
+        x={x}
+        y={y + 1}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontFamily="var(--font-mono)"
+        fontSize={20}
+        fontWeight={700}
+        fill="var(--color-bg)"
+        style={{ letterSpacing: "0.14em" }}
+      >
+        ▶ START HERE
+      </text>
+    </g>
+  );
+}
+
+function FinishBanner({ x, y }: { x: number; y: number }) {
+  const w = 220;
+  const h = 56;
+  const bx = x - w / 2;
+  const by = y - h / 2;
+  return (
+    <g>
+      <rect
+        x={bx + 5}
+        y={by + 5}
+        width={w}
+        height={h}
+        fill="var(--color-text)"
+      />
+      <rect
+        x={bx}
+        y={by}
+        width={w}
+        height={h}
+        fill="var(--color-bg)"
+        stroke="var(--color-text)"
+        strokeWidth={4}
+      />
+      <text
+        x={x}
+        y={y + 1}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontFamily="var(--font-mono)"
+        fontSize={18}
+        fontWeight={700}
+        fill="var(--color-text)"
+        style={{ letterSpacing: "0.18em" }}
+      >
+        ★ FINISH ★
+      </text>
+    </g>
+  );
+}
+
+function StartButtonHTML() {
+  return (
+    <div className="bs-board-html-banner bs-board-html-start">
+      <span>▶ START HERE</span>
+      <style>{`
+        .bs-board-html-banner {
+          font-family: var(--font-mono);
+          font-weight: 700;
+          letter-spacing: 0.14em;
+          padding: var(--spacing-sm) var(--spacing-md);
+          border: 4px solid var(--color-text);
+          margin-bottom: var(--spacing-md);
+          text-align: center;
+          position: relative;
+          z-index: 2;
+        }
+        .bs-board-html-start {
+          background: var(--color-accent);
+          color: var(--color-bg);
+        }
+        .bs-board-html-finish {
+          background: var(--color-bg);
+          color: var(--color-text);
+          margin-top: var(--spacing-md);
+          margin-bottom: 0;
+          letter-spacing: 0.18em;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function FinishBannerHTML() {
+  return (
+    <div className="bs-board-html-banner bs-board-html-finish">
+      <span>★ FINISH ★</span>
+    </div>
+  );
+}
+
+function ModuleHeaderHTML({
+  label,
+  index,
+}: {
+  label: string;
+  index: number;
+}) {
+  return (
+    <div className="bs-board-mod-header">
+      <span className="bs-board-mod-eyebrow">{`MODULE 0${index}`}</span>
+      <span className="bs-board-mod-title">{label.toUpperCase()}</span>
+      <style>{`
+        .bs-board-mod-header {
+          padding: var(--spacing-sm) var(--spacing-md);
+          margin: var(--spacing-md) 0 var(--spacing-sm) 0;
+          border-top: 4px solid var(--color-text);
+          border-bottom: 2px solid var(--color-text);
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          background: var(--color-bg);
+        }
+        .bs-board-mod-eyebrow {
+          font-family: var(--font-mono);
+          font-size: 11px;
+          letter-spacing: 0.12em;
+          color: var(--color-text-muted);
+          font-weight: 500;
+        }
+        .bs-board-mod-title {
+          font-family: var(--font-sans);
+          font-size: var(--text-h3);
+          letter-spacing: 0.04em;
+          font-weight: 700;
+          color: var(--color-text);
         }
       `}</style>
     </div>
@@ -592,76 +894,116 @@ export function CourseOutline({ outline }: Props) {
 }
 
 /**
- * Decorative-sticker primitives. Each one is a small terracotta-monochrome
- * SVG fragment positioned at (x, y) in viewBox units. Drawn only as flavor:
- * dots, hash-stitches, asterisks, and a tiny "milestone" diamond.
+ * Decorative ladder between two cell centres in the same column. Two
+ * parallel verticals + four rungs. Drawn black; sits on top of cells
+ * but below the path ink.
  */
-function Decoration({
-  kind,
-  x,
-  y,
-  rot,
+function DecoLadder({
+  fromCell,
+  toCell,
 }: {
-  kind: DecoKind;
-  x: number;
-  y: number;
-  rot: number;
+  fromCell: number;
+  toCell: number;
 }) {
-  const accent = "var(--color-accent)";
-  const muted = "var(--color-text-muted)";
+  const a = cellCenter(fromCell);
+  const b = cellCenter(toCell);
+  const x = a.cx;
+  const y0 = Math.min(a.cy, b.cy) - 30;
+  const y1 = Math.max(a.cy, b.cy) + 30;
+  const railOffset = 22;
+  const rungs = 5;
+  const stroke = "var(--color-text)";
+  return (
+    <g opacity={0.85} aria-hidden>
+      <line
+        x1={x - railOffset}
+        y1={y0}
+        x2={x - railOffset}
+        y2={y1}
+        stroke={stroke}
+        strokeWidth={4}
+      />
+      <line
+        x1={x + railOffset}
+        y1={y0}
+        x2={x + railOffset}
+        y2={y1}
+        stroke={stroke}
+        strokeWidth={4}
+      />
+      {Array.from({ length: rungs }, (_, k) => {
+        const t = (k + 1) / (rungs + 1);
+        const yy = y0 + (y1 - y0) * t;
+        return (
+          <line
+            key={`rung-${k}`}
+            x1={x - railOffset}
+            y1={yy}
+            x2={x + railOffset}
+            y2={yy}
+            stroke={stroke}
+            strokeWidth={3}
+          />
+        );
+      })}
+    </g>
+  );
+}
 
-  if (kind === "dot-cluster") {
-    return (
-      <g transform={`translate(${x} ${y}) rotate(${rot})`}>
-        <circle cx={-8} cy={4} r={3.5} fill={accent} />
-        <circle cx={6} cy={6} r={2.5} fill={accent} />
-        <circle cx={0} cy={-6} r={2} fill={accent} opacity={0.7} />
-      </g>
-    );
-  }
-  if (kind === "stitch") {
-    return (
-      <g
-        transform={`translate(${x} ${y}) rotate(${rot})`}
-        stroke={accent}
+/**
+ * Decorative snake — a fat terracotta cubic Bezier from one cell
+ * centre to another, with a small head circle and a forked tongue.
+ */
+function DecoSnake({
+  fromCell,
+  toCell,
+}: {
+  fromCell: number;
+  toCell: number;
+}) {
+  const a = cellCenter(fromCell);
+  const b = cellCenter(toCell);
+  // Pull control points sideways for an S-shape.
+  const c1x = a.cx + 140;
+  const c1y = (a.cy + b.cy) / 2 - 40;
+  const c2x = b.cx - 140;
+  const c2y = (a.cy + b.cy) / 2 + 40;
+  return (
+    <g aria-hidden>
+      {/* Outer black outline for brutalist contrast */}
+      <path
+        d={`M ${a.cx} ${a.cy} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${b.cx} ${b.cy}`}
+        fill="none"
+        stroke="var(--color-text)"
+        strokeWidth={16}
+        strokeLinecap="round"
+      />
+      {/* Inner accent body */}
+      <path
+        d={`M ${a.cx} ${a.cy} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${b.cx} ${b.cy}`}
+        fill="none"
+        stroke="var(--color-accent)"
+        strokeWidth={10}
+        strokeLinecap="round"
+      />
+      {/* Head at the FROM end (the high cell) */}
+      <circle
+        cx={a.cx}
+        cy={a.cy}
+        r={11}
+        fill="var(--color-accent)"
+        stroke="var(--color-text)"
         strokeWidth={2}
-        strokeLinecap="round"
-      >
-        <line x1={-12} y1={0} x2={-12} y2={10} />
-        <line x1={0} y1={0} x2={0} y2={12} />
-        <line x1={12} y1={0} x2={12} y2={10} />
-      </g>
-    );
-  }
-  if (kind === "asterisk") {
-    return (
-      <g
-        transform={`translate(${x} ${y}) rotate(${rot})`}
-        stroke={accent}
-        strokeWidth={1.6}
-        strokeLinecap="round"
-      >
-        <line x1={-9} y1={0} x2={9} y2={0} />
-        <line x1={-4.5} y1={-7.8} x2={4.5} y2={7.8} />
-        <line x1={4.5} y1={-7.8} x2={-4.5} y2={7.8} />
-      </g>
-    );
-  }
-  if (kind === "milestone") {
-    return (
-      <g transform={`translate(${x} ${y}) rotate(${rot})`}>
-        <circle
-          cx={0}
-          cy={0}
-          r={9}
-          fill="none"
-          stroke={muted}
-          strokeWidth={1}
-          strokeDasharray="2 3"
-        />
-        <path d="M 0 -5 L 5 0 L 0 5 L -5 0 Z" fill={accent} />
-      </g>
-    );
-  }
-  return null;
+      />
+      <circle cx={a.cx - 3} cy={a.cy - 3} r={1.6} fill="var(--color-text)" />
+      <circle cx={a.cx + 3} cy={a.cy - 3} r={1.6} fill="var(--color-text)" />
+      {/* Tail tip at the TO end */}
+      <circle
+        cx={b.cx}
+        cy={b.cy}
+        r={4}
+        fill="var(--color-text)"
+      />
+    </g>
+  );
 }

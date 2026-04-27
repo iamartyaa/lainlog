@@ -38,6 +38,15 @@ export type CourseSectionIcon =
   | "histogram"
   | "server";
 
+/**
+ * Module groups stops into a major segment of the snake-and-ladders board.
+ * Each module gets its own coloured row-span on the board. Three modules
+ * is the design baseline — Foundations, Core, Application — but the
+ * outline schema allows any string value here so future courses can pick
+ * their own modules.
+ */
+export type CourseModule = "foundations" | "core" | "application";
+
 export type CourseSection = {
   /** Stable id, unique within the course. */
   id: string;
@@ -48,10 +57,13 @@ export type CourseSection = {
   /** One-line gloss, displayed under the title on the milestone card. */
   description?: string;
   /**
-   * 1-indexed stop along the serpentine path. The CourseOutline component
-   * maps `stop` → anchor coordinates via its internal STOPS table.
+   * 1-indexed stop along the snake-and-ladders board. The CourseOutline
+   * component maps `stop` → cell coordinates via boustrophedon traversal
+   * across a fixed grid.
    */
   stop: number;
+  /** Major segment grouping for the board's coloured row-spans. */
+  module: CourseModule;
   /** Optional inline-SVG icon shown beside the card title. */
   icon?: CourseSectionIcon;
 };
@@ -85,6 +97,7 @@ export const COURSES: CourseMeta[] = [
         description:
           "BPE, Unicode edge cases, and why the same string can split two ways on the same model.",
         stop: 1,
+        module: "foundations",
         icon: "tokenization",
       },
       {
@@ -94,6 +107,7 @@ export const COURSES: CourseMeta[] = [
         description:
           "Ten thousand vectors in a drawer. The math behind 'meaning lives in geometry'.",
         stop: 2,
+        module: "foundations",
         icon: "embedding-table",
       },
       {
@@ -103,6 +117,7 @@ export const COURSES: CourseMeta[] = [
         description:
           "Q, K, V, and the matmul that turns attention from a metaphor into a number.",
         stop: 3,
+        module: "core",
         icon: "matrix",
       },
       {
@@ -112,6 +127,7 @@ export const COURSES: CourseMeta[] = [
         description:
           "A 4-token sentence. Most readers pick the wrong head. Then we fix that.",
         stop: 4,
+        module: "core",
         icon: "attention",
       },
       {
@@ -121,6 +137,7 @@ export const COURSES: CourseMeta[] = [
         description:
           "Why the KV-cache exists, what 'prefill' means, and the moment the second token gets cheap.",
         stop: 5,
+        module: "core",
         icon: "transformer",
       },
       {
@@ -130,6 +147,7 @@ export const COURSES: CourseMeta[] = [
         description:
           "Sampling decisions, plotted against a real distribution. Where 'creative' actually comes from.",
         stop: 6,
+        module: "application",
         icon: "histogram",
       },
       {
@@ -139,6 +157,7 @@ export const COURSES: CourseMeta[] = [
         description:
           "Wire a tokenizer, a 1.5B-parameter checkpoint, and a streaming HTTP endpoint into one terminal window.",
         stop: 7,
+        module: "application",
         icon: "server",
       },
     ],
