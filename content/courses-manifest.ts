@@ -16,6 +16,28 @@ export type CourseSectionType =
   | "project"
   | "challenge";
 
+/**
+ * Optional icon identifier on a section. Maps to a small inline-SVG block
+ * inside <CourseStop>. Drawn in lainlog's monochrome-terracotta style — no
+ * external icon library, no fills outside the accent token.
+ *
+ * - `tokenization`     — text-cursor / lozenge with internal divisions
+ * - `embedding-table`  — three stacked rectangles (a "table")
+ * - `matrix`           — 3×3 grid of dots
+ * - `attention`        — Q-K-V triangle / connection diagram
+ * - `transformer`      — stack of 3 layers with arrows
+ * - `histogram`        — three bars at decreasing heights
+ * - `server`           — three stacked cylinders (server stack)
+ */
+export type CourseSectionIcon =
+  | "tokenization"
+  | "embedding-table"
+  | "matrix"
+  | "attention"
+  | "transformer"
+  | "histogram"
+  | "server";
+
 export type CourseSection = {
   /** Stable id, unique within the course. */
   id: string;
@@ -30,6 +52,8 @@ export type CourseSection = {
    * maps `stop` → anchor coordinates via its internal STOPS table.
    */
   stop: number;
+  /** Optional inline-SVG icon shown beside the card title. */
+  icon?: CourseSectionIcon;
 };
 
 export type CourseStatus = "coming-soon" | "open-enrollment" | "live";
@@ -61,6 +85,7 @@ export const COURSES: CourseMeta[] = [
         description:
           "BPE, Unicode edge cases, and why the same string can split two ways on the same model.",
         stop: 1,
+        icon: "tokenization",
       },
       {
         id: "embeddings",
@@ -69,6 +94,7 @@ export const COURSES: CourseMeta[] = [
         description:
           "Ten thousand vectors in a drawer. The math behind 'meaning lives in geometry'.",
         stop: 2,
+        icon: "embedding-table",
       },
       {
         id: "forward-pass",
@@ -77,6 +103,7 @@ export const COURSES: CourseMeta[] = [
         description:
           "Q, K, V, and the matmul that turns attention from a metaphor into a number.",
         stop: 3,
+        icon: "matrix",
       },
       {
         id: "attention-quiz",
@@ -85,6 +112,7 @@ export const COURSES: CourseMeta[] = [
         description:
           "A 4-token sentence. Most readers pick the wrong head. Then we fix that.",
         stop: 4,
+        icon: "attention",
       },
       {
         id: "kv-cache",
@@ -93,6 +121,7 @@ export const COURSES: CourseMeta[] = [
         description:
           "Why the KV-cache exists, what 'prefill' means, and the moment the second token gets cheap.",
         stop: 5,
+        icon: "transformer",
       },
       {
         id: "sampling",
@@ -101,6 +130,7 @@ export const COURSES: CourseMeta[] = [
         description:
           "Sampling decisions, plotted against a real distribution. Where 'creative' actually comes from.",
         stop: 6,
+        icon: "histogram",
       },
       {
         id: "serve",
@@ -109,6 +139,7 @@ export const COURSES: CourseMeta[] = [
         description:
           "Wire a tokenizer, a 1.5B-parameter checkpoint, and a streaming HTTP endpoint into one terminal window.",
         stop: 7,
+        icon: "server",
       },
     ],
   },
