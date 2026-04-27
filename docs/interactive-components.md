@@ -598,6 +598,18 @@ Direct links to the widgets we've shipped and what each taught us.
   - Must be `"use client"` because `MediaBetweenText` takes a `renderMedia` function prop; the parent page is RSC.
   - Use once per article. Two uses become decoration.
 
+### `CourseOutline.tsx` ([course pages](../app/courses/[slug]/page.tsx))
+
+- **Shape**: serpentine timeline (course-page hero, not a post widget).
+- **Teaches**: the shape of an upcoming course — every stop visible at once, the rope makes the order legible.
+- **Lessons**:
+  - Adapted (visual technique only) from the react.gg "From Start to Ready" board layout: a single SVG path drawn with four stacked strokes — outer shadow / dark spine / terracotta wash / dashed stitching — produces a beveled-rope look without a single drop-shadow or gradient.
+  - One-accent rule (DESIGN.md §3) holds even where the reference uses pinks / greens / blues. Type-badge variation (LESSON / INTERACTIVE / QUIZ / PROJECT / CHALLENGE) is driven by `color-mix` percentages of `--color-accent` + neutrals; no new hues introduced.
+  - Frame-stable: the SVG container has a fixed `aspect-ratio: 1166/716` so it cannot reflow during the path-draw entrance.
+  - Mobile fallback at `<720 px` container width: drop the SVG entirely, render a vertical-timeline of the same `<CourseStop>` cards with terracotta numbered circles on a left rail. Toggled via container query, not viewport.
+  - Animation: `pathLength: 0 → 1` on first scroll-in (`useInView`, `once: true`) for the dashed stitching layer; numbered markers and stop cards stagger in across the same window. `useReducedMotion` short-circuits to the final state.
+  - Audio principle #7 from `lib/audio.ts` (user-triggered only) means autonomous scroll-cued sounds are intentionally not wired here, even though the playbook brief proposed a Swoosh on path-completion.
+
 ## 7. When to build a new widget
 
 Ship a bespoke widget when:
