@@ -14,15 +14,20 @@
  * opacity + saturation of the same accent token, plus border treatment —
  * no new hues introduced.
  *
- * Tier-coding (PR #67 enrichment):
- *   - lesson      → 1 px border, accent 6% wash background
- *   - interactive → 1 px border, no wash (quietest)
- *   - quiz        → 1.5 px terracotta border, accent 12% wash
- *   - project     → 2 px terracotta border, accent 16% wash, larger title
- *   - challenge   → 1 px border, no wash (kept aligned with interactive)
+ * Tier-coding (PR #67 rebuild):
+ *   - lesson      → 1 px rule border, plain surface (no wash)
+ *   - interactive → 1 px rule border, plain surface (no wash, quietest)
+ *   - challenge   → 1 px rule border, plain surface (no wash)
+ *   - quiz        → 1.5 px accent border + 12% accent wash (signal moment)
+ *   - project     → 2 px accent border + 16% accent wash + larger title
+ *                    (the destination — biggest signal)
  *
- * Icons are inline SVG blocks rendered beside the title. They're all 24×24,
- * stroke-only, terracotta + muted neutrals. No external icon library.
+ * Polaroid tilts removed — with the cleaner three-traversal path geometry,
+ * tilts add chaos. Cards align cleanly horizontal. The `tilt` prop is kept
+ * on the API for future use but ignored in rendering.
+ *
+ * Icons are inline SVG blocks rendered beside the title. They're all 16×16,
+ * stroke-only, terracotta + muted neutrals. Tertiary detail, not focal.
  *
  * Reduced-motion: parent passes `reduced` and gates entrance animation. The
  * card itself does not own a useReducedMotion hook to avoid duplicate gates.
@@ -121,53 +126,37 @@ function tierFor(type: CourseSectionType): Tier {
   switch (type) {
     case "project":
       // The destination — biggest card, deepest wash, heaviest border.
+      // Larger title only on this tier; everything else stays at h3.
       return {
         borderWidth: 2,
         borderColor: "var(--color-accent)",
         background:
           "color-mix(in oklab, var(--color-accent) 16%, var(--color-surface))",
-        maxWidth: 320,
-        titleSize: "calc(var(--text-h3) * 1.05)",
+        maxWidth: 300,
+        titleSize: "calc(var(--text-h3) * 1.1)",
         padding: "var(--spacing-md) var(--spacing-md)",
       };
     case "quiz":
-      // Checkpoint — slightly denser. Heavier border, mid wash.
+      // Checkpoint — accent border + mid wash mark this as a signal moment.
       return {
         borderWidth: 1.5,
         borderColor: "var(--color-accent)",
         background:
           "color-mix(in oklab, var(--color-accent) 12%, var(--color-surface))",
-        maxWidth: 230,
-        titleSize: "var(--text-h3)",
-        padding: "var(--spacing-2xs) var(--spacing-sm)",
-      };
-    case "interactive":
-      // Quietest tier — no wash, tighter padding, smallest card.
-      return {
-        borderWidth: 1,
-        borderColor: "var(--color-rule)",
-        background: "var(--color-surface)",
-        maxWidth: 240,
-        titleSize: "var(--text-h3)",
-        padding: "var(--spacing-2xs) var(--spacing-sm)",
-      };
-    case "challenge":
-      return {
-        borderWidth: 1,
-        borderColor: "var(--color-rule)",
-        background: "var(--color-surface)",
-        maxWidth: 260,
+        maxWidth: 250,
         titleSize: "var(--text-h3)",
         padding: "var(--spacing-sm) var(--spacing-md)",
       };
+    case "interactive":
+    case "challenge":
     case "lesson":
     default:
-      // Standard — light wash, 1 px border.
+      // Plain surface, 1 px rule border. Visual variety happens in
+      // type-badge color and icon, not in card chrome.
       return {
         borderWidth: 1,
         borderColor: "var(--color-rule)",
-        background:
-          "color-mix(in oklab, var(--color-accent) 6%, var(--color-surface))",
+        background: "var(--color-surface)",
         maxWidth: 260,
         titleSize: "var(--text-h3)",
         padding: "var(--spacing-sm) var(--spacing-md)",
@@ -176,9 +165,9 @@ function tierFor(type: CourseSectionType): Tier {
 }
 
 /**
- * Inline-SVG icon blocks. All 24×24, stroke-only, terracotta accent + muted
- * neutrals. Built original — no external icon library, no copied glyphs from
- * the reference. Subtle by design: they're flavor, not focal points.
+ * Inline-SVG icon blocks. All rendered at 16×16 (viewBox 24×24 internal),
+ * stroke-only, terracotta accent + muted neutrals. Original glyphs — no
+ * external icon library. Tertiary detail: flavor, not focal points.
  */
 function StopIcon({ icon }: { icon: CourseSectionIcon }) {
   const accent = "var(--color-accent)";
@@ -188,8 +177,8 @@ function StopIcon({ icon }: { icon: CourseSectionIcon }) {
       // A lozenge "token" with internal divisions + a cursor on the left.
       return (
         <svg
-          width="22"
-          height="22"
+          width="16"
+          height="16"
           viewBox="0 0 24 24"
           aria-hidden
           focusable={false}
@@ -213,8 +202,8 @@ function StopIcon({ icon }: { icon: CourseSectionIcon }) {
       // 3 stacked rectangles, each subdivided into a few cells.
       return (
         <svg
-          width="22"
-          height="22"
+          width="16"
+          height="16"
           viewBox="0 0 24 24"
           aria-hidden
           focusable={false}
@@ -238,8 +227,8 @@ function StopIcon({ icon }: { icon: CourseSectionIcon }) {
       // 3×3 grid of dots — a "matrix multiply" motif.
       return (
         <svg
-          width="22"
-          height="22"
+          width="16"
+          height="16"
           viewBox="0 0 24 24"
           aria-hidden
           focusable={false}
@@ -255,8 +244,8 @@ function StopIcon({ icon }: { icon: CourseSectionIcon }) {
       // Q-K-V triangle with attention edges between three nodes.
       return (
         <svg
-          width="22"
-          height="22"
+          width="16"
+          height="16"
           viewBox="0 0 24 24"
           aria-hidden
           focusable={false}
@@ -275,8 +264,8 @@ function StopIcon({ icon }: { icon: CourseSectionIcon }) {
       // Stack of 3 layers with arrows ascending between them.
       return (
         <svg
-          width="22"
-          height="22"
+          width="16"
+          height="16"
           viewBox="0 0 24 24"
           aria-hidden
           focusable={false}
@@ -296,8 +285,8 @@ function StopIcon({ icon }: { icon: CourseSectionIcon }) {
       // Three bars at decreasing heights — a sampling distribution.
       return (
         <svg
-          width="22"
-          height="22"
+          width="16"
+          height="16"
           viewBox="0 0 24 24"
           aria-hidden
           focusable={false}
@@ -321,8 +310,8 @@ function StopIcon({ icon }: { icon: CourseSectionIcon }) {
       // Three stacked cylinders — a server stack.
       return (
         <svg
-          width="22"
-          height="22"
+          width="16"
+          height="16"
           viewBox="0 0 24 24"
           aria-hidden
           focusable={false}
@@ -366,12 +355,14 @@ export function CourseStop({
   title,
   type,
   description,
-  tilt = 0,
   delay = 0,
   reduced = false,
   icon,
   stacked = false,
 }: Props) {
+  // `tilt` is accepted on Props for backward-compat / future polaroid mode
+  // but intentionally ignored in rendering — cards align cleanly horizontal
+  // with the new three-traversal path geometry.
   const initial = reduced
     ? { opacity: 1, y: 0 }
     : { opacity: 0, y: 8 };
@@ -394,8 +385,10 @@ export function CourseStop({
         border: `${tier.borderWidth}px solid ${tier.borderColor}`,
         borderRadius: "var(--radius-md)",
         padding: tier.padding,
-        // Polaroid-tilt only in scattered mode. Stacked rows stay flat.
-        transform: stacked ? undefined : `rotate(${tilt}deg)`,
+        // Cards align cleanly horizontal — tilt prop kept on the API for
+        // future use but ignored in rendering. Re-enable per-card tilt
+        // here if a future iteration wants polaroid scatter again:
+        //   transform: stacked ? undefined : `rotate(${tilt}deg)`,
         // Tier-coded width on desktop. Stacked mode uses full row width.
         maxWidth: stacked ? undefined : `${tier.maxWidth}px`,
       }}

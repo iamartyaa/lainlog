@@ -3,95 +3,97 @@
 /**
  * <CourseOutline> — the hero serpentine timeline for course pages.
  *
- * Pattern adapted from the reference react.gg "From Start to Ready" board
- * layout: a single winding SVG path drawn with multiple stacked strokes
- * (outer shadow / dark spine / inner wash / dashed stitching), with
- * milestone cards scattered along the path at hard-coded anchor points.
- * The path geometry is reused as-is; every visual layer is rebuilt against
- * lainlog's terracotta-only token palette (DESIGN.md §3).
+ * Pattern: a single winding SVG path drawn with a stacked stroke stack
+ * (outer rule outline / dark spine / inner accent wash / dashed stitching),
+ * with milestone cards and a numbered marker placed along the path. The
+ * path is original geometry; every visual layer obeys lainlog's
+ * terracotta-only token palette (DESIGN.md §3).
  *
- * PR #67 enrichment iteration:
- *  - Path redrawn for FOUR traversals (left→right→left→right→end) instead
- *    of the original two-traversal S-curve. Same viewBox 1166×716, same
- *    four-layer stroke stack.
- *  - Inner-wash layer is split into 5 sub-paths with progressive accent
- *    opacity (8% → 24%) so the rope's interior reads as having tonal
- *    progression along its length. No SVG gradient (DESIGN.md §12 ban) —
- *    discrete steps via strokeDasharray on a normalized pathLength.
- *  - Decorative scatter elements (terracotta dots, hash-stitches, asterisk
- *    glyphs) sprinkled at ~8 hand-tuned positions between stops.
- *  - Stops re-anchored for clusters-and-gaps rhythm rather than even
- *    metronome spacing. Cards now tier-coded (size + border + wash) by
- *    section type.
+ * PR #67 rebuild iteration:
+ *  - Path simplified from a four-traversal self-intersecting Bezier to a
+ *    clean THREE-traversal serpent: top L→R, middle R→L, bottom L→R. No
+ *    segment crosses another. Single continuous Bezier; gentle U-turns on
+ *    the right and left edges connect the traversals.
+ *  - viewBox grew from 1166×716 to 1200×900 — taller canvas gives every
+ *    traversal a comfortable horizontal stripe and a card-shaped gap above.
+ *  - Numbered-marker anchor coordinates are now derived at mount-time from
+ *    `getPointAtLength` on a hidden invisible measurement path. Markers
+ *    are mathematically ON the rope, not eyeballed beside it.
+ *  - Card placement choreographed by traversal: every card sits ABOVE its
+ *    stop, in the gap toward the previous traversal (or the top of canvas).
+ *    No card overlaps another card or the rope, by construction.
+ *  - Per-stop polaroid tilts removed; cards align cleanly horizontal.
+ *  - Decoration count trimmed to 6 and repositioned into genuinely empty
+ *    canvas regions.
  *
  * Layers (outer → inner):
- *   1. shadow stroke   — width 84, --color-rule (soft beige outline)
- *   2. dark spine      — width 80, --color-text  (the rope's body)
- *   3. inner wash × 5  — width 70, segmented accent 8% → 24%
- *   4. stitching       — width 1.5, dashed (2.01 / 80.58), text-muted
+ *   1. shadow stroke   — width 84, --color-rule
+ *   2. dark spine      — width 80, --color-text
+ *   3. inner wash × 5  — width 70, accent 8% → 24% via dash-window stepping
+ *   4. stitching       — width 1.5, dashed, drawn in via pathLength
  *
  * Animation:
- *   - On first scroll-in (`useInView`, once: true) the stitching pathLength
- *     animates 0 → 1 over a single SPRING.dramatic spring. Numbered
- *     markers, decorations, and stop cards stagger in alongside.
- *   - Reduced-motion: render the final state instantly. No rAF, no tween.
+ *   - On scroll-in (`useInView`, once: true) the stitching pathLength
+ *     animates 0 → 1 over a SPRING.dramatic. Markers, decorations, and
+ *     stop cards stagger in alongside.
+ *   - Reduced-motion: render the final state instantly.
  *
- * Frame-stability (R6): the SVG container has a fixed aspect ratio of
- * 1166 / 716 so it cannot reflow during animation. Cards are absolutely
- * positioned relative to the same wrapper, so their anchor coordinates
- * are stable across viewport widths.
+ * Frame-stability (R6): the SVG container has a fixed aspect ratio so the
+ * canvas can't reflow during animation. Cards are absolutely positioned
+ * relative to the same wrapper.
  *
  * Mobile fallback: at container widths below 720 px the SVG is dropped
- * and a vertical-timeline of stacked CourseStop cards renders instead,
- * with a continuous left rail + numbered terracotta circles.
+ * and a vertical-timeline of stacked CourseStop cards renders instead.
  *
- * One-accent rule: every visual variation between stop cards comes from
- * opacity / saturation of --color-accent + neutrals (§3). No greens, no
- * blues, no pinks — even though the reference layout uses them.
- *
- * Audio: `lib/audio.ts` documents principle #7 (user-triggered only —
- * autonomous animations do NOT call `playSound`). Audio is intentionally
- * not wired here — the rope draw is scroll-driven, hence autonomous.
+ * One-accent rule: every visual variation is opacity / saturation of
+ * --color-accent + neutrals. No new hues (DESIGN.md §3).
  */
 
-import { useMemo, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { motion, useInView, useReducedMotion } from "motion/react";
 import { SPRING } from "@/lib/motion";
 import type { CourseSection } from "@/content/courses-manifest";
 import { CourseStop } from "./CourseStop";
 
 /**
- * Serpentine path geometry — four traversals across the canvas.
+ * Serpentine path geometry — three clean traversals across a 1200×900
+ * canvas. Each traversal is a horizontal stripe at a different y; gentle
+ * U-turns on the right and left edges connect them without crossing any
+ * earlier stroke.
  *
- *   1. (80, 660) → (760, 660)        bottom sweep, L → R
- *   2. (760, 660) → (1080, 420)      right edge, climbing
- *   3. (1080, 420) → (100, 380)      across to far left, R → L
- *   4. (100, 380) → (220, 180)       left edge loop
- *   5. (220, 180) → (920, 200)       upper sweep, L → R
- *   6. (920, 200) → (980, 80)        right edge, climbing
- *   7. (980, 80) → (360, 90)         top, R → L
- *   8. (360, 90) → (100, 140)        finish at top-left
+ *   top traversal     y ≈ 240    (100, 240)  → (1080, 240)       L → R
+ *   right U-turn                 (1080, 240) → (1040, 490)
+ *   middle traversal  y ≈ 490    (1040, 490) → (120, 490)        R → L
+ *   left U-turn                  (120, 490)  → (180, 740)
+ *   bottom traversal  y ≈ 740    (180, 740)  → (1100, 740)       L → R
  *
- * One continuous Bezier curve. SAFE TO EDIT, but anchors below depend on
- * this geometry. If reshaped, recompute STOP_ANCHORS using a path-sample
- * tool.
+ * The traversals sit ~250 viewBox units apart, leaving each row a
+ * card-shaped gap above it (cards live in the gap between this traversal
+ * and the previous one — or the canvas top, for stop 1).
+ *
+ * Mental trace: top stripe, smooth dip down the right edge, middle stripe,
+ * smooth dip down the left edge, bottom stripe. No segment crosses another.
  */
 const SERPENTINE_D =
-  "M 80 660 C 280 700, 540 700, 760 660 C 980 620, 1100 540, 1080 420 C 1060 320, 880 280, 660 320 C 440 360, 280 380, 100 380 C -40 380, -20 200, 220 180 C 460 160, 700 200, 920 200 C 1080 200, 1140 120, 980 80 C 820 40, 540 60, 360 90 C 220 110, 140 130, 100 140";
+  "M 100 240 " +
+  "C 320 200, 700 200, 1080 240 " +
+  // right-edge U-turn from top to middle (stays right of x=1080)
+  "C 1180 260, 1200 400, 1140 460 " +
+  "C 1110 485, 1080 490, 1040 490 " +
+  // middle traversal R → L
+  "C 720 510, 380 470, 120 490 " +
+  // left-edge U-turn from middle to bottom (stays left of x=180)
+  "C 40 510, 20 660, 80 710 " +
+  "C 110 735, 140 740, 180 740 " +
+  // bottom traversal L → R
+  "C 480 760, 800 760, 1100 740";
 
 /**
- * Inner-wash segmentation. Each segment renders one fifth of the path with
- * a progressively deeper terracotta wash, creating tonal depth along the
- * rope without using an SVG gradient (DESIGN.md §12).
- *
- * Implementation trick: every sub-path shares the same `d`, but each one
- * sets `pathLength={100}` to normalize the stroke metric, then uses a
- * `strokeDasharray="20 80"` + a negative `strokeDashoffset` to make only
- * its 20-unit window visible. The five negative offsets (0, -20, -40, -60,
- * -80) march the visible window along the rope.
- *
- * 0.5 unit overlap on each end of the dash window prevents hairline gaps
- * between adjacent segments at the seams.
+ * Inner-wash segmentation. Five sub-paths share `d` and use a normalized
+ * `pathLength=100` plus a 20-unit dash window with marching offsets to
+ * split the rope into five tonal bands without using an SVG gradient
+ * (DESIGN.md §12 ban). The 0.5-unit overlap on each side prevents
+ * hairline gaps at seams.
  */
 type WashSegment = {
   /** opacity of var(--color-accent) in color-mix, 0–100 */
@@ -108,49 +110,91 @@ const WASH_SEGMENTS: WashSegment[] = [
 ];
 
 /**
- * Anchor coordinates for each stop in viewBox units. These were chosen
- * along the new four-traversal path to give a clusters-and-gaps rhythm:
+ * Anchor placement strategy.
  *
- *   - 1, 2  cluster on the bottom sweep (intro phase)
- *   - 3, 4  cluster on the right-side descent (core mechanics)
- *   - 5, 6  cluster on the upper-right sweep (applied phase)
- *   - 7     alone at the top-left (the destination)
+ * Numbered-marker (x, y) coordinates are derived at mount-time via
+ * `getPointAtLength` on a hidden measurement path — they're guaranteed to
+ * sit ON the rope. The fractions below were chosen for clusters-and-gaps
+ * rhythm across the three traversals:
  *
- * `cardDx/cardDy` shifts the card from the anchor in viewBox units so the
- * card sits beside the rope rather than on top of it.
+ *   ~0.05  stop 1 — early on top traversal (left)
+ *   ~0.18  stop 2 — middle of top traversal
+ *   ~0.30  stop 3 — late top traversal (just before the right U-turn)
+ *   ~0.50  stop 4 — middle of middle traversal
+ *   ~0.62  stop 5 — late middle traversal (just before the left U-turn)
+ *   ~0.80  stop 6 — middle of bottom traversal
+ *   ~0.96  stop 7 — destination at the right end of bottom traversal
+ *
+ * Card placement direction is fixed per stop: every card sits ABOVE its
+ * marker. With three traversals stacked vertically, this puts each card
+ * in the gap toward the PREVIOUS traversal (or the canvas top for stop 1).
+ * No card collides with another card or with the rope, by construction.
+ *
+ * cardDx/cardDy are in viewBox units relative to the marker. The card's
+ * top-left corner lands at (anchor.x + cardDx, anchor.y + cardDy).
  */
-type Anchor = {
-  /** Marker (numbered circle) position on the path itself, in viewBox units. */
-  x: number;
-  y: number;
+const STOP_FRACTIONS: Record<number, number> = {
+  1: 0.05,
+  2: 0.18,
+  3: 0.3,
+  4: 0.5,
+  5: 0.62,
+  6: 0.8,
+  7: 0.96,
+};
+
+type CardOffset = {
   /** Card position offset from marker, in viewBox units. */
   cardDx: number;
   cardDy: number;
-  /** Polaroid tilt, signed degrees. */
-  tilt: number;
-};
-
-const STOP_ANCHORS: Record<number, Anchor> = {
-  // intro cluster — bottom sweep
-  1: { x: 250, y: 686, cardDx: -150, cardDy: -190, tilt: -2 },
-  2: { x: 560, y: 690, cardDx: 30, cardDy: -200, tilt: 2 },
-  // core mechanics cluster — right-side descent and turnaround
-  3: { x: 970, y: 470, cardDx: -250, cardDy: -200, tilt: -1 },
-  4: { x: 660, y: 320, cardDx: -50, cardDy: 50, tilt: 1 },
-  // applied cluster — upper-right sweep
-  5: { x: 720, y: 195, cardDx: -260, cardDy: 60, tilt: -1 },
-  6: { x: 970, y: 130, cardDx: -250, cardDy: -110, tilt: 2 },
-  // destination — top-left
-  7: { x: 220, y: 105, cardDx: 50, cardDy: 30, tilt: -1 },
 };
 
 /**
- * Decorative stickers / scatter elements. Terracotta-only, hand-positioned
- * at quiet spots along the rope so they don't collide with cards. Drawn
- * inside the SVG so they share viewBox coordinates and scale with the rope.
+ * Card offsets per stop — all cards sit ABOVE their marker in the gap
+ * toward the previous traversal (or the canvas top for stop 1).
  *
- * Each entry produces a small motion.g that fades in alongside the rope
- * draw via whileInView. Reduced-motion: rendered in final state.
+ * cardDx pulls the card horizontally so it doesn't overhang the U-turn
+ * or the canvas edge. cardDy is uniform at -200 so every card sits the
+ * same distance above its marker.
+ *
+ * Card width is `min(24%, 280px)` → up to 288 viewBox units; height
+ * varies with display size but tops out around 160 viewBox-y units. With
+ * these offsets, no card overlaps another or its marker:
+ *
+ *   stop 1 (top, x≈160)    card x≈70..360,    y≈40..200    [gap to marker 22]
+ *   stop 2 (top, x≈580)    card x≈440..730,   y≈40..200
+ *   stop 3 (top, x≈970)    card x≈820..1110,  y≈40..200
+ *   stop 4 (middle, x≈700) card x≈560..850,   y≈290..450
+ *   stop 5 (middle, x≈340) card x≈180..470,   y≈290..450
+ *   stop 6 (bottom, x≈580) card x≈420..710,   y≈540..700
+ *   stop 7 (bottom, x≈1080) card x≈880..1170, y≈540..700
+ *
+ * Inter-card horizontal gaps on each traversal: 80–110 viewBox-x units.
+ */
+const CARD_OFFSETS: Record<number, CardOffset> = {
+  // Top traversal — cards above, in y≈40–200 region
+  1: { cardDx: -90, cardDy: -200 },
+  2: { cardDx: -140, cardDy: -200 },
+  3: { cardDx: -150, cardDy: -200 },
+  // Middle traversal — cards above, in y≈290–450 region
+  4: { cardDx: -140, cardDy: -200 },
+  5: { cardDx: -160, cardDy: -200 },
+  // Bottom traversal — cards above, in y≈540–700 region
+  6: { cardDx: -160, cardDy: -200 },
+  7: { cardDx: -200, cardDy: -200 },
+};
+
+/**
+ * Decorative stickers — terracotta-only flavor placed in genuinely empty
+ * canvas regions (not overlapping cards or the rope). Trimmed from 8 to 6.
+ *
+ * Verified empty zones:
+ *   - between stop-1 cards and stop-2 cards (top, between x=200 and x=380)
+ *   - upper-right corner above the right U-turn
+ *   - middle-row gap between stop-4 card and stop-3 marker right side
+ *   - left-edge zone below middle traversal
+ *   - bottom-left between bottom-traversal start and stop-6 card area
+ *   - bottom-right empty patch below bottom traversal
  */
 type DecoKind = "dot-cluster" | "stitch" | "asterisk" | "milestone";
 type Deco = {
@@ -158,34 +202,28 @@ type Deco = {
   kind: DecoKind;
   x: number;
   y: number;
-  /** Rotation in degrees (used by stitch / asterisk). */
   rot?: number;
-  /** Stagger delay seconds. */
   delay: number;
 };
 
 const DECORATIONS: Deco[] = [
-  // sit between stops 1 and 2, above the bottom sweep
-  { id: "d1", kind: "dot-cluster", x: 410, y: 660, delay: 0.35 },
-  // big leap — between 2 and 3, just past the bottom-right turn
-  { id: "d2", kind: "asterisk", x: 1060, y: 540, rot: 8, delay: 0.55 },
-  // milestone marker between core-mechanics cluster and the loop
-  { id: "d3", kind: "milestone", x: 380, y: 358, delay: 0.75 },
-  // hash-stitch on the left-side loop
-  { id: "d4", kind: "stitch", x: 30, y: 290, rot: 70, delay: 0.85 },
-  // dot cluster on the upper sweep
-  { id: "d5", kind: "dot-cluster", x: 470, y: 188, delay: 1.05 },
-  // asterisk near the top-right turn
-  { id: "d6", kind: "asterisk", x: 1080, y: 125, rot: -12, delay: 1.2 },
-  // hash-stitch on the long top traverse, between 6 and 7
-  { id: "d7", kind: "stitch", x: 600, y: 60, rot: 0, delay: 1.4 },
-  // tiny dot trio just before the final stop
-  { id: "d8", kind: "dot-cluster", x: 290, y: 110, delay: 1.55 },
+  // top-row gap between card 1 (ends ~x=360) and card 2 (starts ~x=440)
+  { id: "d1", kind: "dot-cluster", x: 400, y: 110, delay: 0.35 },
+  // top-row gap between card 2 (ends ~x=730) and card 3 (starts ~x=820)
+  { id: "d2", kind: "asterisk", x: 770, y: 100, rot: -10, delay: 0.55 },
+  // middle-row gap between card 5 (ends ~x=470) and card 4 (starts ~x=560)
+  { id: "d3", kind: "stitch", x: 510, y: 360, rot: 8, delay: 0.75 },
+  // middle-row right of card 4, before right U-turn enters this y region
+  { id: "d4", kind: "milestone", x: 940, y: 360, delay: 0.95 },
+  // bottom-row gap between card 6 (ends ~x=710) and card 7 (starts ~x=880)
+  { id: "d5", kind: "dot-cluster", x: 800, y: 600, delay: 1.1 },
+  // below the bottom traversal — empty canvas-floor patch
+  { id: "d6", kind: "asterisk", x: 600, y: 850, rot: 4, delay: 1.3 },
 ];
 
-/** viewBox dimensions — kept as constants so the aspect ratio stays in sync. */
-const VB_W = 1166;
-const VB_H = 716;
+/** viewBox dimensions — kept as constants so aspect ratio stays in sync. */
+const VB_W = 1200;
+const VB_H = 900;
 
 type Props = {
   outline: CourseSection[];
@@ -193,6 +231,7 @@ type Props = {
 
 export function CourseOutline({ outline }: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const measurePathRef = useRef<SVGPathElement | null>(null);
   const reduced = useReducedMotion() ?? false;
 
   // amount: 0.25 — start drawing once a quarter of the canvas is on-screen.
@@ -206,20 +245,56 @@ export function CourseOutline({ outline }: Props) {
   );
 
   /**
+   * Marker coordinates derived from `getPointAtLength` on a hidden
+   * measurement path. Computed once at mount; `null` until the layout
+   * effect runs. The fallback during the first paint is a small set of
+   * approximate coordinates so SSR / first-render aren't blank.
+   */
+  const [anchors, setAnchors] = useState<Record<number, { x: number; y: number }>>(
+    () => {
+      // Approximate fallback positions matching the path geometry — used
+      // until getPointAtLength runs on the client. These are close to the
+      // measured values; the layout effect snaps them to exact-on-path
+      // coordinates a tick later.
+      return {
+        1: { x: 175, y: 230 },
+        2: { x: 580, y: 210 },
+        3: { x: 970, y: 230 },
+        4: { x: 700, y: 490 },
+        5: { x: 340, y: 482 },
+        6: { x: 580, y: 750 },
+        7: { x: 1080, y: 742 },
+      };
+    }
+  );
+
+  useLayoutEffect(() => {
+    const path = measurePathRef.current;
+    if (!path) return;
+    const total = path.getTotalLength();
+    const next: Record<number, { x: number; y: number }> = {};
+    for (const [stop, fraction] of Object.entries(STOP_FRACTIONS)) {
+      const pt = path.getPointAtLength(fraction * total);
+      next[Number(stop)] = { x: pt.x, y: pt.y };
+    }
+    setAnchors(next);
+  }, []);
+
+  /**
    * Stagger the stop reveals so the marker scales in just as the path
    * reaches it. The path tween runs ~1.4s; spread N stops across that
-   * window (with a small padding so the last stop pops just after the
-   * rope finishes).
+   * window with a small padding so the last stop pops just after the
+   * rope finishes.
    */
   const stopDelay = (stop: number, total: number): number => {
     if (total <= 1) return 0.4;
     const t = (stop - 1) / (total - 1); // 0 → 1
-    return 0.2 + t * 1.1; // first stop ~200ms in, last ~1.3s in
+    return 0.2 + t * 1.1;
   };
 
   return (
     <div ref={wrapperRef} className="bs-course-outline">
-      {/* ───────────── Desktop / wide: serpentine SVG with scattered cards ───────────── */}
+      {/* ───────────── Desktop / wide: serpentine SVG with cards above each stop ───────────── */}
       <div className="bs-course-outline-wide relative w-full">
         <div
           className="relative w-full"
@@ -234,6 +309,16 @@ export function CourseOutline({ outline }: Props) {
             focusable={false}
             style={{ position: "absolute", inset: 0 }}
           >
+            {/* Hidden measurement path — getPointAtLength reads this once at
+                mount to derive marker coordinates. Stroke is invisible. */}
+            <path
+              ref={measurePathRef}
+              d={SERPENTINE_D}
+              fill="none"
+              stroke="none"
+              style={{ pointerEvents: "none" }}
+            />
+
             {/* Layer 1 — shadow stroke (soft outline) */}
             <path
               d={SERPENTINE_D}
@@ -252,9 +337,7 @@ export function CourseOutline({ outline }: Props) {
               strokeMiterlimit={10}
               strokeLinecap="round"
             />
-            {/* Layer 3 — segmented inner wash (5 sub-paths, progressive accent
-                opacity 8% → 24%). Each sub-path renders one fifth of the rope
-                via a normalized pathLength=100 + 20-unit dash window. */}
+            {/* Layer 3 — segmented inner wash (5 sub-paths, accent 8% → 24%) */}
             {WASH_SEGMENTS.map((seg) => (
               <path
                 key={`wash-${seg.pct}`}
@@ -265,8 +348,6 @@ export function CourseOutline({ outline }: Props) {
                 strokeMiterlimit={10}
                 strokeLinecap="butt"
                 pathLength={100}
-                // 0.5 unit overlap on each side of the 20u window prevents
-                // hairline gaps at the seams between adjacent segments.
                 strokeDasharray="20.5 79.5"
                 strokeDashoffset={seg.offset}
               />
@@ -279,9 +360,7 @@ export function CourseOutline({ outline }: Props) {
               strokeWidth={1.5}
               strokeDasharray="0 0 2.01 80.58"
               strokeMiterlimit={10}
-              initial={
-                reduced ? { pathLength: 1 } : { pathLength: 0 }
-              }
+              initial={reduced ? { pathLength: 1 } : { pathLength: 0 }}
               animate={
                 reduced
                   ? { pathLength: 1 }
@@ -296,9 +375,7 @@ export function CourseOutline({ outline }: Props) {
               }
             />
 
-            {/* Decorative stickers — fade in as the rope draws. Pure SVG so
-                they share viewBox coordinates with the rope and scale
-                consistently. Hand-tuned positions, terracotta-only. */}
+            {/* Decorative stickers — terracotta-only flavor, in empty regions */}
             {DECORATIONS.map((d) => (
               <motion.g
                 key={d.id}
@@ -326,9 +403,10 @@ export function CourseOutline({ outline }: Props) {
               </motion.g>
             ))}
 
-            {/* Numbered markers — small terracotta discs pinned to the path */}
+            {/* Numbered markers — terracotta discs pinned to the rope. Coordinates
+                are mathematically ON the path (getPointAtLength). */}
             {sortedStops.map((s) => {
-              const anchor = STOP_ANCHORS[s.stop];
+              const anchor = anchors[s.stop];
               if (!anchor) return null;
               const delay = stopDelay(s.stop, sortedStops.length);
               return (
@@ -345,9 +423,7 @@ export function CourseOutline({ outline }: Props) {
                         : { scale: 0, opacity: 0 }
                   }
                   transition={
-                    reduced
-                      ? { duration: 0.001 }
-                      : { ...SPRING.snappy, delay }
+                    reduced ? { duration: 0.001 } : { ...SPRING.snappy, delay }
                   }
                   style={{
                     transformOrigin: `${anchor.x}px ${anchor.y}px`,
@@ -379,14 +455,16 @@ export function CourseOutline({ outline }: Props) {
             })}
           </svg>
 
-          {/* Stop cards — absolutely positioned over the SVG. Coordinates are
-              percentage-based so layout scales with the responsive SVG. */}
+          {/* Stop cards — absolutely positioned over the SVG. cardDx/cardDy are in
+              viewBox units, then converted to percentages so cards scale with the
+              responsive aspect-ratio container. */}
           {sortedStops.map((s) => {
-            const anchor = STOP_ANCHORS[s.stop];
-            if (!anchor) return null;
+            const anchor = anchors[s.stop];
+            const offset = CARD_OFFSETS[s.stop];
+            if (!anchor || !offset) return null;
             const delay = stopDelay(s.stop, sortedStops.length);
-            const cardX = anchor.x + anchor.cardDx;
-            const cardY = anchor.y + anchor.cardDy;
+            const cardX = anchor.x + offset.cardDx;
+            const cardY = anchor.y + offset.cardDy;
             return (
               <div
                 key={`card-${s.id}`}
@@ -394,9 +472,7 @@ export function CourseOutline({ outline }: Props) {
                   position: "absolute",
                   left: `${(cardX / VB_W) * 100}%`,
                   top: `${(cardY / VB_H) * 100}%`,
-                  // The card is anchored at its top-left corner. Translation
-                  // from the path is already baked into cardDx/cardDy.
-                  width: "min(28%, 320px)",
+                  width: "min(24%, 280px)",
                 }}
               >
                 <CourseStop
@@ -405,7 +481,6 @@ export function CourseOutline({ outline }: Props) {
                   type={s.type}
                   description={s.description}
                   icon={s.icon}
-                  tilt={anchor.tilt}
                   delay={delay + 0.05}
                   reduced={reduced}
                 />
@@ -476,7 +551,6 @@ export function CourseOutline({ outline }: Props) {
                     fontSize: "var(--text-small)",
                     fontWeight: 500,
                     border: "3px solid var(--color-bg)",
-                    // Slight elevation above the vertical rule.
                     position: "relative",
                     zIndex: 1,
                   }}
@@ -537,7 +611,6 @@ function Decoration({
   const muted = "var(--color-text-muted)";
 
   if (kind === "dot-cluster") {
-    // Three dots arranged in a small triangle.
     return (
       <g transform={`translate(${x} ${y}) rotate(${rot})`}>
         <circle cx={-8} cy={4} r={3.5} fill={accent} />
@@ -547,7 +620,6 @@ function Decoration({
     );
   }
   if (kind === "stitch") {
-    // Three short hash-marks, perpendicular to the rope at this position.
     return (
       <g
         transform={`translate(${x} ${y}) rotate(${rot})`}
@@ -562,7 +634,6 @@ function Decoration({
     );
   }
   if (kind === "asterisk") {
-    // 6-pointed asterisk — like a small printed glyph.
     return (
       <g
         transform={`translate(${x} ${y}) rotate(${rot})`}
@@ -577,7 +648,6 @@ function Decoration({
     );
   }
   if (kind === "milestone") {
-    // A tiny diamond + ring — feels like a numbered checkpoint marker.
     return (
       <g transform={`translate(${x} ${y}) rotate(${rot})`}>
         <circle
@@ -589,10 +659,7 @@ function Decoration({
           strokeWidth={1}
           strokeDasharray="2 3"
         />
-        <path
-          d="M 0 -5 L 5 0 L 0 5 L -5 0 Z"
-          fill={accent}
-        />
+        <path d="M 0 -5 L 5 0 L 0 5 L -5 0 Z" fill={accent} />
       </g>
     );
   }
