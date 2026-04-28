@@ -27,6 +27,15 @@ export type PostMeta = {
 
 export const POSTS: PostMeta[] = [
   {
+    slug: "mcps-explained",
+    title: "MCPs Explained: What They Are and How They Work",
+    date: "2026-04-28",
+    hook:
+      "the handshake that opens every MCP session, the six primitives that ride it, two transports, one boundary — why every published attack is a host-side trust failure, not a protocol flaw.",
+    readingMinutes: 17,
+    tags: ["ai", "agents", "protocols"],
+  },
+  {
     slug: "how-javascript-reads-its-own-future",
     title: "JavaScript Hoisting, the TDZ, and the Call Stack Explained",
     date: "2026-04-25",
