@@ -55,10 +55,11 @@ const OPTIONS = [
   },
   // Treats MCP as a chat API.
   { id: "first-prompt", label: "The server's first system prompt for the model." },
-  // Treats MCP as agent runtime.
+  // Plausible-but-wrong: assumes a strict-auth-first protocol shape.
   {
-    id: "model-stream",
-    label: "An SSE stream of model tokens for the user's request.",
+    id: "auth-error",
+    label:
+      "An error response: the request is missing the protocol version's required field.",
   },
 ];
 
@@ -79,7 +80,7 @@ export function PredictTheHandshake({ codeSlot }: Props) {
           ? "1 message in · ? back"
           : answered.correct
             ? "got it"
-            : "most miss this"
+            : "worth re-reading"
       }
       caption={
         answered === null ? (

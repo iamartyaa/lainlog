@@ -148,12 +148,12 @@ export default function MCPsExplained() {
         <P>
           The story has a person at the centre. David Soria Parra joined
           Anthropic in mid-2024 after a stretch building developer tools at
-          Meta and Atlassian. He was, predictably, copy-pasting between Claude
-          Desktop and his IDE. He had also worked on LSP at his previous job,
-          and the structural symmetry hit him immediately. With Justin
-          Spahr-Summers, he prototyped a JSON-RPC-shaped protocol that put a
-          shared layer between any AI host and any tool. Roughly six weeks
-          later — November 25, 2024 — Anthropic announced{" "}
+          Meta and Atlassian. He was copy-pasting between Claude Desktop and
+          his IDE. He had also worked on LSP at his previous job, and the
+          parallel was obvious. With Justin Spahr-Summers, he prototyped a
+          JSON-RPC-shaped protocol that put a shared layer between any AI
+          host and any tool. Roughly six weeks later — November 25, 2024 —
+          Anthropic announced{" "}
           <A href="https://www.anthropic.com/news/model-context-protocol">
             the Model Context Protocol
           </A>{" "}
@@ -300,9 +300,8 @@ export default function MCPsExplained() {
           </HL>{" "}
           <Code>tools/list</Code>, <Code>tools/call</Code>,{" "}
           <Code>resources/read</Code>, <Code>sampling/createMessage</Code>,{" "}
-          <Code>elicitation/create</Code> — every later method is just a
-          JSON-RPC envelope shaped to the contract. The next two sections walk
-          those primitives one by one.
+          <Code>elicitation/create</Code> — every later method is the same
+          envelope, shaped to the contract.
         </P>
         <Aside>
           Version mismatch isn&apos;t fatal. If the client requests a version
@@ -452,13 +451,14 @@ export default function MCPsExplained() {
         <P>
           <strong>HITL #1 — before send.</strong> When the server&apos;s{" "}
           <Code>sampling/createMessage</Code> arrives, the client doesn&apos;t
-          forward it to the model immediately. It surfaces the request to the
-          user — the messages, the system prompt, the requested model
-          preferences — and lets the user approve, edit, or reject. The
-          edit case is non-trivial: the user can rewrite a server&apos;s
-          prompt before it hits their model. In practice most hosts make this
-          a one-click approve, but the option to edit is the protocol&apos;s
-          escape hatch against a malicious or buggy server.
+          forward it to the model immediately — it hands it up to the host.
+          The host surfaces the request to the user — the messages, the
+          system prompt, the requested model preferences — and lets the user
+          approve, edit, or reject. The edit case is non-trivial: the user
+          can rewrite a server&apos;s prompt before it hits their model. In
+          practice most hosts make this a one-click approve, but the option
+          to edit is the protocol&apos;s escape hatch against a malicious or
+          buggy server.
         </P>
         <P>
           <strong>HITL #2 — before return.</strong> The model produces a
@@ -490,8 +490,8 @@ export default function MCPsExplained() {
           because you asked nicely.
         </P>
         <P>
-          And there is one subtle thing about <Code>includeContext</Code>:
-          it&apos;s a request, not a guarantee. <Code>none</Code> means the
+          <Code>includeContext</Code> has its own subtlety: it&apos;s a
+          request, not a guarantee. <Code>none</Code> means the
           server&apos;s messages are the entire prompt — no user
           conversation history bleeds in. <Code>thisServer</Code> says the
           host may choose to attach context the user has already shared with
@@ -522,6 +522,7 @@ export default function MCPsExplained() {
           from the inference layer in a way nothing else has. Whether the
           ecosystem leans into it or not is a question for 2026 and beyond.
         </Aside>
+        <Dots />
         <H2 id="roots">Roots</H2>
         <P>
           <Term>Roots</Term> are the filesystem boundary the client tells the
@@ -542,6 +543,7 @@ export default function MCPsExplained() {
           server feature. We&apos;ll see what happens when a host fails to
           enforce roots in §7.
         </P>
+        <Dots />
         <H2 id="elicitation">Elicitation</H2>
         <P>
           <Term>Elicitation</Term> is the newest of the six primitives, added

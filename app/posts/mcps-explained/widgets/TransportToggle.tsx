@@ -59,7 +59,7 @@ const CAPTIONS: Record<Transport, React.ReactNode> = {
 
 const MEASUREMENT: Record<Transport, string> = {
   stdio: "subprocess · newline-delimited",
-  http: "one endpoint · sessioned",
+  http: "one endpoint · session-tracked",
 };
 
 /**

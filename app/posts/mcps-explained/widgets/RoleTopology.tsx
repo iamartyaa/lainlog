@@ -32,10 +32,10 @@ type Server = {
 };
 
 const SERVERS: Server[] = [
-  { id: "fs", name: "Filesystem", caps: "tools · resources · roots" },
-  { id: "github", name: "GitHub", caps: "tools · resources" },
-  { id: "notion", name: "Notion", caps: "tools · prompts · sampling" },
-  { id: "slack", name: "Slack", caps: "tools · prompts" },
+  { id: "fs", name: "Filesystem", caps: "file r/w" },
+  { id: "github", name: "GitHub", caps: "git ops" },
+  { id: "notion", name: "Notion", caps: "docs" },
+  { id: "slack", name: "Slack", caps: "messages" },
 ];
 
 const VERDICTS: Record<ServerId, React.ReactNode> = {
@@ -200,14 +200,11 @@ export function RoleTopology() {
             <em>“Summarise yesterday&apos;s commits to the auth repo.”</em>
           </div>
           <div
-            className="mt-[var(--spacing-2xs)] flex flex-wrap gap-[var(--spacing-2xs)] font-mono"
+            className="mt-[var(--spacing-2xs)] font-mono"
             style={{ fontSize: 11, color: "var(--color-text-muted)" }}
             aria-label="four MCP clients, one per server"
           >
-            <span>· client → fs</span>
-            <span>· client → github</span>
-            <span>· client → notion</span>
-            <span>· client → slack</span>
+            4 clients · fs · github · notion · slack
           </div>
         </motion.div>
 

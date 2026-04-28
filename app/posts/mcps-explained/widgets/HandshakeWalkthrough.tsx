@@ -86,7 +86,7 @@ type Step = {
 
 const STEPS: Step[] = [
   {
-    label: "idle",
+    label: "pipe open",
     clientActive: [],
     serverActive: [],
     clientChip: "ready",

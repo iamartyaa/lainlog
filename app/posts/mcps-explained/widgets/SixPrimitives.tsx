@@ -425,15 +425,14 @@ export function SixPrimitives() {
                 transition={SPRING.smooth}
                 className="font-sans flex items-center justify-center"
                 style={{
-                  minHeight: 280,
                   color: "var(--color-text-muted)",
                   fontSize: "var(--text-small)",
                   textAlign: "center",
+                  paddingBlock: "var(--spacing-sm)",
                 }}
               >
                 <span>
-                  Pick any of the six. The sampling chip is the longest read —
-                  it&apos;s where the protocol genuinely surprises you.
+                  Pick any chip. The sampling chip is the longest read.
                 </span>
               </motion.div>
             )}
