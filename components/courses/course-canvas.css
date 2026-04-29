@@ -37,24 +37,75 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Chapter-page prose: 1-px terracotta vertical guide on the left margin at
-   desktop. Within DESIGN.md §12 bounds (the ban is on > 1 px coloured
-   stripes; a 1-px guide is allowed and rhymes with existing prose primitives).
+   ITEM-7 polish-r2 — react.gg-style infinite-canvas gridline background.
+   Scoped to /courses/* via [data-course]. CSS-only (zero JS, zero DOM):
+   two repeating linear-gradients form a 40 × 40 px grid of 1-px lines on a
+   transparent background. The grid sits as a background-image on the data-
+   course root so all course content paints on top of it.
+
+   Light mode: gridlines at ~6 % terracotta-tinted ink, near-invisible until
+   you look for them. Dark mode: ~10 % so the grid stays perceptible against
+   the deeper bg. Anti-banding at high zoom: keep the line at exactly 1 px.
+
+   Uses --color-text mix (existing global token) — no second accent.
+   Static — gridlines never animate, so reduced-motion is irrelevant.
+--------------------------------------------------------------------------- */
+[data-course] {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in oklab, var(--color-text) 6%, transparent) 0,
+      color-mix(in oklab, var(--color-text) 6%, transparent) 1px,
+      transparent 1px,
+      transparent 40px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--color-text) 6%, transparent) 0,
+      color-mix(in oklab, var(--color-text) 6%, transparent) 1px,
+      transparent 1px,
+      transparent 40px
+    );
+  background-size: 40px 40px;
+  background-position: 0 0, 0 0;
+}
+
+[data-theme="dark"] [data-course] {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in oklab, var(--color-text) 10%, transparent) 0,
+      color-mix(in oklab, var(--color-text) 10%, transparent) 1px,
+      transparent 1px,
+      transparent 40px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--color-text) 10%, transparent) 0,
+      color-mix(in oklab, var(--color-text) 10%, transparent) 1px,
+      transparent 1px,
+      transparent 40px
+    );
+  background-size: 40px 40px;
+  background-position: 0 0, 0 0;
+}
+
+/* ---------------------------------------------------------------------------
+   ITEM-1 polish-r2 stray-line diagnosis (recorded 2026-04-30)
+   ------------------------------------------------------------
+   The previous build painted a 1-px terracotta vertical guide on the left
+   margin of the chapter prose column at desktop (≥64rem). With the chapter
+   body still being a single placeholder paragraph, that absolutely-positioned
+   pseudo-line read at 1440 px as an unanchored vertical streak floating in
+   the prose gutter — the user's "stray vertical line" report.
+
+   Fix: keep the relative-position scaffold (so future prose can opt back in
+   via a child element), but drop the ::before guide entirely until real
+   chapter content lands. When prose returns, re-introduce the guide bound to
+   the paragraph block so it can never extend past the content it's marking.
 --------------------------------------------------------------------------- */
 [data-course-chapter] .bs-course-prose {
   position: relative;
-}
-@media (min-width: 64rem) {
-  [data-course-chapter] .bs-course-prose::before {
-    content: "";
-    position: absolute;
-    left: calc(var(--spacing-lg) - 8px);
-    top: var(--spacing-md);
-    bottom: var(--spacing-md);
-    width: 1px;
-    background: color-mix(in oklab, var(--color-accent) 40%, transparent);
-    pointer-events: none;
-  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -92,5 +143,60 @@
   }
   .bs-chapter-nav-centre-desktop {
     display: flex;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   ITEM-5 polish-r2 — MotionAccordion (chapter outline replacement).
+   ------------------------------------------------------------
+   Vendored Unlumen motion-accordion, retoned for bytesize:
+   - Background uses --color-surface (light) / --clay-100 (under [data-course]
+     dark) instead of foreground/background swap. Items read as quiet cards
+     in the editorial palette, not high-contrast marketing tiles.
+   - Border-radius reduced to --radius-md (4px); rounded-[30px] read as a
+     consumer-app tile.
+   - Header padding y reduced from py-5 to ~14px so the row reads as a
+     chapter list, not a FAQ block.
+   - Focus ring on the button — keyboard a11y. 2-px terracotta outline +
+     2-px offset matches site-wide focus-visible style.
+--------------------------------------------------------------------------- */
+.bs-accordion-item {
+  background: var(--clay-100, var(--color-surface));
+  border: 1px solid var(--clay-200, var(--color-rule));
+  border-radius: var(--radius-md);
+  transition: border-color 200ms var(--ease-out), background 200ms var(--ease-out);
+}
+.bs-accordion-item-open {
+  border-color: color-mix(in oklab, var(--color-accent) 40%, transparent);
+  background: var(--clay-50, var(--color-bg));
+}
+.bs-accordion-header {
+  padding: 14px var(--spacing-md);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  width: 100%;
+  outline-offset: 2px;
+}
+.bs-accordion-header:focus-visible {
+  outline: 2px solid var(--color-accent);
+}
+.bs-accordion-panel {
+  padding: 0 var(--spacing-md) var(--spacing-md) var(--spacing-md);
+}
+@media (min-width: 30rem) {
+  .bs-accordion-header {
+    padding: 14px var(--spacing-lg);
+  }
+  .bs-accordion-panel {
+    padding: 0 var(--spacing-lg) var(--spacing-lg) calc(var(--spacing-lg) + 3ch + var(--spacing-md));
+  }
+}
+@media (max-width: 29.99rem) {
+  /* On mobile, panel content aligns under the title (no left-indent) so the
+     reading column doesn't get crushed against the right edge. */
+  .bs-accordion-panel {
+    padding-left: var(--spacing-md);
   }
 }

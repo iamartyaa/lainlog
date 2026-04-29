@@ -2,7 +2,7 @@
 
 import { motion, useReducedMotion } from "motion/react";
 import { CourseSpine } from "./CourseSpine";
-import { CourseChapterCard } from "./CourseChapterCard";
+import { MotionAccordion } from "./MotionAccordion";
 import { useCourseProgress } from "@/lib/hooks/use-course-progress";
 import type { CourseMeta } from "@/content/courses-manifest";
 import { totalReadingMinutes } from "@/content/courses-manifest";
@@ -20,7 +20,8 @@ import Link from "next/link";
  *   5. Course meta strip (chapters · minutes · last updated · level)
  *   6. Intro section (`#intro`) — pull-quote + paragraph + ornament
  *   7. <Dots /> ornament + `<H2>Chapters</H2>`
- *   8. Chapter outline — vertical sequence of <CourseChapterCard> rows
+ *   8. Chapter outline — <MotionAccordion> (polish-r2 ITEM 5 vendored from
+ *      Unlumen, replacing the prior <CourseChapterCard> vertical sequence)
  *   9. Footer "what you'll know after this course" callout
  *
  * Two /overdrive surfaces live in this component (Q12=a):
@@ -221,11 +222,21 @@ export function CourseLandingHero({ course }: { course: CourseMeta }) {
         ) : null}
       </p>
 
+      {/* ITEM-3 polish-r2 — Swiss-grid section divider before intro.
+          A single 1-px solid rule marks "metadata done, content begins". */}
+      <hr
+        aria-hidden
+        style={{
+          margin: "var(--spacing-2xl) 0 0 0",
+          border: 0,
+          borderTop: "1px solid var(--color-rule)",
+        }}
+      />
       {/* 6. Intro section — stronger phase break (2xl above), pull-quote
           sits as a distinct visual unit before the placeholder body. */}
       <section
         id="intro"
-        className="mt-[var(--spacing-2xl)]"
+        className="mt-[var(--spacing-xl)]"
         style={{ scrollMarginTop: "var(--spacing-xl)" }}
       >
         <blockquote
@@ -259,66 +270,50 @@ export function CourseLandingHero({ course }: { course: CourseMeta }) {
 
       <H2 id="chapters">Chapters</H2>
 
-      {/* 8. Chapter outline — vertical sequence of tactile rows. The
-          oversized number column at the left creates a strong vertical
-          ladder; rows breathe via per-row vertical padding rather than
-          inter-row gaps.
-
-          /overdrive surface #2: when the outline first enters the
-          viewport, rows cascade in via 60 ms stagger × 240 ms fade+rise
-          each. IntersectionObserver-driven (motion/react's whileInView).
-          Fires once. Reduced-motion: instant, no stagger. */}
-      <motion.ol
-        className="list-none p-0"
+      {/* 8. Chapter outline — replaced (polish-r2 ITEM 5) by the vendored
+          Unlumen MotionAccordion. Each accordion item is one chapter; the
+          expanded state reveals the chapter hook + reading minutes + a
+          "Start chapter →" link routing to /courses/<slug>/<chapterSlug>.
+          /overdrive cascade is preserved by wrapping the accordion in a
+          motion container that fades the whole block in on first scroll
+          (single-block reveal vs. per-row cascade — the accordion's own
+          stagger lives inside expand/collapse interactions). */}
+      <motion.div
         style={{ margin: "var(--spacing-md) 0 0 0" }}
-        aria-label="Course chapters"
-        initial={reduce ? "show" : "hidden"}
-        whileInView="show"
+        initial={reduce ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }}
+        whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.15, margin: "0px 0px -10% 0px" }}
-        variants={{
-          hidden: {},
-          show: {
-            transition: { staggerChildren: reduce ? 0 : 0.06, delayChildren: reduce ? 0 : 0.04 },
-          },
-        }}
+        transition={
+          reduce
+            ? { duration: 0 }
+            : { duration: 0.32, ease: EASE_OUT_QUINT }
+        }
       >
-        {course.chapters.map((c, i) => (
-          <motion.li
-            key={c.slug}
-            className="list-none"
-            variants={{
-              hidden: reduce ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 },
-              show: {
-                opacity: 1,
-                y: 0,
-                transition: { duration: reduce ? 0 : 0.24, ease: EASE_OUT_QUINT },
-              },
-            }}
-          >
-            <CourseChapterCard
-              courseSlug={course.slug}
-              chapter={c}
-              index={i}
-              visited={visited.has(c.slug)}
-              isHydrated={isHydrated}
-            />
-          </motion.li>
-        ))}
-        {/* bottom rule under the last card */}
-        <li
-          aria-hidden
-          style={{
-            listStyle: "none",
-            borderTop: "1px solid var(--color-rule)",
-            height: 0,
-          }}
+        <MotionAccordion
+          courseSlug={course.slug}
+          chapters={course.chapters}
+          visited={visited}
+          isHydrated={isHydrated}
         />
-      </motion.ol>
+      </motion.div>
 
+      {/* ITEM-3 polish-r2 — Swiss-grid section divider before footer callout.
+          A single 1-px solid rule in --color-rule marks the phase shift from
+          chapter outline → "what you'll know" payoff. Stronger contrast than
+          the dashed meta-strip rule above so it reads as a deliberate
+          compositional break, not a row separator. */}
+      <hr
+        aria-hidden
+        style={{
+          margin: "var(--spacing-2xl) 0 0 0",
+          border: 0,
+          borderTop: "1px solid var(--color-rule)",
+        }}
+      />
       {/* 9. Footer callout — generous space-above marks the bottom of the
           page; mono bullets read as quiet promise, not marketing. */}
       <section
-        className="mt-[var(--spacing-3xl)]"
+        className="mt-[var(--spacing-2xl)]"
         aria-label="What you'll know after this course"
       >
         <h3

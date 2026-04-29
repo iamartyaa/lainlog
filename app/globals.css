@@ -651,3 +651,113 @@ html[data-theme-transitioning] {
 .bs-range:focus-visible::-moz-range-thumb {
   transform: scale(1.15);
 }
+
+/* ---------------------------------------------------------------------------
+   ITEM-2 polish-r2 — nan.fyi-style drafting-paper frame on CozyFrame.
+   ------------------------------------------------------------
+   1-px ruled border around the centred container, with four short corner
+   ticks extending outside the frame to read as drafting-paper ruler marks.
+   Border + ticks both use --color-rule so they sit at the same hue/opacity
+   as PostList's dashed row separators — visual coherence with the existing
+   typography rhythm.
+
+   Coexists with the body's diagonal-hatch background (which paints OUTSIDE
+   this frame because the wrapper has its own --color-bg fill). The border
+   sits between the bg-fill and the hatch, framing the page as one unit.
+
+   Mobile-first: border is always-on; the corner ticks scale slightly
+   smaller below sm: so they don't overpower the narrow viewport.
+--------------------------------------------------------------------------- */
+.bs-cozy-frame {
+  border-left: 1px solid var(--color-rule);
+  border-right: 1px solid var(--color-rule);
+}
+.bs-cozy-frame::before,
+.bs-cozy-frame::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--color-rule);
+  pointer-events: none;
+}
+.bs-cozy-frame::before { top: 0; }
+.bs-cozy-frame::after  { bottom: 0; }
+
+/* Corner ticks — short 12-px marks at each corner, extending outside the
+   border by 1 px to read as ruler-tick registration marks. CSS-only via
+   four single-pixel boxes painted on a wrapper-positioned element. */
+.bs-cozy-frame > :first-child::before,
+.bs-cozy-frame > :first-child::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  /* Two 1-px lines forming an L at each corner, via box-shadow-free borders.
+     The single pseudo paints both arms via background-image gradients so we
+     don't need four separate elements. */
+}
+.bs-cozy-frame > :first-child::before {
+  top: -1px;
+  left: -1px;
+  border-top: 1px solid var(--color-text-muted);
+  border-left: 1px solid var(--color-text-muted);
+  opacity: 0.45;
+}
+.bs-cozy-frame > :first-child::after {
+  top: -1px;
+  right: -1px;
+  border-top: 1px solid var(--color-text-muted);
+  border-right: 1px solid var(--color-text-muted);
+  opacity: 0.45;
+}
+@media (min-width: 30rem) {
+  .bs-cozy-frame > :first-child::before,
+  .bs-cozy-frame > :first-child::after {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   ITEM-4 polish-r2 — z-index lift + premium elevation on home course card.
+   ------------------------------------------------------------
+   The home pinned <CourseCard> sits inline in the right-column post stream.
+   This wrapper lifts it visually so it reads as "course, not article" without
+   breaking PostList's row rhythm:
+
+   - `position: relative; z-index: 1` — paints above adjacent post rows.
+     No layout-shift cost (purely paint-order).
+   - Subtle paper-lift shadow via `filter: drop-shadow()` — transform-only,
+     keeps the dashed-rule + ::before/::after outlines composable with the
+     ITEM-2 cozy-frame border. drop-shadow respects the card's actual
+     silhouette (incl. the dashed top + bottom rules) where box-shadow
+     would only outline the bounding box.
+   - Mobile-first: shadow + tilt are gated to (hover: hover) + (min-width:
+     30rem) so touch users don't see a shadow that has no hover state to
+     invite. The z-index lift itself is always-on (it's the rhythm cue,
+     not the hover affordance).
+--------------------------------------------------------------------------- */
+.bs-course-card-lift {
+  position: relative;
+  z-index: 1;
+}
+@media (hover: hover) and (min-width: 30rem) {
+  .bs-course-card-lift {
+    filter: drop-shadow(0 1px 0 color-mix(in oklab, var(--color-text) 4%, transparent))
+            drop-shadow(0 2px 8px color-mix(in oklab, var(--color-text) 6%, transparent));
+    transition: filter 240ms var(--ease-out);
+  }
+  .bs-course-card-lift:hover {
+    filter: drop-shadow(0 1px 0 color-mix(in oklab, var(--color-text) 6%, transparent))
+            drop-shadow(0 4px 16px color-mix(in oklab, var(--color-accent) 10%, transparent));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bs-course-card-lift,
+  .bs-course-card-lift:hover {
+    transition: none !important;
+  }
+}

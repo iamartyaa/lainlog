@@ -25,6 +25,12 @@ export function CourseSpine() {
     { y: 48, w: 180 },
   ];
 
+  // ITEM-1 polish-r2: dropped `preserveAspectRatio="none"` + `overflow: visible`.
+  // The previous version stretched the 320-wide viewBox to 100% of the title
+  // column without preserving aspect — at 1440 px the dashes elongated to read
+  // as full-page stray horizontal lines beneath the title. Now: width capped
+  // at min(420px, 60%) so the spine sits as a discrete motif behind the H1's
+  // last line, not as a page-wide rule.
   return (
     <svg
       viewBox="0 0 320 60"
@@ -32,8 +38,10 @@ export function CourseSpine() {
       height="60"
       aria-hidden
       focusable={false}
-      style={{ display: "block", overflow: "visible" }}
-      preserveAspectRatio="none"
+      style={{
+        display: "block",
+        maxWidth: "min(420px, 60%)",
+      }}
     >
       {dashes.map((d, i) => (
         <motion.line

@@ -1,6 +1,7 @@
 import { PostList } from "@/components/nav/PostList";
 import { AboutColumn } from "@/components/nav/AboutColumn";
 import { CourseCard } from "@/components/nav/CourseCard";
+import { TiltedCourseCardWrapper } from "@/components/courses/TiltedCourseCardWrapper";
 import { POSTS_NEWEST_FIRST } from "@/content/posts-manifest";
 import { PINNED_COURSE } from "@/content/courses-manifest";
 import { getUniqueReaderCount } from "@/lib/stats";
@@ -19,7 +20,11 @@ export default async function Home() {
       <div className="grid gap-[var(--spacing-xl)] lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-[var(--spacing-3xl)]">
         <AboutColumn readerCount={readerCount} />
         <div>
-          {PINNED_COURSE ? <CourseCard course={PINNED_COURSE} /> : null}
+          {PINNED_COURSE ? (
+            <TiltedCourseCardWrapper>
+              <CourseCard course={PINNED_COURSE} />
+            </TiltedCourseCardWrapper>
+          ) : null}
           <PostList posts={POSTS_NEWEST_FIRST} />
         </div>
       </div>
