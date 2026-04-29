@@ -1,13 +1,16 @@
 import { PostList } from "@/components/nav/PostList";
 import { AboutColumn } from "@/components/nav/AboutColumn";
+import { CourseCard } from "@/components/nav/CourseCard";
 import { POSTS_NEWEST_FIRST } from "@/content/posts-manifest";
+import { PINNED_COURSE } from "@/content/courses-manifest";
 import { getUniqueReaderCount } from "@/lib/stats";
 
 /**
  * Home page — single column below lg:, two-column from lg: up.
  * At md: (768) the sidebar would starve the PostList body cell to ~400px,
  * so the grid stays single-column until there's real room at 1024.
- * Left: AboutColumn (~320px, sticky). Right: PostList (flex fill).
+ * Left: AboutColumn (~320px, sticky). Right: pinned <CourseCard /> (if a
+ * course is pinned) above <PostList />.
  */
 export default async function Home() {
   const readerCount = await getUniqueReaderCount();
@@ -16,6 +19,7 @@ export default async function Home() {
       <div className="grid gap-[var(--spacing-xl)] lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-[var(--spacing-3xl)]">
         <AboutColumn readerCount={readerCount} />
         <div>
+          {PINNED_COURSE ? <CourseCard course={PINNED_COURSE} /> : null}
           <PostList posts={POSTS_NEWEST_FIRST} />
         </div>
       </div>
