@@ -54,7 +54,10 @@ export function CourseChapterCard({
           // from display:none children at mobile.
           columnGap: "var(--spacing-md)",
           padding: "var(--spacing-lg) var(--spacing-sm)",
-          borderTop: "1px solid var(--color-rule)",
+          // polish-r4: borderTop divider removed (user directive — no
+          // horizontal dividers on /courses/*). NB: this component is no
+          // longer mounted (replaced by MotionAccordion in CourseLandingHero)
+          // — kept in the tree as reference scaffolding.
         }}
         whileHover={reduce ? undefined : { y: -1 }}
         whileTap={reduce ? undefined : { scale: 0.995 }}

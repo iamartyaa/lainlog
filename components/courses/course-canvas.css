@@ -160,33 +160,23 @@
    - Focus ring on the button — keyboard a11y. 2-px terracotta outline +
      2-px offset matches site-wide focus-visible style.
 
-   polish-r3 ITEM 3 — vertical-separator scrap.
-   The previous full-perimeter `border: 1px solid` painted left/right
-   sides on every accordion item, stacking parallel to the react.gg
-   gridline background's vertical lines and reading as overlapping
-   verticals at 1440 px. Switched to dashed top + bottom rules only
-   (PostList-style rhythm) so the chapter outline reads as a list of
-   horizontal bands sharing the gridline canvas, not as a column of
-   bordered tiles competing with it. The open-state colour shift is
-   preserved on the top/bottom rules; the surface tint still distinguishes
-   open from closed without needing perimeter weight.
+   polish-r4 — divider scrap (user directive: no horizontal dividers on
+   /courses/*). The previous dashed top + bottom rules acted as section
+   dividers between accordion items, reading as a stack of horizontal
+   bars stitched together. Removed entirely. The chapter outline now
+   relies on the surface tint (--clay-100 closed / --clay-50 open) +
+   item-internal padding + the rounded corners to delineate items. The
+   gridline canvas underneath provides ambient structure without
+   painting any rule lines. The open-state accent is now carried by a
+   subtle background shift only (no border-color change, since there
+   is no border to colour).
 --------------------------------------------------------------------------- */
 .bs-accordion-item {
   background: var(--clay-100, var(--color-surface));
-  /* polish-r3 ITEM 3: dashed top + bottom only (no left/right). The
-     adjacent items share the dashed-rule rhythm; the bottom rule of one
-     and the top rule of the next collapse into a single visible 1-px
-     dashed line via the `gap`-based stack (CSS gap doesn't paint, so
-     the rules sit flush against each other across the gap and read as
-     one continuous separator). */
-  border-top: 1px dashed var(--clay-200, var(--color-rule));
-  border-bottom: 1px dashed var(--clay-200, var(--color-rule));
   border-radius: var(--radius-md);
-  transition: border-color 200ms var(--ease-out), background 200ms var(--ease-out);
+  transition: background 200ms var(--ease-out);
 }
 .bs-accordion-item-open {
-  border-top-color: color-mix(in oklab, var(--color-accent) 40%, transparent);
-  border-bottom-color: color-mix(in oklab, var(--color-accent) 40%, transparent);
   background: var(--clay-50, var(--color-bg));
 }
 .bs-accordion-header {

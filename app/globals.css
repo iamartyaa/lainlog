@@ -785,3 +785,18 @@ html[data-theme-transitioning] {
     transition: none !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   polish-r4 ITEM 1 — BorderGlow dark-mode tonal override.
+   ------------------------------------------------------------
+   The home pinned card's BorderGlow `glowColor` is set inline at the call
+   site to "14 60 45" — the HSL approximation of light-mode --color-accent
+   (oklch(0.52 0.145 28)). In dark mode the canonical accent shifts to
+   --color-terra-60 (oklch(0.65 0.135 28) ≈ hsl(14 55 60)). This rule
+   overrides --bg-glow-hsl for any BorderGlow inside the dark theme so the
+   radial cursor-light + the conic ring stay tonal terracotta against the
+   darker surface, never going muddy. Single accent rule preserved.
+--------------------------------------------------------------------------- */
+[data-theme="dark"] .border-glow-card {
+  --bg-glow-hsl: 14 55 60;
+}

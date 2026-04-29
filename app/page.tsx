@@ -1,7 +1,7 @@
 import { PostList } from "@/components/nav/PostList";
 import { AboutColumn } from "@/components/nav/AboutColumn";
 import { CourseCard } from "@/components/nav/CourseCard";
-import { TiltedCourseCardWrapper } from "@/components/courses/TiltedCourseCardWrapper";
+import { BorderGlow } from "@/components/courses/BorderGlow";
 import { POSTS_NEWEST_FIRST } from "@/content/posts-manifest";
 import { PINNED_COURSE } from "@/content/courses-manifest";
 import { getUniqueReaderCount } from "@/lib/stats";
@@ -56,9 +56,46 @@ export default async function Home() {
         />
         <div>
           {PINNED_COURSE ? (
-            <TiltedCourseCardWrapper>
+            // polish-r4 ITEM 1 — replaces TiltedCard with React Bits
+            // BorderGlow, retoned to bytesize terracotta/clay tokens.
+            //   • colors  — three terracotta/clay stops (NO purple/pink/blue)
+            //   • glowColor — HSL approximation of --color-accent (terra-40
+            //     light / terra-60 dark) read via --bg-glow-hsl, set per
+            //     theme inline (light) + via [data-theme="dark"] override
+            //     in app/globals.css.
+            //   • backgroundColor — clay-50 (light) / clay-100 (dark) so the
+            //     card surface stays consistent with the rest of the page;
+            //     react.gg gridline canvas reads through the rest of the bg.
+            //   • Editorial-calm tuning: edgeSensitivity=20, glowRadius=28,
+            //     glowIntensity=0.6, coneSpread=20, borderRadius=12 (matches
+            //     --radius-md), animated=false (no intro sweep).
+            //   • The wrapper carries data-course (so --clay-* + --bg-glow-hsl
+            //     resolve) and data-on-tilted-card (legacy attr CourseCard
+            //     reads to suppress its own dashed top + bottom rules — kept
+            //     because BorderGlow paints its own perimeter).
+            <BorderGlow
+              data-course="true"
+              data-on-tilted-card="true"
+              colors={[
+                "var(--color-accent)",
+                "var(--clay-200, var(--color-rule))",
+                "var(--clay-100, var(--color-surface))",
+              ]}
+              // Light-mode terracotta HSL (oklch(0.52 0.145 28) ≈ hsl(14 60 45)).
+              // Dark-mode override lives in app/globals.css via [data-theme="dark"]
+              // .border-glow-card { --bg-glow-hsl: 14 55 60 } so the same
+              // component instance picks up the correct hue per theme.
+              glowColor="14 60 45"
+              backgroundColor="var(--clay-50, var(--color-surface))"
+              edgeSensitivity={20}
+              glowRadius={28}
+              glowIntensity={0.6}
+              coneSpread={20}
+              borderRadius={12}
+              animated={false}
+            >
               <CourseCard course={PINNED_COURSE} />
-            </TiltedCourseCardWrapper>
+            </BorderGlow>
           ) : null}
           <PostList posts={POSTS_NEWEST_FIRST} />
         </div>

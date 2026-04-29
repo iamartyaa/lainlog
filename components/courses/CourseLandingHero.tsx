@@ -195,17 +195,19 @@ export function CourseLandingHero({ course }: { course: CourseMeta }) {
         <SecondaryAction href="#intro">Read intro</SecondaryAction>
       </motion.div>
 
-      {/* 5. Meta strip — separated by a dashed rule, sits as a quiet
-          metadata band before the content phase begins. */}
+      {/* 5. Meta strip — sits as a quiet metadata band before the content
+          phase begins. polish-r4: dashed `borderTop` divider removed (user
+          directive: scrap all horizontal dividers on /courses/*). The phase
+          break is now carried by --spacing-2xl whitespace + the type
+          hierarchy shift (mono small caps vs. serif body) — the gridline
+          canvas reads through the gap and provides ambient structure. */}
       <p
-        className="mt-[var(--spacing-xl)] font-mono"
+        className="font-mono"
         style={{
           fontSize: "var(--text-small)",
           letterSpacing: "0.06em",
           color: "var(--color-text-muted)",
-          margin: "var(--spacing-xl) 0 0 0",
-          paddingTop: "var(--spacing-md)",
-          borderTop: "1px dashed var(--color-rule)",
+          margin: "var(--spacing-2xl) 0 0 0",
         }}
       >
         {course.chapters.length} chapters
@@ -222,21 +224,15 @@ export function CourseLandingHero({ course }: { course: CourseMeta }) {
         ) : null}
       </p>
 
-      {/* ITEM-3 polish-r2 — Swiss-grid section divider before intro.
-          A single 1-px solid rule marks "metadata done, content begins". */}
-      <hr
-        aria-hidden
-        style={{
-          margin: "var(--spacing-2xl) 0 0 0",
-          border: 0,
-          borderTop: "1px solid var(--color-rule)",
-        }}
-      />
-      {/* 6. Intro section — stronger phase break (2xl above), pull-quote
-          sits as a distinct visual unit before the placeholder body. */}
+      {/* polish-r4: <hr> Swiss-grid section divider removed (user directive
+          — no horizontal dividers on /courses/*). The phase break from
+          metadata → intro is now whitespace-only: --spacing-3xl above the
+          intro section, with the gridline canvas providing ambient
+          structure underneath. */}
+      {/* 6. Intro section — phase break carried by --spacing-3xl above. */}
       <section
         id="intro"
-        className="mt-[var(--spacing-xl)]"
+        className="mt-[var(--spacing-3xl)]"
         style={{ scrollMarginTop: "var(--spacing-xl)" }}
       >
         {/* polish-r3 ITEM 3 — dropped the terracotta `borderLeft` accent
@@ -316,23 +312,15 @@ export function CourseLandingHero({ course }: { course: CourseMeta }) {
         />
       </motion.div>
 
-      {/* ITEM-3 polish-r2 — Swiss-grid section divider before footer callout.
-          A single 1-px solid rule in --color-rule marks the phase shift from
-          chapter outline → "what you'll know" payoff. Stronger contrast than
-          the dashed meta-strip rule above so it reads as a deliberate
-          compositional break, not a row separator. */}
-      <hr
-        aria-hidden
-        style={{
-          margin: "var(--spacing-2xl) 0 0 0",
-          border: 0,
-          borderTop: "1px solid var(--color-rule)",
-        }}
-      />
+      {/* polish-r4: <hr> Swiss-grid divider above the footer callout removed
+          (user directive — no horizontal dividers on /courses/*). The phase
+          break from chapter outline → "what you'll know" payoff is now
+          carried by --spacing-3xl whitespace below + the H3 type weight
+          change. */}
       {/* 9. Footer callout — generous space-above marks the bottom of the
           page; mono bullets read as quiet promise, not marketing. */}
       <section
-        className="mt-[var(--spacing-2xl)]"
+        className="mt-[var(--spacing-3xl)]"
         aria-label="What you'll know after this course"
       >
         <h3
