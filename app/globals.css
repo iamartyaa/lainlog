@@ -743,16 +743,40 @@ html[data-theme-transitioning] {
 .bs-course-card-lift {
   position: relative;
   z-index: 1;
+  /* polish-r3 ITEM 2 — tonal terracotta shade + minimalist border + at-rest
+     elevation. Resolves --clay-* via the data-course scope on the wrapper.
+     - Background: --clay-50 light / --clay-100 dark, both fall back to
+       --color-surface so the card never goes invisible without scope.
+     - Border: --clay-200 with --radius-md corners — "cute minimalist".
+     - At-rest box-shadow: 1+3 px stack at low opacity for a soft float
+       above the post rows. Static (no animation), so reduced-motion users
+       still see the elevation cue.
+     - The internal padding compensates for the visual weight of the new
+       border so the card content doesn't crowd the new perimeter. */
+  background: var(--clay-50, var(--color-surface));
+  border: 1px solid var(--clay-200, var(--color-rule));
+  border-radius: var(--radius-md);
+  box-shadow:
+    0 1px 0 color-mix(in oklab, var(--color-text) 3%, transparent),
+    0 4px 12px color-mix(in oklab, var(--color-text) 5%, transparent);
+}
+/* Suppress the CourseCard's own dashed top + bottom rules when nested
+   inside the tilted-card wrapper. The wrapper's full minimalist border
+   takes over the bracketing job; the dashed rules INSIDE the new border
+   would read as a doubled seam. */
+[data-on-tilted-card] .bs-course-card {
+  border-top: 0 !important;
+  border-bottom: 0 !important;
 }
 @media (hover: hover) and (min-width: 30rem) {
   .bs-course-card-lift {
-    filter: drop-shadow(0 1px 0 color-mix(in oklab, var(--color-text) 4%, transparent))
-            drop-shadow(0 2px 8px color-mix(in oklab, var(--color-text) 6%, transparent));
-    transition: filter 240ms var(--ease-out);
+    transition: box-shadow 240ms var(--ease-out), border-color 240ms var(--ease-out);
   }
   .bs-course-card-lift:hover {
-    filter: drop-shadow(0 1px 0 color-mix(in oklab, var(--color-text) 6%, transparent))
-            drop-shadow(0 4px 16px color-mix(in oklab, var(--color-accent) 10%, transparent));
+    border-color: color-mix(in oklab, var(--color-accent) 30%, var(--clay-200, var(--color-rule)));
+    box-shadow:
+      0 1px 0 color-mix(in oklab, var(--color-text) 5%, transparent),
+      0 8px 24px color-mix(in oklab, var(--color-accent) 10%, transparent);
   }
 }
 @media (prefers-reduced-motion: reduce) {

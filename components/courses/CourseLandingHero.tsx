@@ -239,18 +239,37 @@ export function CourseLandingHero({ course }: { course: CourseMeta }) {
         className="mt-[var(--spacing-xl)]"
         style={{ scrollMarginTop: "var(--spacing-xl)" }}
       >
+        {/* polish-r3 ITEM 3 — dropped the terracotta `borderLeft` accent
+            on this pull-quote. The /courses/* react.gg gridline background
+            already provides vertical structure on the left margin; layering
+            a hard 1-px terracotta vertical on top of a faint gridline read
+            as a duplicated guide. The pull-quote retains its identity via
+            italic serif + muted colour + a quiet leading dash glyph that
+            occupies the same visual slot as the old border without painting
+            a continuous vertical line. */}
         <blockquote
           className="font-serif italic"
           style={{
             margin: 0,
             paddingLeft: "var(--spacing-md)",
-            borderLeft:
-              "1px solid color-mix(in oklab, var(--color-accent) 40%, transparent)",
             color: "var(--color-text-muted)",
             fontSize: "var(--text-medium, 1.0625rem)",
             lineHeight: 1.55,
+            position: "relative",
           }}
         >
+          <span
+            aria-hidden
+            style={{
+              position: "absolute",
+              left: 0,
+              top: "0.55em",
+              width: "0.5em",
+              height: "1px",
+              background:
+                "color-mix(in oklab, var(--color-accent) 60%, transparent)",
+            }}
+          />
           {course.hook}
         </blockquote>
         <div className="mt-[var(--spacing-md)]">
