@@ -23,6 +23,7 @@ import ToolsResourcesPromptsContent from "./tools-resources-prompts/Content";
 import BuildAServerContent from "./build-a-server/Content";
 import BuildAClientPickATransportContent from "./build-a-client-pick-a-transport/Content";
 import WhenTheServerAsksBackContent from "./when-the-server-asks-back/Content";
+import HowMcpGetsAttackedContent from "./how-mcp-gets-attacked/Content";
 
 export const MCPS_CONTENT: Record<string, ComponentType> = {
   "the-room-before-the-protocol": TheRoomBeforeProtocolContent,
@@ -33,4 +34,5 @@ export const MCPS_CONTENT: Record<string, ComponentType> = {
   "build-a-server": BuildAServerContent,
   "build-a-client-pick-a-transport": BuildAClientPickATransportContent,
   "when-the-server-asks-back": WhenTheServerAsksBackContent,
+  "how-mcp-gets-attacked": HowMcpGetsAttackedContent,
 };
