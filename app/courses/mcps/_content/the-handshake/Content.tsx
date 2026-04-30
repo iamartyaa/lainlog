@@ -357,7 +357,7 @@ export function Content() {
         What <em>are</em> these primitives the two sides keep promising
         each other — and how does the host pick which to invoke?{" "}
         <Link
-          href="/courses/mcps/the-server-primitives"
+          href="/courses/mcps/tools-resources-prompts"
           className="font-sans"
           style={{ color: "var(--color-accent)" }}
         >
