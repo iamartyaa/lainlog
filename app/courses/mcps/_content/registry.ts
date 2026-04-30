@@ -19,10 +19,12 @@ import HostClientServerContent from "./host-client-server/Content";
 import TheRoomBeforeProtocolContent from "./the-room-before-the-protocol/Content";
 import JsonRpcTheWireContent from "./json-rpc-the-wire/Content";
 import TheHandshakeContent from "./the-handshake/Content";
+import ToolsResourcesPromptsContent from "./tools-resources-prompts/Content";
 
 export const MCPS_CONTENT: Record<string, ComponentType> = {
   "the-room-before-the-protocol": TheRoomBeforeProtocolContent,
   "host-client-server": HostClientServerContent,
   "json-rpc-the-wire": JsonRpcTheWireContent,
   "the-handshake": TheHandshakeContent,
+  "tools-resources-prompts": ToolsResourcesPromptsContent,
 };

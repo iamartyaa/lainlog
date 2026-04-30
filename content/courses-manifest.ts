@@ -75,10 +75,10 @@ export const COURSES: CourseMeta[] = [
         readingMinutes: 11,
       },
       {
-        slug: "the-server-primitives",
-        title: "Tools, resources, prompts",
+        slug: "tools-resources-prompts",
+        title: "Tools, resources, prompts: the server's three voices",
         hook: "three primitives, three controllers — model, application, user.",
-        readingMinutes: 14,
+        readingMinutes: 12,
       },
       {
         slug: "build-a-server",
