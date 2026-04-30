@@ -17,8 +17,10 @@
 import type { ComponentType } from "react";
 import HostClientServerContent from "./host-client-server/Content";
 import JsonRpcTheWireContent from "./json-rpc-the-wire/Content";
+import TheHandshakeContent from "./the-handshake/Content";
 
 export const MCPS_CONTENT: Record<string, ComponentType> = {
   "host-client-server": HostClientServerContent,
   "json-rpc-the-wire": JsonRpcTheWireContent,
+  "the-handshake": TheHandshakeContent,
 };
