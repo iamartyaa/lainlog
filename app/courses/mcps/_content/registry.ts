@@ -19,22 +19,18 @@ import HostClientServerContent from "./host-client-server/Content";
 import TheRoomBeforeProtocolContent from "./the-room-before-the-protocol/Content";
 import JsonRpcTheWireContent from "./json-rpc-the-wire/Content";
 import TheHandshakeContent from "./the-handshake/Content";
-<<<<<<< HEAD
 import ToolsResourcesPromptsContent from "./tools-resources-prompts/Content";
 import BuildAServerContent from "./build-a-server/Content";
-=======
 import BuildAClientPickATransportContent from "./build-a-client-pick-a-transport/Content";
->>>>>>> 17f3e5e (feat(courses/mcps): chapter 7 — Build a client, and pick a transport)
+import WhenTheServerAsksBackContent from "./when-the-server-asks-back/Content";
 
 export const MCPS_CONTENT: Record<string, ComponentType> = {
   "the-room-before-the-protocol": TheRoomBeforeProtocolContent,
   "host-client-server": HostClientServerContent,
   "json-rpc-the-wire": JsonRpcTheWireContent,
   "the-handshake": TheHandshakeContent,
-<<<<<<< HEAD
   "tools-resources-prompts": ToolsResourcesPromptsContent,
   "build-a-server": BuildAServerContent,
-=======
   "build-a-client-pick-a-transport": BuildAClientPickATransportContent,
->>>>>>> 17f3e5e (feat(courses/mcps): chapter 7 — Build a client, and pick a transport)
+  "when-the-server-asks-back": WhenTheServerAsksBackContent,
 };
