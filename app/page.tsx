@@ -56,46 +56,52 @@ export default async function Home() {
         />
         <div>
           {PINNED_COURSE ? (
-            // polish-r4 ITEM 1 — replaces TiltedCard with React Bits
-            // BorderGlow, retoned to bytesize terracotta/clay tokens.
-            //   • colors  — three terracotta/clay stops (NO purple/pink/blue)
-            //   • glowColor — HSL approximation of --color-accent (terra-40
-            //     light / terra-60 dark) read via --bg-glow-hsl, set per
-            //     theme inline (light) + via [data-theme="dark"] override
-            //     in app/globals.css.
-            //   • backgroundColor — clay-50 (light) / clay-100 (dark) so the
-            //     card surface stays consistent with the rest of the page;
-            //     react.gg gridline canvas reads through the rest of the bg.
-            //   • Editorial-calm tuning: edgeSensitivity=20, glowRadius=28,
-            //     glowIntensity=0.6, coneSpread=20, borderRadius=12 (matches
-            //     --radius-md), animated=false (no intro sweep).
-            //   • The wrapper carries data-course (so --clay-* + --bg-glow-hsl
-            //     resolve) and data-on-tilted-card (legacy attr CourseCard
-            //     reads to suppress its own dashed top + bottom rules — kept
-            //     because BorderGlow paints its own perimeter).
-            <BorderGlow
-              data-course="true"
-              data-on-tilted-card="true"
-              colors={[
-                "var(--color-accent)",
-                "var(--clay-200, var(--color-rule))",
-                "var(--clay-100, var(--color-surface))",
-              ]}
-              // Light-mode terracotta HSL (oklch(0.52 0.145 28) ≈ hsl(14 60 45)).
-              // Dark-mode override lives in app/globals.css via [data-theme="dark"]
-              // .border-glow-card { --bg-glow-hsl: 14 55 60 } so the same
-              // component instance picks up the correct hue per theme.
-              glowColor="14 60 45"
-              backgroundColor="var(--clay-50, var(--color-surface))"
-              edgeSensitivity={20}
-              glowRadius={28}
-              glowIntensity={0.6}
-              coneSpread={20}
-              borderRadius={12}
-              animated={false}
-            >
-              <CourseCard course={PINNED_COURSE} />
-            </BorderGlow>
+            // polish-r5 ITEM 1 + ITEM 2 — neo-brutalism wrapper around
+            // re-vendored BorderGlow.
+            //
+            // Composition (outer → inner):
+            //   .bs-course-card-brutalist  ← heavy border + 8px offset
+            //     shadow + "COURSE" label glyph; owns hover "press"
+            //     micro-interaction. Mobile shrinks shadow to 4px for
+            //     frame-stability.
+            //   <BorderGlow ...>           ← React Bits pointer-tracked
+            //     conic ring + mesh radial, retoned to terracotta tokens.
+            //   <CourseCard />              ← actual link markup; dashed
+            //     top/bottom rules suppressed via [data-on-tilted-card].
+            //
+            // Both data-course (clay-token scope) and data-on-tilted-card
+            // (CourseCard rule-suppression) flow through to BorderGlow.
+            // /layout phase — vertical rhythm. The brutalist wrapper's
+            // ::before COURSE label protrudes 10 px above the card; we
+            // give it `mt-3` so the protrusion doesn't clip against the
+            // grid row above. The `mb-[var(--spacing-xl)]` reserves
+            // breathing room below so the 8 px offset shadow can breathe
+            // without colliding with the post-list's first dashed rule.
+            <div className="bs-course-card-brutalist mt-3 mb-[var(--spacing-xl)]">
+              <BorderGlow
+                data-course="true"
+                data-on-tilted-card="true"
+                colors={[
+                  "var(--color-accent)",
+                  "var(--clay-200, var(--color-rule))",
+                  "var(--clay-100, var(--color-surface))",
+                ]}
+                // Light-mode terracotta HSL (oklch(0.52 0.145 28) ≈
+                // hsl(14 60 45)). Dark-mode override in globals.css.
+                glowColor="14 60 45"
+                backgroundColor="var(--clay-50, var(--color-surface))"
+                edgeSensitivity={24}
+                glowRadius={32}
+                glowIntensity={0.7}
+                coneSpread={22}
+                // Match the brutalist wrapper's 4 px corner so the
+                // pointer-tracked ring traces the same perimeter.
+                borderRadius={4}
+                animated={false}
+              >
+                <CourseCard course={PINNED_COURSE} />
+              </BorderGlow>
+            </div>
           ) : null}
           <PostList posts={POSTS_NEWEST_FIRST} />
         </div>

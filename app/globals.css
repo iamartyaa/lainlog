@@ -800,3 +800,127 @@ html[data-theme-transitioning] {
 [data-theme="dark"] .border-glow-card {
   --bg-glow-hsl: 14 55 60;
 }
+
+/* ---------------------------------------------------------------------------
+   polish-r5 ITEM 2 — neo-brutalism wrapper for the home pinned course card.
+   ------------------------------------------------------------
+   The user's intent: the home pinned course card should STAND OUT from the
+   post rows beneath it. The polish-r4 BorderGlow + at-rest .bs-course-card-
+   lift combo reads as "premium" but the card still sits in the same visual
+   register as the surrounding editorial rhythm. Neo-brutalism — heavy
+   border, hard offset shadow with NO blur — gives the card a deliberate
+   block-like presence that separates it from the dashed-rule post rows.
+
+   Composition order (outer → inner):
+     1. .bs-course-card-brutalist  ← THIS rule. Heavy border + hard offset
+        shadow. Hosts the "press" interaction (shadow shrinks on hover/
+        active). Owns the wow cue.
+     2. .border-glow-card          ← BorderGlow root. Pointer-tracked conic
+        ring + mesh radial. Inherits sharper border-radius from the
+        brutalist wrapper via `border-radius: inherit` at the inner.
+     3. .bs-course-card            ← The actual <Link> markup. Dashed top/
+        bottom rules already suppressed via [data-on-tilted-card].
+
+   Scope: ONLY this wrapper class — applied at the home pinned card call
+   site in app/page.tsx. Do NOT propagate to chapter pages, course
+   landing, or anywhere else.
+
+   Reduced-motion: shadow stays at rest (no transitions). Mobile (<30rem):
+   shadow offset shrinks from 8 → 4 px to preserve frame stability — an
+   8 px shadow at 375 px width would push content awkwardly outside the
+   visible column.
+
+   Dark-mode: the shadow inverts to --color-text on dark backgrounds (it
+   reads as a near-white block-shadow). The border colour matches the
+   shadow. This keeps the brutalist cue strong in both themes.
+--------------------------------------------------------------------------- */
+.bs-course-card-brutalist {
+  /* Sharp corners. We keep a small radius (4 px) rather than 0 so the
+     BorderGlow's masked conic ring still has a defined inside corner to
+     trace. 0 px would clip the ring crisp at corners; 4 px lets the
+     pointer-tracked light wrap them gracefully. */
+  border-radius: 4px;
+  border: 2px solid var(--color-text);
+  background: var(--clay-50, var(--color-surface));
+  box-shadow: 8px 8px 0 0 var(--color-text);
+  transition:
+    box-shadow 180ms var(--ease-out),
+    transform 180ms var(--ease-out);
+}
+/* Make the inner BorderGlow inherit the brutalist corner radius so the
+   conic ring traces the same perimeter (no doubled corner). */
+.bs-course-card-brutalist > .border-glow-card {
+  border-radius: inherit;
+  box-shadow: none; /* the brutalist wrapper owns the elevation cue */
+}
+.bs-course-card-brutalist > .bs-course-card-lift {
+  /* Same treatment for the reduced-motion fallback path. */
+  border-radius: inherit;
+  border: 0;
+  box-shadow: none;
+}
+
+/* Hover: shadow shrinks toward the card — "press" feel. */
+@media (hover: hover) and (min-width: 30rem) {
+  .bs-course-card-brutalist:hover {
+    box-shadow: 4px 4px 0 0 var(--color-text);
+    transform: translate(2px, 2px);
+  }
+  .bs-course-card-brutalist:active {
+    box-shadow: 0 0 0 0 var(--color-text);
+    transform: translate(8px, 8px);
+  }
+}
+
+/* Mobile: offset shrinks so the shadow doesn't push the card out of the
+   viewport gutter. Frame-stability rule (DESIGN.md). */
+@media (max-width: 29.99rem) {
+  .bs-course-card-brutalist {
+    box-shadow: 4px 4px 0 0 var(--color-text);
+  }
+}
+
+/* Reduced-motion: kill all transitions + transforms. Shadow stays static
+   at the rest size. */
+@media (prefers-reduced-motion: reduce) {
+  .bs-course-card-brutalist,
+  .bs-course-card-brutalist:hover,
+  .bs-course-card-brutalist:active {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* Neo-brutalist label glyph anchored top-left. Mono, ALL CAPS, terracotta
+   block — the hallmark "label that announces what this thing is" cue.
+   Sits OUTSIDE the BorderGlow's clipping context (on the brutalist
+   wrapper itself) so it can extend slightly past the card's top edge,
+   reading as a tag pinned to the corner. */
+.bs-course-card-brutalist {
+  position: relative;
+}
+.bs-course-card-brutalist::before {
+  content: "COURSE";
+  position: absolute;
+  top: -10px;
+  left: 16px;
+  z-index: 3;
+  padding: 2px 8px;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+  font-size: 0.6875rem; /* 11 px */
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--color-bg);
+  background: var(--color-accent);
+  border: 2px solid var(--color-text);
+  border-radius: 2px;
+  line-height: 1.2;
+  pointer-events: none;
+}
+@media (max-width: 29.99rem) {
+  .bs-course-card-brutalist::before {
+    top: -9px;
+    left: 12px;
+    font-size: 0.625rem;
+  }
+}

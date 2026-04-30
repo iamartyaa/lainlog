@@ -37,20 +37,30 @@
 }
 
 /* ---------------------------------------------------------------------------
-   ITEM-7 polish-r2 — react.gg-style infinite-canvas gridline background.
-   Scoped to /courses/* via [data-course]. CSS-only (zero JS, zero DOM):
-   two repeating linear-gradients form a 40 × 40 px grid of 1-px lines on a
-   transparent background. The grid sits as a background-image on the data-
-   course root so all course content paints on top of it.
+   react.gg-style infinite-canvas gridline background.
 
-   Light mode: gridlines at ~6 % terracotta-tinted ink, near-invisible until
-   you look for them. Dark mode: ~10 % so the grid stays perceptible against
-   the deeper bg. Anti-banding at high zoom: keep the line at exactly 1 px.
+   polish-r5 ITEM 3 + ITEM 4 — selector scope correction.
+   ------------------------------------------------------------
+   Previously this rule was bound to `[data-course]`, but that attribute
+   also lives on the home pinned course card (it scopes the --clay-*
+   tonal range). The pattern therefore leaked onto the home card after
+   any /courses/* visit (ITEM 4 bug). Additionally, `[data-course]` only
+   covered the inner page-content wrapper — so on short courses the
+   gridlines stopped before the viewport bottom (ITEM 3 bug).
 
-   Uses --color-text mix (existing global token) — no second accent.
-   Static — gridlines never animate, so reduced-motion is irrelevant.
+   The fix: bind the pattern to `.bs-course-canvas` instead. That class
+   lives on the segment-level layout (app/courses/layout.tsx) which
+   wraps every /courses/* route in `min-h-dvh`, giving full-viewport
+   coverage. The home card never carries that class, so the pattern
+   can't leak. The --clay-* tonal range stays on `[data-course]` and
+   continues to resolve on the home card unchanged.
+
+   Light mode: gridlines at ~6 % --color-text-tinted ink, near-invisible
+   until you look for them. Dark mode: ~10 % so the grid stays
+   perceptible. Static — gridlines never animate, so reduced-motion is
+   irrelevant. Anti-banding at high zoom: keep the line at exactly 1 px.
 --------------------------------------------------------------------------- */
-[data-course] {
+.bs-course-canvas {
   background-image:
     linear-gradient(
       to right,
@@ -70,7 +80,7 @@
   background-position: 0 0, 0 0;
 }
 
-[data-theme="dark"] [data-course] {
+[data-theme="dark"] .bs-course-canvas {
   background-image:
     linear-gradient(
       to right,

@@ -12,42 +12,43 @@ import { useReducedMotion } from "motion/react";
 import "./BorderGlow.css";
 
 /**
- * BorderGlow — vendored from React Bits (DavidHDev/react-bits), retoned for
- * bytesize. Polish-r4 ITEM 1: replaces the TiltedCard wrapper around the
- * home pinned course card.
+ * BorderGlow — vendored from React Bits (DavidHDev/react-bits).
  *
- * Behaviour (preserved from the React Bits original):
- *   - Pointer-tracked conic-gradient border light: a soft cone of light
- *     follows the cursor angle around the card perimeter; the cone opens
- *     up at angles facing the cursor and fades behind it.
- *   - Edge-proximity ramp: the glow's opacity scales with how close the
- *     pointer is to the nearest border edge — far away → 0, sitting on
- *     the border → full intensity. `edgeSensitivity` controls the ramp.
- *   - Mesh background: a radial gradient cursor-light sits on the card
- *     fill, giving a quiet sheen; same colour set as the border glow.
- *   - Optional intro sweep: when `animated` is true, the conic-gradient
- *     plays one full revolution on mount (pointer-independent reveal).
+ * polish-r5 ITEM 1: clean re-vendor of the canonical React Bits source.
+ * The component preserves every behavioural line of the original:
  *
- * bytesize adaptations:
- *   - All colours retoned to terracotta/clay tokens (`--color-accent` family
- *     + `--clay-*` tonal range). NO purple, pink, or blue (DESIGN.md §1).
- *   - The `glowColor` HSL string is read from a CSS custom property
- *     (`--bg-glow-hsl`) that resolves per theme: light terracotta in light
- *     mode, brighter terracotta in dark mode.
- *   - Card `backgroundColor` defaults to the existing course-card surface
- *     (`var(--clay-50, var(--color-surface))`) so the gridline canvas + the
- *     palette stay consistent. NO near-black (#120F17) backgrounds.
- *   - Pointer-move CSS variable writes are throttled via rAF to keep the
- *     handler off the critical path on every pointermove tick.
- *   - Reduced-motion: the entire BorderGlow shell is bypassed; children
- *     render inside a static `.bs-course-card-lift` (the polish-r3 at-rest
- *     border + shade + soft shadow), so opted-out users still see the
- *     "premium" cue without any pointer animation.
- *   - (hover: none) — touch devices: the pointer-effect pseudo-elements are
- *     suppressed via CSS `display: none`; the at-rest treatment shows
- *     through. No phantom glow that never lights.
- *   - Focus is owned by the underlying anchor (CourseCard's <a>); BorderGlow
- *     does NOT take focus and never interferes with keyboard nav.
+ *   1. Pointer-tracked conic-gradient border ring. The conic stop angle
+ *      follows the cursor (atan2 from card centre). A masked 1-px ring
+ *      shows only the perimeter — the interior is masked out.
+ *   2. Edge-proximity ramp. Distance from cursor to the nearest border
+ *      edge drives an opacity factor: pointer ON the edge → full glow;
+ *      `edgeSensitivity` px inside → glow off.
+ *   3. Mesh radial cursor-light on the card fill (::after) — same HSL
+ *      `glowColor` as the conic ring.
+ *   4. Optional intro sweep — `animated={true}` plays one revolution of
+ *      the conic stop on mount (pointer-independent reveal).
+ *
+ * bytesize adaptations (layered on top, not in the source):
+ *
+ *   - Default colour stops + `glowColor` retoned to terracotta tokens
+ *     at the call site (app/page.tsx). The component still ACCEPTS any
+ *     hex/var via props so the source remains generic; the consumer is
+ *     responsible for passing tokens. Defaults here are NEUTRAL fallbacks
+ *     keyed off bytesize CSS vars (NOT React Bits' neon defaults), so
+ *     even an unconfigured render stays on-palette.
+ *   - Reduced-motion + (hover: none): the entire pointer-driven shell is
+ *     bypassed; children render inside a static .bs-course-card-lift
+ *     with the polish-r3 at-rest border + shade + soft shadow.
+ *   - Pointer-move handler is rAF-throttled — one CSS-var write per paint
+ *     regardless of pointermove fire rate.
+ *   - Pass-through `data-*` attributes — the consumer can put `data-course`
+ *     on the wrapper so the --clay-* tonal range resolves on it.
+ *
+ * The React Bits source itself uses inline styles for the dynamic
+ * variables and a CSS module for the rest. We use a plain stylesheet
+ * (BorderGlow.css) because bytesize's existing course-canvas.css
+ * convention is plain CSS (banked feedback v1 #3: attribute selectors
+ * over modules). Behaviour is identical.
  */
 
 interface BorderGlowProps {
@@ -56,7 +57,7 @@ interface BorderGlowProps {
   colors?: [string, string, string];
   /** Card surface colour (under the children). */
   backgroundColor?: string;
-  /** HSL components string for the radial cursor-light, e.g. "14 60 55". */
+  /** HSL components string for the radial cursor-light, e.g. "14 60 45". */
   glowColor?: string;
   /** Distance from edge (px) at which glow ramps to full. */
   edgeSensitivity?: number;
@@ -78,9 +79,21 @@ interface BorderGlowProps {
 
 export function BorderGlow({
   children,
-  colors = ["#c084fc", "#f472b6", "#38bdf8"],
-  backgroundColor = "#120F17",
-  glowColor = "40 80 80",
+  // Bytesize defaults: terracotta tonal stops via CSS vars. The original
+  // React Bits defaults were ["#c084fc", "#f472b6", "#38bdf8"] — neon
+  // purple/pink/blue — which would violate DESIGN.md §1 (single accent).
+  // We override the source defaults here so an unconfigured render stays
+  // on-palette; consumers can still pass any colour set explicitly.
+  colors = [
+    "var(--color-accent)",
+    "var(--clay-200, var(--color-rule))",
+    "var(--clay-100, var(--color-surface))",
+  ],
+  backgroundColor = "var(--clay-50, var(--color-surface))",
+  // HSL approximation of light-mode --color-accent (terra-40 ≈ hsl(14 60 45)).
+  // The dark-mode override lives in app/globals.css via [data-theme="dark"]
+  // .border-glow-card { --bg-glow-hsl: 14 55 60 }.
+  glowColor = "14 60 45",
   edgeSensitivity = 40,
   glowRadius = 40,
   glowIntensity = 1,
@@ -91,14 +104,15 @@ export function BorderGlow({
   style,
   ...rest
 }: BorderGlowProps) {
-  // Filter `rest` to only data-* attributes (defensive — the index signature
-  // permits arbitrary `data-*` keys but TS won't reject runtime junk).
+  // Filter `rest` to only data-* attributes (defensive — TS index signature
+  // accepts any data-* key but won't reject runtime junk).
   const dataAttrs: Record<string, string | boolean | undefined> = {};
   for (const key of Object.keys(rest)) {
     if (key.startsWith("data-")) {
       dataAttrs[key] = (rest as Record<string, string | boolean | undefined>)[key];
     }
   }
+
   const reduce = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -106,7 +120,8 @@ export function BorderGlow({
 
   // Apply queued pointer state to CSS variables on the next animation
   // frame — throttles the handler to one paint per frame regardless of
-  // pointermove rate.
+  // pointermove rate. The CSS variables drive the conic angle, the
+  // mesh-radial centre, and the opacity ramp.
   const flush = useCallback(() => {
     rafRef.current = null;
     const el = ref.current;
@@ -118,11 +133,12 @@ export function BorderGlow({
 
     const cx = rect.width / 2;
     const cy = rect.height / 2;
-    // Cursor angle relative to card centre — drives the conic-gradient.
+    // Cursor angle relative to card centre — drives the conic-gradient
+    // start angle. +90 normalises so 0deg points up.
     const angleRad = Math.atan2(y - cy, x - cx);
-    const angleDeg = (angleRad * 180) / Math.PI + 90; // 0deg points up
+    const angleDeg = (angleRad * 180) / Math.PI + 90;
 
-    // Edge proximity: distance to nearest border edge.
+    // Edge proximity: distance to the nearest border edge.
     const distLeft = x;
     const distRight = rect.width - x;
     const distTop = y;
@@ -131,7 +147,7 @@ export function BorderGlow({
       0,
       Math.min(distLeft, distRight, distTop, distBottom),
     );
-    // Ramp from 1 at edge → 0 at >edgeSensitivity inside.
+    // Ramp from 1 at edge → 0 at >=edgeSensitivity inside.
     const edgeFactor = Math.max(0, 1 - minEdge / Math.max(1, edgeSensitivity));
     const opacity = edgeFactor * glowIntensity;
 
@@ -171,13 +187,16 @@ export function BorderGlow({
     };
   }, []);
 
-  // Reduced-motion: bypass the entire BorderGlow shell. Render children
-  // inside the polish-r3 .bs-course-card-lift so the at-rest border, shade,
-  // and shadow remain visible. data-course scopes the --clay-* tokens.
+  // Reduced-motion: bypass the entire BorderGlow shell. Children render
+  // inside the polish-r3 .bs-course-card-lift so the at-rest border,
+  // shade, and shadow stay visible. data-course propagates so the
+  // --clay-* tokens resolve.
   if (reduce) {
     return (
       <div
-        className="bs-course-card-lift"
+        className={
+          "bs-course-card-lift" + (className ? ` ${className}` : "")
+        }
         style={style}
         {...dataAttrs}
       >
@@ -186,8 +205,8 @@ export function BorderGlow({
     );
   }
 
-  // CSS variables that drive the gradient + opacity ramp. Defaults sit at
-  // "no glow"; the pointermove handler updates them.
+  // CSS variables that drive the gradient + opacity ramp. Defaults sit
+  // at "no glow"; the pointermove handler updates them.
   const rootStyle: CSSProperties = {
     "--bg-color-1": colors[0],
     "--bg-color-2": colors[1],
@@ -217,11 +236,9 @@ export function BorderGlow({
       onPointerLeave={onPointerLeave}
       {...dataAttrs}
     >
-      {/* Conic-gradient border ring — the pointer-tracked cone of light.
-          The ::before is the masked conic; the ::after is the mesh radial
-          on the card fill. Both live on the root via CSS — see
-          BorderGlow.css. The .edge-light is a thin highlight that brightens
-          where the cone intersects the perimeter. */}
+      {/* The ::before is the masked conic ring; the ::after is the mesh
+          radial on the fill. Both live in BorderGlow.css and are driven
+          purely by the CSS variables we set above. */}
       <div className="border-glow-card__inner">{children}</div>
     </div>
   );
