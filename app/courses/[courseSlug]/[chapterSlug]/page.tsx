@@ -182,3 +182,4 @@ export default async function CourseChapterPage({
     </div>
   );
 }
+
