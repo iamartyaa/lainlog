@@ -50,21 +50,21 @@ export const COURSES: CourseMeta[] = [
         slug: "the-room-before-the-protocol",
         title: "The room before the protocol",
         hook:
-          "before MCP, every AI integration was a one-off — and your terminal already hides the receipt.",: chapter 3 — JSON-RPC, the wire that carries it): chapter 4 — The handshake)
+          "before MCP, every AI integration was a one-off — and your terminal already hides the receipt.",
         readingMinutes: 8,
       },
       {
         slug: "host-client-server",
         title: "Three roles, one connection",
         hook:
-          "MCP isn't peer-to-peer. it's a host that spawns one client per server.",: chapter 3 — JSON-RPC, the wire that carries it): chapter 4 — The handshake)
+          "MCP isn't peer-to-peer. it's a host that spawns one client per server.",
         readingMinutes: 10,
       },
       {
         slug: "json-rpc-the-wire",
         title: "JSON-RPC, the wire that carries it",
         hook:
-          "every MCP message is JSON-RPC 2.0. four fields are the whole story.",: chapter 3 — JSON-RPC, the wire that carries it): chapter 4 — The handshake)
+          "every MCP message is JSON-RPC 2.0. four fields are the whole story.",
         readingMinutes: 12,
       },
       {
@@ -77,7 +77,7 @@ export const COURSES: CourseMeta[] = [
       {
         slug: "the-server-primitives",
         title: "Tools, resources, prompts",
-        hook: "three primitives, three controllers — model, application, user.",: chapter 4 — The handshake)
+        hook: "three primitives, three controllers — model, application, user.",
         readingMinutes: 14,
       },
       {
@@ -105,7 +105,7 @@ export const COURSES: CourseMeta[] = [
         slug: "how-mcp-gets-attacked",
         title: "How MCP gets attacked",
         hook:
-          "MCP is a protocol, not a perimeter. the spec says SHOULD; you ship the MUST.",: chapter 3 — JSON-RPC, the wire that carries it): chapter 4 — The handshake)
+          "MCP is a protocol, not a perimeter. the spec says SHOULD; you ship the MUST.",
         readingMinutes: 12,
       },
     ],
