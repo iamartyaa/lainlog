@@ -20,6 +20,7 @@ import TheRoomBeforeProtocolContent from "./the-room-before-the-protocol/Content
 import JsonRpcTheWireContent from "./json-rpc-the-wire/Content";
 import TheHandshakeContent from "./the-handshake/Content";
 import ToolsResourcesPromptsContent from "./tools-resources-prompts/Content";
+import BuildAServerContent from "./build-a-server/Content";
 
 export const MCPS_CONTENT: Record<string, ComponentType> = {
   "the-room-before-the-protocol": TheRoomBeforeProtocolContent,
@@ -27,4 +28,5 @@ export const MCPS_CONTENT: Record<string, ComponentType> = {
   "json-rpc-the-wire": JsonRpcTheWireContent,
   "the-handshake": TheHandshakeContent,
   "tools-resources-prompts": ToolsResourcesPromptsContent,
+  "build-a-server": BuildAServerContent,
 };
