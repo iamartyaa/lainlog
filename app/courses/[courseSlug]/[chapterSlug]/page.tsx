@@ -25,7 +25,7 @@ function getChapterContent(
     return MCPS_CONTENT[chapterSlug] ?? null;
   }
   return null;
-}: chapter 4 — The handshake)
+}
 
 /**
  * Chapter page.
@@ -74,11 +74,6 @@ export default async function CourseChapterPage({
   const found = findChapter(courseSlug, chapterSlug);
   if (!found) notFound();
   const { course, chapter, index } = found;
-
-  // Resolve chapter content if a module is registered. Chapters without a
-  // registered module render the placeholder paragraph below.
-  const loader = CHAPTER_CONTENT[course.slug]?.[chapter.slug];
-  const Content = loader ? (await loader()).default : null;
 
   return (
     <div
@@ -175,7 +170,7 @@ export default async function CourseChapterPage({
                 will land here next.
               </p>
             );
-          })()}: chapter 4 — The handshake)
+          })()}
         </div>
       </Prose>
 
