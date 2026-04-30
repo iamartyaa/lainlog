@@ -651,3 +651,276 @@ html[data-theme-transitioning] {
 .bs-range:focus-visible::-moz-range-thumb {
   transform: scale(1.15);
 }
+
+/* ---------------------------------------------------------------------------
+   ITEM-2 polish-r2 — nan.fyi-style drafting-paper frame on CozyFrame.
+   ------------------------------------------------------------
+   1-px ruled border around the centred container, with four short corner
+   ticks extending outside the frame to read as drafting-paper ruler marks.
+   Border + ticks both use --color-rule so they sit at the same hue/opacity
+   as PostList's dashed row separators — visual coherence with the existing
+   typography rhythm.
+
+   Coexists with the body's diagonal-hatch background (which paints OUTSIDE
+   this frame because the wrapper has its own --color-bg fill). The border
+   sits between the bg-fill and the hatch, framing the page as one unit.
+
+   Mobile-first: border is always-on; the corner ticks scale slightly
+   smaller below sm: so they don't overpower the narrow viewport.
+--------------------------------------------------------------------------- */
+.bs-cozy-frame {
+  border-left: 1px solid var(--color-rule);
+  border-right: 1px solid var(--color-rule);
+}
+.bs-cozy-frame::before,
+.bs-cozy-frame::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--color-rule);
+  pointer-events: none;
+}
+.bs-cozy-frame::before { top: 0; }
+.bs-cozy-frame::after  { bottom: 0; }
+
+/* Corner ticks — short 12-px marks at each corner, extending outside the
+   border by 1 px to read as ruler-tick registration marks. CSS-only via
+   four single-pixel boxes painted on a wrapper-positioned element. */
+.bs-cozy-frame > :first-child::before,
+.bs-cozy-frame > :first-child::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  /* Two 1-px lines forming an L at each corner, via box-shadow-free borders.
+     The single pseudo paints both arms via background-image gradients so we
+     don't need four separate elements. */
+}
+.bs-cozy-frame > :first-child::before {
+  top: -1px;
+  left: -1px;
+  border-top: 1px solid var(--color-text-muted);
+  border-left: 1px solid var(--color-text-muted);
+  opacity: 0.45;
+}
+.bs-cozy-frame > :first-child::after {
+  top: -1px;
+  right: -1px;
+  border-top: 1px solid var(--color-text-muted);
+  border-right: 1px solid var(--color-text-muted);
+  opacity: 0.45;
+}
+@media (min-width: 30rem) {
+  .bs-cozy-frame > :first-child::before,
+  .bs-cozy-frame > :first-child::after {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   ITEM-4 polish-r2 — z-index lift + premium elevation on home course card.
+   ------------------------------------------------------------
+   The home pinned <CourseCard> sits inline in the right-column post stream.
+   This wrapper lifts it visually so it reads as "course, not article" without
+   breaking PostList's row rhythm:
+
+   - `position: relative; z-index: 1` — paints above adjacent post rows.
+     No layout-shift cost (purely paint-order).
+   - Subtle paper-lift shadow via `filter: drop-shadow()` — transform-only,
+     keeps the dashed-rule + ::before/::after outlines composable with the
+     ITEM-2 cozy-frame border. drop-shadow respects the card's actual
+     silhouette (incl. the dashed top + bottom rules) where box-shadow
+     would only outline the bounding box.
+   - Mobile-first: shadow + tilt are gated to (hover: hover) + (min-width:
+     30rem) so touch users don't see a shadow that has no hover state to
+     invite. The z-index lift itself is always-on (it's the rhythm cue,
+     not the hover affordance).
+--------------------------------------------------------------------------- */
+.bs-course-card-lift {
+  position: relative;
+  z-index: 1;
+  /* polish-r3 ITEM 2 — tonal terracotta shade + minimalist border + at-rest
+     elevation. Resolves --clay-* via the data-course scope on the wrapper.
+     - Background: --clay-50 light / --clay-100 dark, both fall back to
+       --color-surface so the card never goes invisible without scope.
+     - Border: --clay-200 with --radius-md corners — "cute minimalist".
+     - At-rest box-shadow: 1+3 px stack at low opacity for a soft float
+       above the post rows. Static (no animation), so reduced-motion users
+       still see the elevation cue.
+     - The internal padding compensates for the visual weight of the new
+       border so the card content doesn't crowd the new perimeter. */
+  background: var(--clay-50, var(--color-surface));
+  border: 1px solid var(--clay-200, var(--color-rule));
+  border-radius: var(--radius-md);
+  box-shadow:
+    0 1px 0 color-mix(in oklab, var(--color-text) 3%, transparent),
+    0 4px 12px color-mix(in oklab, var(--color-text) 5%, transparent);
+}
+/* Suppress the CourseCard's own dashed top + bottom rules when nested
+   inside the tilted-card wrapper. The wrapper's full minimalist border
+   takes over the bracketing job; the dashed rules INSIDE the new border
+   would read as a doubled seam. */
+[data-on-tilted-card] .bs-course-card {
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+}
+@media (hover: hover) and (min-width: 30rem) {
+  .bs-course-card-lift {
+    transition: box-shadow 240ms var(--ease-out), border-color 240ms var(--ease-out);
+  }
+  .bs-course-card-lift:hover {
+    border-color: color-mix(in oklab, var(--color-accent) 30%, var(--clay-200, var(--color-rule)));
+    box-shadow:
+      0 1px 0 color-mix(in oklab, var(--color-text) 5%, transparent),
+      0 8px 24px color-mix(in oklab, var(--color-accent) 10%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bs-course-card-lift,
+  .bs-course-card-lift:hover {
+    transition: none !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   polish-r4 ITEM 1 — BorderGlow dark-mode tonal override.
+   ------------------------------------------------------------
+   The home pinned card's BorderGlow `glowColor` is set inline at the call
+   site to "14 60 45" — the HSL approximation of light-mode --color-accent
+   (oklch(0.52 0.145 28)). In dark mode the canonical accent shifts to
+   --color-terra-60 (oklch(0.65 0.135 28) ≈ hsl(14 55 60)). This rule
+   overrides --bg-glow-hsl for any BorderGlow inside the dark theme so the
+   radial cursor-light + the conic ring stay tonal terracotta against the
+   darker surface, never going muddy. Single accent rule preserved.
+--------------------------------------------------------------------------- */
+[data-theme="dark"] .border-glow-card {
+  --bg-glow-hsl: 14 55 60;
+}
+
+/* ---------------------------------------------------------------------------
+   polish-r5 ITEM 2 — neo-brutalism wrapper for the home pinned course card.
+   ------------------------------------------------------------
+   The user's intent: the home pinned course card should STAND OUT from the
+   post rows beneath it. The polish-r4 BorderGlow + at-rest .bs-course-card-
+   lift combo reads as "premium" but the card still sits in the same visual
+   register as the surrounding editorial rhythm. Neo-brutalism — heavy
+   border, hard offset shadow with NO blur — gives the card a deliberate
+   block-like presence that separates it from the dashed-rule post rows.
+
+   Composition order (outer → inner):
+     1. .bs-course-card-brutalist  ← THIS rule. Heavy border + hard offset
+        shadow. Hosts the "press" interaction (shadow shrinks on hover/
+        active). Owns the wow cue.
+     2. .border-glow-card          ← BorderGlow root. Pointer-tracked conic
+        ring + mesh radial. Inherits sharper border-radius from the
+        brutalist wrapper via `border-radius: inherit` at the inner.
+     3. .bs-course-card            ← The actual <Link> markup. Dashed top/
+        bottom rules already suppressed via [data-on-tilted-card].
+
+   Scope: ONLY this wrapper class — applied at the home pinned card call
+   site in app/page.tsx. Do NOT propagate to chapter pages, course
+   landing, or anywhere else.
+
+   Reduced-motion: shadow stays at rest (no transitions). Mobile (<30rem):
+   shadow offset shrinks from 8 → 4 px to preserve frame stability — an
+   8 px shadow at 375 px width would push content awkwardly outside the
+   visible column.
+
+   Dark-mode: the shadow inverts to --color-text on dark backgrounds (it
+   reads as a near-white block-shadow). The border colour matches the
+   shadow. This keeps the brutalist cue strong in both themes.
+--------------------------------------------------------------------------- */
+.bs-course-card-brutalist {
+  /* Sharp corners. We keep a small radius (4 px) rather than 0 so the
+     BorderGlow's masked conic ring still has a defined inside corner to
+     trace. 0 px would clip the ring crisp at corners; 4 px lets the
+     pointer-tracked light wrap them gracefully. */
+  border-radius: 4px;
+  border: 2px solid var(--color-text);
+  background: var(--clay-50, var(--color-surface));
+  box-shadow: 8px 8px 0 0 var(--color-text);
+  transition:
+    box-shadow 180ms var(--ease-out),
+    transform 180ms var(--ease-out);
+}
+/* Make the inner BorderGlow inherit the brutalist corner radius so the
+   conic ring traces the same perimeter (no doubled corner). */
+.bs-course-card-brutalist > .border-glow-card {
+  border-radius: inherit;
+  box-shadow: none; /* the brutalist wrapper owns the elevation cue */
+}
+.bs-course-card-brutalist > .bs-course-card-lift {
+  /* Same treatment for the reduced-motion fallback path. */
+  border-radius: inherit;
+  border: 0;
+  box-shadow: none;
+}
+
+/* Hover: shadow shrinks toward the card — "press" feel. */
+@media (hover: hover) and (min-width: 30rem) {
+  .bs-course-card-brutalist:hover {
+    box-shadow: 4px 4px 0 0 var(--color-text);
+    transform: translate(2px, 2px);
+  }
+  .bs-course-card-brutalist:active {
+    box-shadow: 0 0 0 0 var(--color-text);
+    transform: translate(8px, 8px);
+  }
+}
+
+/* Mobile: offset shrinks so the shadow doesn't push the card out of the
+   viewport gutter. Frame-stability rule (DESIGN.md). */
+@media (max-width: 29.99rem) {
+  .bs-course-card-brutalist {
+    box-shadow: 4px 4px 0 0 var(--color-text);
+  }
+}
+
+/* Reduced-motion: kill all transitions + transforms. Shadow stays static
+   at the rest size. */
+@media (prefers-reduced-motion: reduce) {
+  .bs-course-card-brutalist,
+  .bs-course-card-brutalist:hover,
+  .bs-course-card-brutalist:active {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* Neo-brutalist label glyph anchored top-left. Mono, ALL CAPS, terracotta
+   block — the hallmark "label that announces what this thing is" cue.
+   Sits OUTSIDE the BorderGlow's clipping context (on the brutalist
+   wrapper itself) so it can extend slightly past the card's top edge,
+   reading as a tag pinned to the corner. */
+.bs-course-card-brutalist {
+  position: relative;
+}
+.bs-course-card-brutalist::before {
+  content: "COURSE";
+  position: absolute;
+  top: -10px;
+  left: 16px;
+  z-index: 3;
+  padding: 2px 8px;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, monospace);
+  font-size: 0.6875rem; /* 11 px */
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--color-bg);
+  background: var(--color-accent);
+  border: 2px solid var(--color-text);
+  border-radius: 2px;
+  line-height: 1.2;
+  pointer-events: none;
+}
+@media (max-width: 29.99rem) {
+  .bs-course-card-brutalist::before {
+    top: -9px;
+    left: 12px;
+    font-size: 0.625rem;
+  }
+}

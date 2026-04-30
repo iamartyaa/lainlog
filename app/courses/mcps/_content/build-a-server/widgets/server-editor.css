@@ -1,0 +1,64 @@
+/**
+ * ServerEditor — input + responsive grid styles.
+ *
+ * Kept beside the component so the widget file stays focused on the React
+ * + state logic. Values match the rest of the bytesize course canvas:
+ * fonts via --font-mono / --font-sans, surfaces via --color-surface,
+ * focus rings via --color-accent.
+ */
+
+.bs-input {
+  width: 100%;
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  line-height: 1.4;
+  min-height: 32px;
+  box-sizing: border-box;
+}
+
+.bs-input:focus,
+.bs-input:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent);
+}
+
+textarea.bs-input {
+  resize: vertical;
+  min-height: 44px;
+}
+
+select.bs-input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 24px;
+  background-image: linear-gradient(
+      45deg,
+      transparent 50%,
+      var(--color-text-muted) 50%
+    ),
+    linear-gradient(135deg, var(--color-text-muted) 50%, transparent 50%);
+  background-position:
+    right 10px top 14px,
+    right 6px top 14px;
+  background-size:
+    4px 4px,
+    4px 4px;
+  background-repeat: no-repeat;
+}
+
+/* Scope to widget so we don't leak to the rest of the page. */
+.bs-server-editor button {
+  font-family: inherit;
+}
+
+@media (min-width: 720px) {
+  .bs-tryit-grid {
+    grid-template-columns: 1fr;
+  }
+}

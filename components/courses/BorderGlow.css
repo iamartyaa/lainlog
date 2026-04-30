@@ -1,0 +1,168 @@
+/* ---------------------------------------------------------------------------
+   BorderGlow.css — pointer-driven conic-gradient border ring + mesh
+   radial cursor-light. Re-vendored from React Bits (DavidHDev/react-bits)
+   in polish-r5.
+
+   The component (BorderGlow.tsx) writes four CSS custom properties on
+   pointermove:
+     --bg-x       horizontal cursor position (px)
+     --bg-y       vertical cursor position   (px)
+     --bg-angle   cursor angle relative to centre (deg)
+     --bg-opacity ramp 0..1 from edge proximity × intensity
+
+   Plus six configuration vars set inline by the consumer:
+     --bg-color-1 / --bg-color-2 / --bg-color-3   conic gradient stops
+     --bg-bg                                       card surface fill
+     --bg-glow-hsl                                 mesh-radial HSL trio
+     --bg-radius                                   border-radius (px)
+     --bg-glow-radius                              radial fall-off (%)
+     --bg-cone-spread                              conic stop spread (deg)
+
+   bytesize defaults (overrides of the React Bits source defaults — those
+   were neon purple/pink/blue, which would violate DESIGN.md §1's single-
+   accent rule). All defaults below resolve to terracotta tokens via CSS
+   vars; the dark-mode override lives in app/globals.css.
+
+   Layout stability: every moving part is an absolutely positioned pseudo-
+   element on a `position: relative` root. Nothing reflows on pointer move;
+   only paint-only properties change.
+
+   (hover: none) — touch devices: pointer-driven layers hide so the card
+   sits at its at-rest treatment.
+--------------------------------------------------------------------------- */
+
+.border-glow-card {
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--bg-radius, 28px);
+  background: var(--bg-bg, var(--clay-50, var(--color-surface)));
+  overflow: hidden;
+  /* Soft static elevation so the card reads as "lifted" even with the
+     glow at zero opacity. Mirrors the .bs-course-card-lift baseline.
+     Static — no transition — so reduced-motion users see the same cue. */
+  box-shadow:
+    0 1px 0 color-mix(in oklab, var(--color-text) 3%, transparent),
+    0 4px 12px color-mix(in oklab, var(--color-text) 5%, transparent);
+}
+
+/* Inner box hosts the children at z-index 2 above the glow layers. */
+.border-glow-card__inner {
+  position: relative;
+  z-index: 2;
+  border-radius: inherit;
+}
+
+/* ::before — conic-gradient cone-of-light tracked to the pointer angle.
+   The conic stops are arranged so the bright stop sits at `--bg-angle`,
+   with `--bg-cone-spread` falloff on either side. The interior is masked
+   out via subtractive `mask-composite: exclude`, so only the 1-px
+   perimeter ring shows. */
+.border-glow-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--bg-angle, 0deg) at 50% 50%,
+    var(--bg-color-1, var(--color-accent)) 0deg,
+    var(--bg-color-2, var(--clay-200, var(--color-rule))) calc(var(--bg-cone-spread, 30deg) * 1),
+    var(--bg-color-3, var(--clay-100, var(--color-surface))) calc(var(--bg-cone-spread, 30deg) * 2),
+    transparent calc(var(--bg-cone-spread, 30deg) * 3),
+    transparent 360deg
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: var(--bg-opacity, 0);
+  transition: opacity 250ms ease-out;
+  pointer-events: none;
+}
+
+/* When pointer leaves, ramp out a touch slower for a calmer fade. */
+.border-glow-card:not(:hover)::before {
+  transition: opacity 750ms ease-out;
+}
+
+/* ::after — mesh radial that paints a soft cursor-light on the card fill.
+   Sits behind .border-glow-card__inner (z-index: 1) so children paint on
+   top of it. The HSL channels come from --bg-glow-hsl which overrides
+   per theme (light: 14 60 45 ; dark: 14 55 60 — see globals.css). */
+.border-glow-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: 1;
+  background:
+    radial-gradient(
+      circle at var(--bg-x, 50%) var(--bg-y, 50%),
+      hsl(var(--bg-glow-hsl, 14 60 45) / 0.35) 0%,
+      hsl(var(--bg-glow-hsl, 14 60 45) / 0.10) 30%,
+      transparent var(--bg-glow-radius, 40%)
+    );
+  opacity: var(--bg-opacity, 0);
+  transition: opacity 250ms ease-out;
+  pointer-events: none;
+}
+.border-glow-card:not(:hover)::after {
+  transition: opacity 750ms ease-out;
+}
+
+/* Optional intro sweep — one-shot revolution of the conic stop angle on
+   mount. Only applied when the consumer passes `animated={true}`. */
+@keyframes border-glow-intro-sweep {
+  from {
+    --bg-angle: 0deg;
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.6;
+  }
+  to {
+    --bg-angle: 360deg;
+    opacity: 0;
+  }
+}
+
+@property --bg-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.border-glow-card--animated::before {
+  animation: border-glow-intro-sweep 1400ms ease-out 1 both;
+}
+
+/* (hover: none) — touch devices: pointer-driven layers hide so the card
+   sits at its at-rest treatment (background + static shadow). Mirrors the
+   reduced-motion fallback; the children remain fully interactive. */
+@media (hover: none) {
+  .border-glow-card::before,
+  .border-glow-card::after {
+    display: none;
+  }
+}
+
+/* Reduced-motion safety net. The component already short-circuits to a
+   non-animated path; this rule is belt-and-braces for OS toggles mid-
+   session. */
+@media (prefers-reduced-motion: reduce) {
+  .border-glow-card::before,
+  .border-glow-card::after {
+    transition: none !important;
+    animation: none !important;
+  }
+  .border-glow-card--animated::before {
+    animation: none !important;
+  }
+}

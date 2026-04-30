@@ -1,0 +1,221 @@
+/* ---------------------------------------------------------------------------
+   course-canvas.css
+
+   Scoped CSS custom properties for /courses/* pages. Imported once from the
+   course-landing and chapter route files. Plain global stylesheet (NOT a
+   CSS module — banked feedback v1 #3) so attribute selectors pass through
+   unchanged and Next.js dedupes the import at the build-graph level.
+
+   The `--clay-*` tints are SCOPED CUSTOM PROPERTIES — they only resolve
+   inside `[data-course]`. They cannot leak into post pages because they
+   don't exist outside the attribute root. No additions to app/globals.css.
+
+   Single accent rule preserved (DESIGN.md §1):
+     --clay-500 binds to `var(--color-accent)`. The 50/100/200/300/400/600
+     tints are all the same hue (28°), varying chroma + lightness only.
+     This is "tonal range," not a second accent.
+--------------------------------------------------------------------------- */
+
+[data-course] {
+  --clay-50:  oklch(98% 0.01 28);   /* near-white, palest clay tint */
+  --clay-100: oklch(96% 0.02 28);   /* chapter-card hover surface tint */
+  --clay-200: oklch(92% 0.04 28);   /* spine-stroke quiet variant */
+  --clay-300: oklch(85% 0.07 28);   /* progress-rule muted track */
+  --clay-400: oklch(75% 0.11 28);   /* secondary accent on numbers */
+  --clay-500: var(--color-accent);  /* canonical terracotta — single accent rule */
+  --clay-600: oklch(58% 0.13 28);   /* hover/active darker terracotta */
+}
+
+[data-theme="dark"] [data-course] {
+  --clay-50:  oklch(15% 0.01 28);
+  --clay-100: oklch(20% 0.025 28);
+  --clay-200: oklch(26% 0.04 28);
+  --clay-300: oklch(34% 0.06 28);
+  --clay-400: oklch(50% 0.10 28);
+  --clay-500: var(--color-accent);
+  --clay-600: oklch(72% 0.13 28);
+}
+
+/* ---------------------------------------------------------------------------
+   react.gg-style infinite-canvas gridline background.
+
+   polish-r5 ITEM 3 + ITEM 4 — selector scope correction.
+   ------------------------------------------------------------
+   Previously this rule was bound to `[data-course]`, but that attribute
+   also lives on the home pinned course card (it scopes the --clay-*
+   tonal range). The pattern therefore leaked onto the home card after
+   any /courses/* visit (ITEM 4 bug). Additionally, `[data-course]` only
+   covered the inner page-content wrapper — so on short courses the
+   gridlines stopped before the viewport bottom (ITEM 3 bug).
+
+   The fix: bind the pattern to `.bs-course-canvas` instead. That class
+   lives on the segment-level layout (app/courses/layout.tsx) which
+   wraps every /courses/* route in `min-h-dvh`, giving full-viewport
+   coverage. The home card never carries that class, so the pattern
+   can't leak. The --clay-* tonal range stays on `[data-course]` and
+   continues to resolve on the home card unchanged.
+
+   Light mode: gridlines at ~6 % --color-text-tinted ink, near-invisible
+   until you look for them. Dark mode: ~10 % so the grid stays
+   perceptible. Static — gridlines never animate, so reduced-motion is
+   irrelevant. Anti-banding at high zoom: keep the line at exactly 1 px.
+--------------------------------------------------------------------------- */
+.bs-course-canvas {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in oklab, var(--color-text) 6%, transparent) 0,
+      color-mix(in oklab, var(--color-text) 6%, transparent) 1px,
+      transparent 1px,
+      transparent 40px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--color-text) 6%, transparent) 0,
+      color-mix(in oklab, var(--color-text) 6%, transparent) 1px,
+      transparent 1px,
+      transparent 40px
+    );
+  background-size: 40px 40px;
+  background-position: 0 0, 0 0;
+}
+
+[data-theme="dark"] .bs-course-canvas {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in oklab, var(--color-text) 10%, transparent) 0,
+      color-mix(in oklab, var(--color-text) 10%, transparent) 1px,
+      transparent 1px,
+      transparent 40px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--color-text) 10%, transparent) 0,
+      color-mix(in oklab, var(--color-text) 10%, transparent) 1px,
+      transparent 1px,
+      transparent 40px
+    );
+  background-size: 40px 40px;
+  background-position: 0 0, 0 0;
+}
+
+/* ---------------------------------------------------------------------------
+   ITEM-1 polish-r2 stray-line diagnosis (recorded 2026-04-30)
+   ------------------------------------------------------------
+   The previous build painted a 1-px terracotta vertical guide on the left
+   margin of the chapter prose column at desktop (≥64rem). With the chapter
+   body still being a single placeholder paragraph, that absolutely-positioned
+   pseudo-line read at 1440 px as an unanchored vertical streak floating in
+   the prose gutter — the user's "stray vertical line" report.
+
+   Fix: keep the relative-position scaffold (so future prose can opt back in
+   via a child element), but drop the ::before guide entirely until real
+   chapter content lands. When prose returns, re-introduce the guide bound to
+   the paragraph block so it can never extend past the content it's marking.
+--------------------------------------------------------------------------- */
+[data-course-chapter] .bs-course-prose {
+  position: relative;
+}
+
+/* ---------------------------------------------------------------------------
+   CourseChapterCard grid template — mobile drops glyph + reading-minutes
+   columns (those children carry `display: none` below sm:). Switching the
+   grid template at the same breakpoint avoids phantom columns from
+   `display: none` items inside an explicit grid.
+--------------------------------------------------------------------------- */
+.bs-course-chapter-card {
+  /* mobile: number · content · arrow · dot (4 cols) */
+  grid-template-columns: auto minmax(0, 1fr) auto auto !important;
+}
+@media (min-width: 30rem) {
+  .bs-course-chapter-card {
+    /* desktop: number · content · glyph · minutes · arrow · dot (6 cols) */
+    grid-template-columns: auto minmax(0, 1fr) auto auto auto auto !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   ChapterNav centre slot — CSS-only @media swap (banked feedback
+   v2-independent #3). The nav renders BOTH the desktop dot row and the
+   mobile text link in the DOM; this rule toggles which is visible. No
+   useMediaQuery, no SSR flicker, no hydration mismatch.
+--------------------------------------------------------------------------- */
+.bs-chapter-nav-centre-mobile {
+  display: inline-flex;
+}
+.bs-chapter-nav-centre-desktop {
+  display: none;
+}
+@media (min-width: 30rem) {
+  .bs-chapter-nav-centre-mobile {
+    display: none !important;
+  }
+  .bs-chapter-nav-centre-desktop {
+    display: flex;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   ITEM-5 polish-r2 — MotionAccordion (chapter outline replacement).
+   ------------------------------------------------------------
+   Vendored Unlumen motion-accordion, retoned for bytesize:
+   - Background uses --color-surface (light) / --clay-100 (under [data-course]
+     dark) instead of foreground/background swap. Items read as quiet cards
+     in the editorial palette, not high-contrast marketing tiles.
+   - Border-radius reduced to --radius-md (4px); rounded-[30px] read as a
+     consumer-app tile.
+   - Header padding y reduced from py-5 to ~14px so the row reads as a
+     chapter list, not a FAQ block.
+   - Focus ring on the button — keyboard a11y. 2-px terracotta outline +
+     2-px offset matches site-wide focus-visible style.
+
+   polish-r4 — divider scrap (user directive: no horizontal dividers on
+   /courses/*). The previous dashed top + bottom rules acted as section
+   dividers between accordion items, reading as a stack of horizontal
+   bars stitched together. Removed entirely. The chapter outline now
+   relies on the surface tint (--clay-100 closed / --clay-50 open) +
+   item-internal padding + the rounded corners to delineate items. The
+   gridline canvas underneath provides ambient structure without
+   painting any rule lines. The open-state accent is now carried by a
+   subtle background shift only (no border-color change, since there
+   is no border to colour).
+--------------------------------------------------------------------------- */
+.bs-accordion-item {
+  background: var(--clay-100, var(--color-surface));
+  border-radius: var(--radius-md);
+  transition: background 200ms var(--ease-out);
+}
+.bs-accordion-item-open {
+  background: var(--clay-50, var(--color-bg));
+}
+.bs-accordion-header {
+  padding: 14px var(--spacing-md);
+  background: transparent;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  width: 100%;
+  outline-offset: 2px;
+}
+.bs-accordion-header:focus-visible {
+  outline: 2px solid var(--color-accent);
+}
+.bs-accordion-panel {
+  padding: 0 var(--spacing-md) var(--spacing-md) var(--spacing-md);
+}
+@media (min-width: 30rem) {
+  .bs-accordion-header {
+    padding: 14px var(--spacing-lg);
+  }
+  .bs-accordion-panel {
+    padding: 0 var(--spacing-lg) var(--spacing-lg) calc(var(--spacing-lg) + 3ch + var(--spacing-md));
+  }
+}
+@media (max-width: 29.99rem) {
+  /* On mobile, panel content aligns under the title (no left-indent) so the
+     reading column doesn't get crushed against the right edge. */
+  .bs-accordion-panel {
+    padding-left: var(--spacing-md);
+  }
+}
