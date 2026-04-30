@@ -7,7 +7,24 @@ import { ChapterTopRule } from "@/components/courses/ChapterTopRule";
 import { ChapterNav } from "@/components/courses/ChapterNav";
 import { Prose } from "@/components/prose";
 import { SITE_NAME } from "@/lib/site";
+import { MCPS_CONTENT } from "@/app/courses/mcps/_content/registry";
 import "@/components/courses/course-canvas.css";
+
+/**
+ * Per-course content registry. Looks up an authored Content component for
+ * a given (courseSlug, chapterSlug) pair. Returns null if the chapter has
+ * no authored body yet — the route falls back to the placeholder paragraph
+ * in that case.
+ */
+function getChapterContent(
+  courseSlug: string,
+  chapterSlug: string,
+): React.ComponentType | null {
+  if (courseSlug === "mcps") {
+    return MCPS_CONTENT[chapterSlug] ?? null;
+  }
+  return null;
+}
 
 /**
  * Chapter page.
@@ -130,21 +147,29 @@ export default async function CourseChapterPage({
             {chapter.hook}
           </p>
 
-          {/* Placeholder body */}
-          <p
-            className="font-serif"
-            style={{
-              fontSize: "var(--text-body)",
-              lineHeight: 1.7,
-              color: "var(--color-text)",
-              margin: 0,
-            }}
-          >
-            Chapter content lands in a follow-up task. This page is the
-            layout shell — the navigation works end-to-end, your progress is
-            tracked locally, and the typography is in place. Real prose, with
-            an embedded interactive widget, will land here next.
-          </p>
+          {(() => {
+            const Content = getChapterContent(course.slug, chapter.slug);
+            if (Content) {
+              return <Content />;
+            }
+            return (
+              <p
+                className="font-serif"
+                style={{
+                  fontSize: "var(--text-body)",
+                  lineHeight: 1.7,
+                  color: "var(--color-text)",
+                  margin: 0,
+                }}
+              >
+                Chapter content lands in a follow-up task. This page is the
+                layout shell — the navigation works end-to-end, your
+                progress is tracked locally, and the typography is in
+                place. Real prose, with an embedded interactive widget,
+                will land here next.
+              </p>
+            );
+          })()}
         </div>
       </Prose>
 

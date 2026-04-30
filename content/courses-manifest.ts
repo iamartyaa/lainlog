@@ -39,42 +39,74 @@ export type CourseMeta = {
 export const COURSES: CourseMeta[] = [
   {
     slug: "mcps",
-    title: "Model Context Protocols",
+    title: "Model Context Protocol",
     hook:
-      "what MCPs are, why they're built like this, and why they matter right now.",
+      "what MCP is, why it's built like this, and why it matters right now.",
     pinned: true,
     level: "intro",
     updatedAt: "2026-04-30",
     chapters: [
       {
-        slug: "what-is-an-mcp",
-        title: "What is an MCP?",
-        hook: "the shape of the protocol, in one paragraph.",
-        readingMinutes: 6,
+        slug: "the-room-before-the-protocol",
+        title: "The room before the protocol",
+        hook:
+          "before MCP, every AI integration was a one-off — and your terminal already hides the receipt.",
+        readingMinutes: 8,
       },
       {
-        slug: "why-build-mcps",
-        title: "Why build MCPs?",
-        hook: "the problem they exist to solve.",
-        readingMinutes: 6,
+        slug: "host-client-server",
+        title: "Three roles, one connection",
+        hook:
+          "MCP isn't peer-to-peer. it's a host that spawns one client per server.",
+        readingMinutes: 10,
       },
       {
-        slug: "the-design-reasoning",
-        title: "The design reasoning",
-        hook: "why client/server, why JSON-RPC, why now.",
-        readingMinutes: 7,
+        slug: "json-rpc-the-wire",
+        title: "JSON-RPC, the wire that carries it",
+        hook:
+          "every MCP message is JSON-RPC 2.0. four fields are the whole story.",
+        readingMinutes: 12,
       },
       {
-        slug: "what-purpose-they-serve",
-        title: "What purpose they serve",
-        hook: "the day-to-day jobs MCPs are good at.",
-        readingMinutes: 6,
+        slug: "the-handshake",
+        title: "The handshake",
+        hook:
+          "every session begins with a negotiation. get it wrong and nothing works.",
+        readingMinutes: 11,
       },
       {
-        slug: "why-needed-today",
-        title: "Why they're needed today",
-        hook: "the tipping point that made MCPs inevitable.",
-        readingMinutes: 5,
+        slug: "the-server-primitives",
+        title: "Tools, resources, prompts",
+        hook: "three primitives, three controllers — model, application, user.",
+        readingMinutes: 14,
+      },
+      {
+        slug: "build-a-server",
+        title: "Build a server, in the page",
+        hook:
+          "by the end of this chapter you've authored a working MCP server.",
+        readingMinutes: 14,
+      },
+      {
+        slug: "build-a-client-pick-a-transport",
+        title: "Build a client, pick a transport",
+        hook:
+          "stdio for trust, HTTP for distance. and the smallest host that works.",
+        readingMinutes: 13,
+      },
+      {
+        slug: "when-the-server-asks-back",
+        title: "When the server asks back",
+        hook:
+          "sampling, elicitation, roots — and the human in the loop in each.",
+        readingMinutes: 11,
+      },
+      {
+        slug: "how-mcp-gets-attacked",
+        title: "How MCP gets attacked",
+        hook:
+          "MCP is a protocol, not a perimeter. the spec says SHOULD; you ship the MUST.",
+        readingMinutes: 12,
       },
     ],
   },
