@@ -30,7 +30,6 @@ import {
   H3,
   P,
   Callout,
-  Dots,
   Em,
   Note,
   Term,
@@ -139,7 +138,6 @@ export default function EvalsOrVibes() {
 
       {/* §1 — Preface: orient the reader. */}
       <div>
-        <Dots />
         <SectionH2 eyebrow="1 · what this is about" id="preface">
           What this article is, in one paragraph.
         </SectionH2>
@@ -177,7 +175,6 @@ export default function EvalsOrVibes() {
 
       {/* §2 — What goes wrong without evals: one concrete failure mode. */}
       <div>
-        <Dots />
         <SectionH2 eyebrow="2 · the failure mode" id="failure-mode">
           What goes wrong when you skip this.
         </SectionH2>
@@ -215,7 +212,6 @@ export default function EvalsOrVibes() {
 
       {/* §3 — Three kinds of evals. */}
       <div>
-        <Dots />
         <SectionH2 eyebrow="3 · the three kinds" id="three-kinds">
           The three kinds of evals.
         </SectionH2>
@@ -332,7 +328,6 @@ export default function EvalsOrVibes() {
 
       {/* §4 — How to actually start. */}
       <div>
-        <Dots />
         <SectionH2 eyebrow="4 · the recipe" id="recipe">
           How to start, on Monday.
         </SectionH2>
@@ -406,7 +401,6 @@ export default function EvalsOrVibes() {
 
       {/* §5 — Closing. */}
       <div>
-        <Dots />
         <SectionH2 eyebrow="5 · the point" id="the-point">
           The point.
         </SectionH2>
