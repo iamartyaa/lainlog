@@ -133,7 +133,7 @@
    bars stitched together. Removed entirely. The chapter outline now
    relies on the surface tint (--clay-100 closed / --clay-50 open) +
    item-internal padding + the rounded corners to delineate items. The
-   gridline canvas underneath provides ambient structure without
+   dot-field background underneath provides ambient structure without
    painting any rule lines. The open-state accent is now carried by a
    subtle background shift only (no border-color change, since there
    is no border to colour).
