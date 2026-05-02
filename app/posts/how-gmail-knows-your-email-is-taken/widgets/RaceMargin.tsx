@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { Scrubber } from "@/components/viz/Scrubber";
 import { SPRING } from "@/lib/motion";
-import { WidgetShell } from "./WidgetShell";
+import { WidgetShell } from "@/components/viz/WidgetShell";
 
 type Props = {
   initialAMs?: number;

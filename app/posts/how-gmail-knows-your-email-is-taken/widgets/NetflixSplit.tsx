@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { PRESS, SPRING } from "@/lib/motion";
 import { playSound } from "@/lib/audio";
-import { WidgetShell } from "./WidgetShell";
+import { WidgetShell } from "@/components/viz/WidgetShell";
 
 type InputId = "dotted" | "tagged" | "both";
 

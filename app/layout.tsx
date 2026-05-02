@@ -10,15 +10,16 @@ import { MotionConfigProvider } from "@/components/providers/motion-config";
 import { GoatCounter } from "@/components/analytics/GoatCounter";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
-// Path B-lite: pre-flight grep found no `font-bold` / fontWeight 700 usage
-// (600 is the heaviest actually rendered weight via `font-semibold`), so we
-// drop 700 from both subsets. 14 font files → 11. Proper Path A (self-hosted
-// variable fonts) is deferred to Phase 7 once VF glyph coverage is verified
-// against the content corpus.
+// Path B-lite, expanded for the Phase 1 type-ramp revamp: Plex Serif gains
+// 300 (lighter editorial register for chrome / metadata copy); Plex Sans
+// gains 700 so h1 has real weight differentiation against h2/h3 (600). 11
+// font files → 13. Proper Path A (self-hosted variable fonts) is still
+// deferred to a follow-up phase once VF glyph coverage is verified against
+// the content corpus.
 const plexSerif = IBM_Plex_Serif({
   variable: "--font-plex-serif",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["300", "400", "500", "600"],
   style: ["normal", "italic"],
   display: "swap",
 });
@@ -26,7 +27,7 @@ const plexSerif = IBM_Plex_Serif({
 const plexSans = IBM_Plex_Sans({
   variable: "--font-plex-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 

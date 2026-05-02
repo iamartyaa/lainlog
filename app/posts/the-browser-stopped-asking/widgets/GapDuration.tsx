@@ -3,7 +3,7 @@
 import { memo, useMemo, useState } from "react";
 import { Scrubber } from "@/components/viz/Scrubber";
 import { TextHighlighter } from "@/components/fancy";
-import { WidgetShell } from "./WidgetShell";
+import { WidgetShell } from "@/components/viz/WidgetShell";
 import {
   classify,
   ClassifiedEvent,

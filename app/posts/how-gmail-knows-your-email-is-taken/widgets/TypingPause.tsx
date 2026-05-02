@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { PRESS, SPRING } from "@/lib/motion";
 import { playSound } from "@/lib/audio";
-import { WidgetShell } from "./WidgetShell";
+import { WidgetShell } from "@/components/viz/WidgetShell";
 
 const SAMPLE = "johndoe@gmail.com";
 const KEYSTROKE_MS = 90; // human-realistic typing cadence

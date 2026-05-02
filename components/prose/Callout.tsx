@@ -26,11 +26,17 @@ export function Callout({
         lineHeight: 1.6,
       }}
     >
+      {/* Label uses the new --text-h4 register: uppercase, sans, semibold,
+          0.06em tracking. Weight + size + tracking all come from the paired
+          --text-h4-* vars so the label rule lives in one place. */}
       <span
-        className="mr-2 font-sans font-semibold uppercase tracking-wider"
+        className="mr-2 font-sans uppercase"
         style={{
-          fontSize: "0.7rem",
-          letterSpacing: "0.08em",
+          fontFamily: "var(--text-h4-family)",
+          fontSize: "var(--text-h4)",
+          fontWeight: "var(--text-h4-weight)",
+          lineHeight: "var(--text-h4-lh)",
+          letterSpacing: "var(--text-h4-tracking)",
           color: "var(--color-accent)",
         }}
       >

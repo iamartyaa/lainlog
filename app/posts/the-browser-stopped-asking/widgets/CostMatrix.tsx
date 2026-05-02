@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { WidgetShell } from "./WidgetShell";
+import { WidgetShell } from "@/components/viz/WidgetShell";
 import { TextHighlighter } from "@/components/fancy";
 import { SPRING } from "@/lib/motion";
 import { playSound } from "@/lib/audio";

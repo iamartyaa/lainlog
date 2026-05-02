@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { WidgetShell } from "./WidgetShell";
+import { WidgetShell } from "@/components/viz/WidgetShell";
 import { playSound } from "@/lib/audio";
 
 type Row = {

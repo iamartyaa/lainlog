@@ -3,7 +3,7 @@
 import { memo, useState } from "react";
 import { WidgetNav } from "@/components/viz/WidgetNav";
 import { TextHighlighter } from "@/components/fancy";
-import { WidgetShell } from "./WidgetShell";
+import { WidgetShell } from "@/components/viz/WidgetShell";
 import {
   SPEC_SAMPLE,
   StepsCanvasNarrow,

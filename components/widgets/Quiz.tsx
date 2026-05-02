@@ -192,8 +192,10 @@ export function Quiz({
           line-height: 1.45;
           text-align: left;
           border-radius: var(--radius-sm);
+          /* Phase 1 visual-weight lift: opaque surface (was 60% alpha-mix)
+             so chips read as deliberate picks, not ghost text. */
           border: 1px solid var(--color-rule);
-          background: color-mix(in oklab, var(--color-surface) 60%, transparent);
+          background: var(--color-surface);
           color: var(--color-text);
           cursor: pointer;
           transition: background 200ms, color 200ms, border-color 200ms, opacity 200ms;
@@ -304,6 +306,10 @@ export function Quiz({
                       : isChosen
                         ? "var(--color-accent)"
                         : "var(--color-rule)",
+                  // Phase 1 — selected chip reads as a deliberate pick via
+                  // a 2 px border (was 1 px). Resting border stays 1 px so
+                  // the surface only tightens once the reader has chosen.
+                  borderWidth: isChosen || showCorrectMark ? 2 : 1,
                   background: showCorrectMark
                     ? "color-mix(in oklab, var(--color-accent) 16%, transparent)"
                     : isWrongChosen

@@ -6,6 +6,41 @@ Cross-reference: [`DESIGN.md`](../DESIGN.md), [`voice-profile.md`](./voice-profi
 
 ---
 
+## 0. Widget layout contract
+
+Every widget rendered in a post follows this body order, top to bottom:
+
+1. **Title** (metadata row) — sans, muted, left; mono tabular-nums measurements right.
+2. **Canvas** — the interactive surface (SVG / HTML viz). Opaque `--color-surface` with a 1 px `--color-rule` border.
+3. **State caption** — the teacher-voice line that names what just happened. `--text-body-strong`, full contrast, with a 10 × 10 rotated terracotta square marker.
+4. **Controls** — `<WidgetNav>` or a custom controls cluster. Bottom of the widget, always.
+
+**Frame stability is per-viewport.** Within a viewport, widget bounding-box dimensions MUST NOT change as the user interacts with the widget. Layout flips driven by `@container` queries (viewport-width-driven) are still allowed — the constraint is interaction-stability, not viewport-stability.
+
+The contract is enforced by [`components/viz/WidgetShell.tsx`](../components/viz/WidgetShell.tsx). New widgets compose the shell with the strict slot props:
+
+```tsx
+<WidgetShell
+  title="HashLane"
+  measurements="m=16 · set=5"
+  canvas={<HashLaneCanvas …/>}
+  state={<>The lane just collided. Each new probe walks one slot right.</>}
+  controls={<WidgetNav value={step} total={N} onChange={setStep} />}
+/>
+```
+
+The legacy `children` (canvas) and `caption` (state) props remain functional through the Phase 1 → Phase 2 gap so the existing 23+ widget callsites still render correctly during the migration. Phase 2 retires the compat shim and migrates each widget to the strict slots one at a time.
+
+**Per-zone min-height contract** (set by the shell, not by the widget):
+
+- `canvas`: no shell-level min-height on the post-hydration canvas — per-widget responsibility (Phase 2 sets each widget's tallest reachable state). The pre-hydration SSR-dot path retains its `min-h-[120px]` floor so the pre-hydration size is stable.
+- `state`: shell sets `min-height: 5.25em` so the state line never causes a layout jump when copy changes.
+- `controls`: shell sets `min-height: var(--widget-controls-min, 44px)` so single-button vs full-WidgetNav rows don't change frame height between widgets.
+
+**Inline-prose exemption.** `PredictReveal`, `DomReveal`, and `ClosingDot` are typographic punctuation embedded inside paragraphs — not standalone widgets. They render inline and do not follow the layout contract.
+
+---
+
 ## 1. The widget-shape taxonomy
 
 Every widget we've shipped collapses to one of seven shapes. Pick the shape that matches the teaching claim before picking the widget's visual design.

@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { WidgetNav } from "@/components/viz/WidgetNav";
 import { PRESS, SPRING } from "@/lib/motion";
 import { playSound } from "@/lib/audio";
-import { WidgetShell } from "./WidgetShell";
+import { WidgetShell } from "@/components/viz/WidgetShell";
 
 type LocalityId = "hot" | "warm" | "cold";
 

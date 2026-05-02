@@ -36,13 +36,16 @@ export function AboutColumn({ readerCount }: AboutColumnProps) {
           collapses back to a block (eyes hidden here, rendered in their
           desktop slot below). */}
       <div className="flex items-center justify-between gap-[var(--spacing-md)] lg:block">
-        {/* Giant serif wordmark — brand moment. */}
+        {/* Giant serif wordmark — brand moment. Size is intentionally bigger
+            than --text-h1 (this is the home logotype, not a hero h1), but
+            tracking is sourced from --brand-tracking so the brand moment
+            stays consistent with the type ramp's tracking philosophy. */}
         <h1
           className="font-serif font-semibold"
           style={{
             fontSize: "clamp(3rem, 2.2rem + 3vw, 4.5rem)",
             lineHeight: 0.95,
-            letterSpacing: "-0.03em",
+            letterSpacing: "var(--brand-tracking)",
             color: "var(--color-text)",
           }}
         >
