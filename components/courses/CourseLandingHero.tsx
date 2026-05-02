@@ -199,8 +199,9 @@ export function CourseLandingHero({ course }: { course: CourseMeta }) {
           phase begins. polish-r4: dashed `borderTop` divider removed (user
           directive: scrap all horizontal dividers on /courses/*). The phase
           break is now carried by --spacing-2xl whitespace + the type
-          hierarchy shift (mono small caps vs. serif body) — the gridline
-          canvas reads through the gap and provides ambient structure. */}
+          hierarchy shift (mono small caps vs. serif body) — the DotField
+          (landing) / static-dots (chapter) background reads through the
+          gap and provides ambient structure. */}
       <p
         className="font-mono"
         style={{
@@ -227,7 +228,7 @@ export function CourseLandingHero({ course }: { course: CourseMeta }) {
       {/* polish-r4: <hr> Swiss-grid section divider removed (user directive
           — no horizontal dividers on /courses/*). The phase break from
           metadata → intro is now whitespace-only: --spacing-3xl above the
-          intro section, with the gridline canvas providing ambient
+          intro section, with the dot-field background providing ambient
           structure underneath. */}
       {/* 6. Intro section — phase break carried by --spacing-3xl above. */}
       <section
@@ -236,13 +237,15 @@ export function CourseLandingHero({ course }: { course: CourseMeta }) {
         style={{ scrollMarginTop: "var(--spacing-xl)" }}
       >
         {/* polish-r3 ITEM 3 — dropped the terracotta `borderLeft` accent
-            on this pull-quote. The /courses/* react.gg gridline background
-            already provides vertical structure on the left margin; layering
-            a hard 1-px terracotta vertical on top of a faint gridline read
-            as a duplicated guide. The pull-quote retains its identity via
-            italic serif + muted colour + a quiet leading dash glyph that
-            occupies the same visual slot as the old border without painting
-            a continuous vertical line. */}
+            on this pull-quote. The original rationale was that the
+            /courses/* gridline background already carried vertical
+            structure on the left margin and a hard 1-px terracotta
+            vertical layered on top read as a duplicated guide. Under
+            the dot-field successor that exact concern is gone, but the
+            decision still stands: the pull-quote retains its identity
+            via italic serif + muted colour + a quiet leading dash glyph
+            that occupies the same visual slot as the old border without
+            painting a continuous vertical line. */}
         <blockquote
           className="font-serif italic"
           style={{

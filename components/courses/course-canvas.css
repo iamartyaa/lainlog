@@ -37,68 +37,25 @@
 }
 
 /* ---------------------------------------------------------------------------
-   react.gg-style infinite-canvas gridline background.
-
-   polish-r5 ITEM 3 + ITEM 4 — selector scope correction.
+   Course-route background — superseded.
    ------------------------------------------------------------
-   Previously this rule was bound to `[data-course]`, but that attribute
-   also lives on the home pinned course card (it scopes the --clay-*
-   tonal range). The pattern therefore leaked onto the home card after
-   any /courses/* visit (ITEM 4 bug). Additionally, `[data-course]` only
-   covered the inner page-content wrapper — so on short courses the
-   gridlines stopped before the viewport bottom (ITEM 3 bug).
+   The previous react.gg-style 40-px gridline pattern lived here, painted
+   on `.bs-course-canvas` (the segment-layout wrapper). It has been
+   replaced by the dot-field background system:
 
-   The fix: bind the pattern to `.bs-course-canvas` instead. That class
-   lives on the segment-level layout (app/courses/layout.tsx) which
-   wraps every /courses/* route in `min-h-dvh`, giving full-viewport
-   coverage. The home card never carries that class, so the pattern
-   can't leak. The --clay-* tonal range stays on `[data-course]` and
-   continues to resolve on the home card unchanged.
+     - Landing pages    → <DotField/> canvas (cursor-reactive bulge + glow
+                          + diagonal gradient)
+     - Chapter pages    → static radial-gradient dots (1 px @ 22 px)
 
-   Light mode: gridlines at ~6 % --color-text-tinted ink, near-invisible
-   until you look for them. Dark mode: ~10 % so the grid stays
-   perceptible. Static — gridlines never animate, so reduced-motion is
-   irrelevant. Anti-banding at high zoom: keep the line at exactly 1 px.
+   Both surfaces are painted on fixed-position wrappers rendered by
+   `app/courses/CourseBackground.tsx`. The CSS lives in `app/globals.css`
+   (`.bs-course-bg-static` and `.bs-course-bg-canvas`).
+
+   `bs-course-canvas` remains as a className on the segment-layout div for
+   backward-compat with comments that still reference it; no rule binds
+   to it anymore. The `[data-course]` token scope (--clay-*) below is
+   unaffected and continues to resolve on the inner page wrapper.
 --------------------------------------------------------------------------- */
-.bs-course-canvas {
-  background-image:
-    linear-gradient(
-      to right,
-      color-mix(in oklab, var(--color-text) 6%, transparent) 0,
-      color-mix(in oklab, var(--color-text) 6%, transparent) 1px,
-      transparent 1px,
-      transparent 40px
-    ),
-    linear-gradient(
-      to bottom,
-      color-mix(in oklab, var(--color-text) 6%, transparent) 0,
-      color-mix(in oklab, var(--color-text) 6%, transparent) 1px,
-      transparent 1px,
-      transparent 40px
-    );
-  background-size: 40px 40px;
-  background-position: 0 0, 0 0;
-}
-
-[data-theme="dark"] .bs-course-canvas {
-  background-image:
-    linear-gradient(
-      to right,
-      color-mix(in oklab, var(--color-text) 10%, transparent) 0,
-      color-mix(in oklab, var(--color-text) 10%, transparent) 1px,
-      transparent 1px,
-      transparent 40px
-    ),
-    linear-gradient(
-      to bottom,
-      color-mix(in oklab, var(--color-text) 10%, transparent) 0,
-      color-mix(in oklab, var(--color-text) 10%, transparent) 1px,
-      transparent 1px,
-      transparent 40px
-    );
-  background-size: 40px 40px;
-  background-position: 0 0, 0 0;
-}
 
 /* ---------------------------------------------------------------------------
    ITEM-1 polish-r2 stray-line diagnosis (recorded 2026-04-30)
@@ -176,7 +133,7 @@
    bars stitched together. Removed entirely. The chapter outline now
    relies on the surface tint (--clay-100 closed / --clay-50 open) +
    item-internal padding + the rounded corners to delineate items. The
-   gridline canvas underneath provides ambient structure without
+   dot-field background underneath provides ambient structure without
    painting any rule lines. The open-state accent is now carried by a
    subtle background shift only (no border-color change, since there
    is no border to colour).

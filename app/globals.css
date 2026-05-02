@@ -168,6 +168,14 @@
   --color-accent: var(--color-terra-40);
   --color-accent-pressed: var(--color-terra-50);
   --color-rule: color-mix(in oklab, var(--color-text) 12%, transparent);
+
+  /* Course-routes dot-field background (DotField + static dots).
+     Theme-token mix (NOT terracotta) — muted neutrals derived from
+     --color-text. DotField reads these via getComputedStyle on mount and
+     on data-theme flip. */
+  --course-dot-from: color-mix(in oklab, var(--color-text) 18%, transparent);
+  --course-dot-to:   color-mix(in oklab, var(--color-text) 12%, transparent);
+  --course-glow:     color-mix(in oklab, var(--color-text) 6%, transparent);
 }
 
 [data-theme="dark"] {
@@ -178,6 +186,13 @@
   --color-accent: var(--color-terra-60);
   --color-accent-pressed: var(--color-terra-50);
   --color-rule: color-mix(in oklab, var(--color-text) 10%, transparent);
+
+  /* Dark-mode dot-field tokens — slightly higher contrast since OLED
+     blacks make low-opacity light pixels feel quieter than equivalent
+     light-theme tints. */
+  --course-dot-from: color-mix(in oklab, var(--color-text) 22%, transparent);
+  --course-dot-to:   color-mix(in oklab, var(--color-text) 14%, transparent);
+  --course-glow:     color-mix(in oklab, var(--color-text) 10%, transparent);
 }
 
 html {
@@ -205,6 +220,62 @@ body {
     color-mix(in oklab, var(--color-text) 5%, transparent) 13px,
     color-mix(in oklab, var(--color-text) 5%, transparent) 14px
   );
+}
+
+/* ---------------------------------------------------------------------------
+   Course-routes dot-field background.
+   ------------------------------------------------------------
+   Two fixed-position wrappers rendered by app/courses/CourseBackground.tsx,
+   one of which mounts (depending on the route depth):
+
+     .bs-course-bg-static  — chapter pages (and the DotField fallback for
+                             touch / reduced-motion / localStorage off).
+                             A single radial-gradient dot pattern, 1 px @ 22 px,
+                             tinted ~9% --color-text in light, ~7% in dark.
+
+     .bs-course-bg-canvas  — landing pages. Hosts the <canvas> painted by
+                             DotField. Carries the same static-dots
+                             gradient as a fallback that the canvas
+                             overdraws — so if DotField bails out at
+                             mount (touch / localStorage off), users
+                             still see the dotted background.
+
+   Both are `position: fixed; inset: 0; z-index: -1; pointer-events: none`,
+   so cursor events pass through to content (DotField hooks mousemove on
+   `window` for cursor data) and the body's diagonal hatch is fully
+   occluded under /courses/* routes.
+--------------------------------------------------------------------------- */
+.bs-course-bg-static,
+.bs-course-bg-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    color-mix(in oklab, var(--color-text) 9%, transparent) 1px,
+    transparent 1.5px
+  );
+  background-size: 22px 22px;
+  background-color: var(--color-bg);
+}
+
+[data-theme="dark"] .bs-course-bg-static,
+[data-theme="dark"] .bs-course-bg-canvas {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    color-mix(in oklab, var(--color-text) 7%, transparent) 1px,
+    transparent 1.5px
+  );
+}
+
+/* Print: courses chapters can be exported; suppress both background
+   variants so paper output stays clean. */
+@media print {
+  .bs-course-bg-static,
+  .bs-course-bg-canvas {
+    background-image: none !important;
+  }
 }
 
 /* ---------------------------------------------------------------------------

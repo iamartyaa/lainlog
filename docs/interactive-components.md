@@ -718,3 +718,96 @@ deprecated emergency override path. It is not consumed by `<PostCover>`
 today; if a future post needs a hand-cropped raster, wire it through
 the registry by adding a static-image cover component instead of
 re-introducing the field.
+
+## 11. Course-route backgrounds — the hybrid dot field
+
+The `/courses/*` segment paints its own background under the centred
+content column, signalling "you've left the blog, you're in a playground
+now." The system is **hybrid by design**: landing pages get a cursor-
+reactive canvas, chapter pages get a static radial-gradient dot pattern.
+Both surfaces are scoped to `/courses/*` — posts and the homepage are
+unaffected.
+
+### Architecture (1 paragraph)
+
+`app/courses/layout.tsx` renders `<CourseBackground />` once at the
+segment root. `CourseBackground.tsx` reads `usePathname()` and dispatches:
+two-segment paths (`/courses/<slug>`) mount `<DotField />` (loaded via
+`next/dynamic({ ssr: false })`); three-or-more segment paths
+(`/courses/<slug>/<chapter>`) render a marker div whose CSS paints a
+1-px-at-22-px radial-gradient. Both wrappers are
+`position: fixed; inset: 0; z-index: -1; pointer-events: none`. The
+courses layout also wraps children in `<CozyFrameProvider transparent>`
+so the root layout's `<CozyFrame>` drops its solid `--color-bg` fill,
+letting the dots show through behind the centered column.
+
+### DotField (vendored from React Bits, retoned)
+
+Source: `components/fancy/dot-field/DotField.tsx`. The user-blessed
+calibration is hard-coded by the call site:
+
+```tsx
+<DotField />  /* defaults match the calibration below */
+```
+
+| Prop | Default (vs. React Bits') | Why |
+|------|---------------------------|-----|
+| `dotRadius` | 1.25 (1.5) | Reads as background, not foreground |
+| `dotSpacing` | 20 (14) | Looser grid, less density |
+| `cursorRadius` | 320 (500) | Local effect, not page-wide |
+| `bulgeOnly` | true (true) | Bulge mode, not physics push |
+| `bulgeStrength` | 28 (67) | Subtle response, not a tractor beam |
+| `glowRadius` | 120 (160) | Tighter cursor glow |
+| `sparkle` | false (false) | Off — feels gimmicky on a static landing |
+| `waveAmplitude` | 0 (0) | Off — wave is always-running motion |
+
+Colors come from CSS vars (`--course-dot-from`, `--course-dot-to`,
+`--course-glow`) defined in `app/globals.css` for both light + dark
+themes. Tokens use `color-mix(in oklab, var(--color-text) Nx%, transparent)`
+— **muted neutral, never accent**. DotField re-reads these on
+`MutationObserver` of the `<html>` `data-theme` attribute, so theme
+flip is a smooth one-frame transition.
+
+### Performance + a11y guards (added to the vendored source)
+
+- `prefers-reduced-motion: reduce` — single static frame, no RAF loop,
+  no listeners. Component still mounts so the visual baseline is
+  consistent.
+- `(pointer: coarse), (hover: none)` — bails out before mounting any
+  effect; the wrapper's CSS fallback gradient is what touch users see.
+- `localStorage["lainlog:dotfield"] === "off"` — same fallthrough. Set
+  this in DevTools and reload to test, or wire a future toggle UI.
+- `IntersectionObserver` — pauses RAF when the canvas scrolls fully
+  off-screen (mirrors `components/viz/WidgetNav.tsx`).
+- `document.visibilitychange` — pauses RAF when the tab is backgrounded.
+- `mousemove` listener (passive: true) updates a ref; no work happens
+  until the next RAF tick reads it.
+
+### Static-dots fallback (chapter pages + DotField fall-through)
+
+`.bs-course-bg-static` paints a 1-px-at-22-px radial-gradient tinted
+~9% `--color-text` in light, ~7% in dark. The same gradient is also
+painted on `.bs-course-bg-canvas` as a fallback the canvas overdraws —
+so if DotField bails out, the static dots are still there. `@media print`
+suppresses both wrappers so chapter exports stay clean.
+
+### CSS vars
+
+```
+--course-dot-from   gradient + dot color (top-left corner of the wash)
+--course-dot-to     gradient color (bottom-right corner of the wash)
+--course-glow       cursor glow centre color
+```
+
+All three are `color-mix(in oklab, var(--color-text) N%, transparent)` —
+the percentage is the only thing that varies between light and dark.
+Tune the percentages in `app/globals.css` if the field reads too quiet
+or too loud.
+
+### CozyFrame transparent variant
+
+`CozyFrame` reads a `transparent` flag from `CozyFrameContext`. Default
+is `false` (solid `--color-bg` fill, as before). The courses layout
+wraps in `<CozyFrameProvider transparent>` so the column doesn't paint
+over the dots. Posts and the homepage never see this provider; their
+default `false` is unchanged.
