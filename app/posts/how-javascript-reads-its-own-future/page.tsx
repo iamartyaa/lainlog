@@ -8,7 +8,6 @@ import {
   Em,
   Aside,
   A,
-  HeroTile,
   Term,
 } from "@/components/prose";
 import { PostBackLink } from "@/components/nav/PostBackLink";
@@ -70,9 +69,6 @@ export default function HowJavaScriptReadsItsOwnFuture() {
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
         <PostBackLink />
-        <div className="mt-[var(--spacing-md)] mb-[var(--spacing-md)] hidden md:flex">
-          <HeroTile slug="how-javascript-reads-its-own-future" />
-        </div>
         <H1 style={{ fontSize: "clamp(2.5rem, 2rem + 3.5vw, 4rem)" }}>
           JavaScript Hoisting, the TDZ, and the Call Stack Explained
         </H1>

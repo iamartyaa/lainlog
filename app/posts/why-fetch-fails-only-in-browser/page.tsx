@@ -10,7 +10,6 @@ import {
   Aside,
   A,
   FullBleed,
-  HeroTile,
   Term,
 } from "@/components/prose";
 import { PostBackLink } from "@/components/nav/PostBackLink";
@@ -46,9 +45,6 @@ export default function WhyFetchFailsOnlyInBrowser() {
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
         <PostBackLink />
-        <div className="mt-[var(--spacing-md)] mb-[var(--spacing-md)] hidden md:flex">
-          <HeroTile slug="why-fetch-fails-only-in-browser" />
-        </div>
         <H1>Why fetch fails in browser but works in curl (CORS)</H1>
         <p
           className="mt-[var(--spacing-sm)] font-mono tabular-nums"

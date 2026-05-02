@@ -10,20 +10,25 @@ const STORAGE_KEY = "lainlog:audio:prompt-dismissed";
 /**
  * AudioPromptTooltip — first-visit hint anchored beside the speaker icon.
  *
+ * Audio is default-on (per the 2026-05-02 flip), so this tooltip's job is
+ * to tell first-time readers HOW TO MUTE — pointer at the speaker toggle.
+ * It is never shown again once dismissed.
+ *
  * Renders ONLY when all four conditions are true:
  *   - hydrated (avoids SSR mismatch — localStorage isn't available on the
  *     server, so the first paint is empty and the tooltip eases in once
  *     the client confirms the user qualifies)
  *   - pathname === "/"  (home page only — article pages stay quiet)
- *   - audio preference is OFF (no point prompting if they're already in)
+ *   - audio preference is ON (the only state where a "click to mute"
+ *     hint makes sense)
  *   - localStorage[STORAGE_KEY] !== "true"  (sticky dismiss)
  *
  * Dismiss paths:
  *   - close button click → persists `prompt-dismissed = "true"` and
  *     unmounts via AnimatePresence.
- *   - AudioToggle parent flips audio ON → `audioEnabled` prop becomes
- *     true → effect persists `prompt-dismissed = "true"` so the tooltip
- *     never reappears, even if the user later turns audio back off.
+ *   - AudioToggle parent flips audio OFF → `audioEnabled` prop becomes
+ *     false → effect persists `prompt-dismissed = "true"` so the tooltip
+ *     never reappears, even if the user later turns audio back on.
  *
  * Visual language: matches `<Callout>` (the canonical "speaking to the
  * reader" element) — rounded radius-md, var(--color-surface) bg, plain
@@ -60,11 +65,11 @@ export function AudioPromptTooltip({
     }
   }, []);
 
-  // Auto-dismiss + persist when audio gets turned on. The user's intent
-  // is clear at that point — keep the tooltip from ever coming back.
+  // Auto-dismiss + persist when audio gets muted. The user has just acted
+  // on the hint — keep the tooltip from ever coming back.
   useEffect(() => {
     if (!hydrated) return;
-    if (audioEnabled && !dismissed) {
+    if (!audioEnabled && !dismissed) {
       try {
         window.localStorage.setItem(STORAGE_KEY, "true");
       } catch {
@@ -84,7 +89,7 @@ export function AudioPromptTooltip({
   };
 
   const shouldShow =
-    hydrated && pathname === "/" && !audioEnabled && !dismissed;
+    hydrated && pathname === "/" && audioEnabled && !dismissed;
 
   return (
     <AnimatePresence>
@@ -117,7 +122,7 @@ export function AudioPromptTooltip({
           >
             ♪
           </span>
-          <span>try it with sounds on</span>
+          <span>Click here to mute the site.</span>
           <button
             type="button"
             onClick={handleDismiss}

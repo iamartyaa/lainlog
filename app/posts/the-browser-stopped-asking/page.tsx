@@ -9,7 +9,6 @@ import {
   Em,
   A,
   FullBleed,
-  HeroTile,
   Term,
 } from "@/components/prose";
 import { PostBackLink } from "@/components/nav/PostBackLink";
@@ -61,9 +60,6 @@ export default function TheBrowserStoppedAsking() {
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
         <PostBackLink />
-        <div className="mt-[var(--spacing-md)] mb-[var(--spacing-md)] hidden md:flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
-          <HeroTile slug="the-browser-stopped-asking" />
-        </div>
         <H1>WebSockets, SSE, and long-polling: how real-time web works</H1>
         <p
           className="mt-[var(--spacing-sm)] font-mono tabular-nums"
