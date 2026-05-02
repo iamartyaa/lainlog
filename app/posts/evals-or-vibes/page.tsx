@@ -332,7 +332,9 @@ export default function EvalsOrVibes() {
           </Em>{" "}
           The Anthropic evals literature is even blunter: the term of art
           is <Term>eval saturation</Term>, the moment the suite stops
-          giving signal. Every wine on your panel scored 95.{" "}
+          giving signal.
+        </P>
+        <P>
           <BallotChipReveal />
         </P>
         <P>
