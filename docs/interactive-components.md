@@ -310,6 +310,50 @@ A 🔸 candidate graduates to ✅ shipped when:
 
 No "just in case" installs. The Fancy library is big; bytesize stays small.
 
+## 2.6 Prose primitives — `Note` + `Term`
+
+Two sitewide primitives in `components/prose/`. Both are exported from the `@/components/prose` barrel. Use sparingly — these are pacing tools, not decoration.
+
+### `<Note summary="...">` — collapsed-by-default disclosure
+
+- Sibling, not replacement, for `<Callout>`. Callout is **always-visible** (the reader can't miss it). Note is **opt-in reveal** (the reader chooses to expand it).
+- Use for tactical asides — implementation recipes, "if you want a specific procedure", caveats — that would weigh down the article inline but earn their place on demand.
+- **Closed state** renders a one-line `summary`, a small mono "Note" eyebrow, a chevron, and a soft terracotta shimmer (4 small dots, ~3.6s loop) that catches the eye. The shimmer is auto-suppressed under `prefers-reduced-motion: reduce`.
+- **Open state** grows downward via a 320 ms height + opacity transition. Audio: `Pop` fires on expand only (per `audio-playbook.md`); collapse is silent.
+- Accessibility: real `<button>` with `aria-expanded` + `aria-controls`; keyboard works for free.
+- Frame stability: closed-state height is the trigger row only. Growing on user click is allowed (the "no size jumps mid-interaction" rule scopes to widget canvases, not collapsibles).
+- **2-3 Notes per post is the right ballpark.** The prose should still flow without expanding any of them.
+
+```tsx
+<Note summary="The Yan recipe — sample, blind, compare">
+  Eugene Yan has the cleanest tactical version: every week, sample 30
+  outputs the LLM-judge has scored. Have a human re-grade them blind…
+</Note>
+```
+
+### `<Term define="...">` — one-tap glossary tooltip
+
+- Two modes:
+  1. Plain `<Term>foo</Term>` — backwards-compatible italic `<dfn>`.
+  2. Interrogable `<Term define="…">foo</Term>` — dotted-underline term that surfaces a small popover on hover (desktop) and tap (touch). Esc / click-outside dismiss; `aria-describedby` wires the popover for screen readers.
+- Use for technical conventions readers will encounter elsewhere (e.g. *eval set*, *eval saturation*) but that don't merit a paragraph of prose. **First appearance only** of any given term — subsequent mentions stay plain text. The tooltip is a glossary helper, not a typographic flourish.
+- For terms you can simplify in plain English (rubric → "scoring guide"), prefer rephrasing over wrapping.
+- Mobile: the popover constrains to `min(280px, 90vw)` so it stays readable in a 320 px viewport.
+
+```tsx
+<Term define="A held-out set of inputs your LLM has to produce acceptable outputs for. Test fixtures with a scoring guide attached.">
+  eval set
+</Term>
+```
+
+### `<Note>` vs `<Callout>` vs `<Aside>` — when to use which
+
+| Primitive | Visibility | Use for |
+|-----------|-----------|---------|
+| `<Callout>` | Always visible | Load-bearing summary the reader must see (rules-of-thumb, key warnings). |
+| `<Note>` | Hidden until tapped | Tactical aside, optional recipe, implementation detail worth surfacing on demand. |
+| `<Aside>` | Always visible (italic, smaller) | Brief tonal aside or footnote-flavored caveat that earns its place inline. |
+
 ## 3. Design-system invariants — the non-negotiables
 
 Every widget must clear every bullet. Reviewer's first pass checks these mechanically.

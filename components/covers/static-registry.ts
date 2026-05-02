@@ -6,6 +6,7 @@ import { FunctionRememberedCoverStatic } from "./FunctionRememberedCover";
 import { WebpageReadsAgentCoverStatic } from "./WebpageReadsAgentCover";
 import { LineThatWaitsItsTurnCoverStatic } from "./LineThatWaitsItsTurnCover";
 import { HowJavascriptReadsItsOwnFutureCoverStatic } from "./HowJavascriptReadsItsOwnFutureCover";
+import { EvalsOrVibesCoverStatic } from "./EvalsOrVibesCover";
 
 /**
  * Server-safe registry of pure-JSX static cover components, keyed by post slug.
@@ -40,4 +41,5 @@ export const STATIC_COVERS: Record<string, () => JSX.Element> = {
   "the-webpage-that-reads-the-agent": WebpageReadsAgentCoverStatic,
   "the-line-that-waits-its-turn": LineThatWaitsItsTurnCoverStatic,
   "how-javascript-reads-its-own-future": HowJavascriptReadsItsOwnFutureCoverStatic,
+  "evals-or-vibes": EvalsOrVibesCoverStatic,
 };

@@ -27,6 +27,16 @@ export type PostMeta = {
 
 export const POSTS: PostMeta[] = [
   {
+    slug: "evals-or-vibes",
+    title:
+      "How to know if your AI is actually any good — a primer on evals for LLM products",
+    date: "2026-05-02",
+    hook:
+      "an eval is a test for an LLM feature: a list of inputs, the answers you expect, and a way to score what came back. three kinds, and a monday-morning recipe.",
+    readingMinutes: 9,
+    tags: ["ai", "evals", "engineering-practice"],
+  },
+  {
     slug: "how-javascript-reads-its-own-future",
     title: "JavaScript Hoisting, the TDZ, and the Call Stack Explained",
     date: "2026-04-25",
