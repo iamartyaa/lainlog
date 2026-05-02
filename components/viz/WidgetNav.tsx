@@ -1,16 +1,8 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { PRESS, SPRING } from "@/lib/motion";
+import { PRESS } from "@/lib/motion";
 import { useTapPulse } from "@/lib/hooks/use-tap-pulse";
 import { playSound } from "@/lib/audio";
 
@@ -37,30 +29,27 @@ type WidgetNavProps = {
 /**
  * WidgetNav — the canonical step-controls primitive for lainlog widgets.
  *
- * Visual: prev / play / next sit as a joined pill row. A single `motion.div`
- * indicator pill morphs between the active button position via
- * `transform: translateX/scaleX` only (DESIGN.md §9 — no width/height
- * animations, no decorative pulses). The "gooey" feel comes from an inline
- * SVG `<filter>` (`feGaussianBlur` + alpha-snap `feColorMatrix`) scoped per
- * instance via `useId()`, applied to the indicator pill div only — text is
- * rendered outside the filter group so it stays crisp.
+ * Visual: prev / play / next render as a row of self-contained pills with
+ * 6px (`gap-1.5`) breathing room. Each pill carries its own 1px rule
+ * border, surface bg, accent text on hover, and per-button PRESS tap
+ * feedback (DESIGN.md §9 — transform-only, no width/height animation).
  *
- * Behaviour preserved from the legacy `<Stepper>`:
+ * Behaviour preserved:
  * - Auto-play scheduling at `playInterval` ms (1800ms under reduced motion).
  * - `IntersectionObserver` pauses autoplay when the nav scrolls off-screen
  *   (battery-life requirement on mobile when many widgets share a page).
  * - `useTapPulse` ring-pulse on prev / next so heavy-commit actions feel
  *   tactile.
+ * - `Progress-Tick` plays on every user-driven press (prev / play / pause /
+ *   replay / next). Auto-advance ticks stay silent.
  *
  * Accessibility:
- * - The active button carries `aria-current="step"`.
- * - The `n / N` counter is `aria-live="polite"` only when NOT auto-playing,
- *   so screen readers don't get flooded during autoplay.
+ * - The next button carries `aria-current="step"` while there are still
+ *   steps ahead.
+ * - The `n / N` counter is `aria-live="polite"` only after the user has
+ *   moved at least once and is NOT auto-playing, so screen readers don't
+ *   get flooded.
  * - All hit targets are ≥ 44 × 44 (DESIGN.md §11).
- *
- * Reduced motion:
- * - Indicator pill teleports (no spring tail).
- * - Goo filter is dropped entirely.
  */
 export function WidgetNav({
   value,
@@ -75,17 +64,10 @@ export function WidgetNav({
   const [inView, setInView] = useState(true);
   const onChangeRef = useRef(onChange);
   const containerRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const prevBtnRef = useRef<HTMLButtonElement>(null);
-  const playBtnRef = useRef<HTMLButtonElement>(null);
-  const nextBtnRef = useRef<HTMLButtonElement>(null);
   const prefersReducedMotion = useReducedMotion();
   const userMovedRef = useRef(false);
   const prevPulse = useTapPulse<HTMLButtonElement>();
   const nextPulse = useTapPulse<HTMLButtonElement>();
-
-  const filterId = useId();
-  const gooFilter = `bs-goo-${filterId.replace(/:/g, "")}`;
 
   onChangeRef.current = onChange;
 
@@ -97,44 +79,6 @@ export function WidgetNav({
     },
     [total],
   );
-
-  // Indicator-pill geometry: measure the active button each time `value`,
-  // `playing`, or layout changes. Re-measure on resize.
-  const [pill, setPill] = useState({ x: 0, w: 0, ready: false });
-
-  const measure = useCallback(() => {
-    const track = trackRef.current;
-    if (!track) return;
-    let active: HTMLButtonElement | null = null;
-    if (playing && playable && playBtnRef.current) {
-      active = playBtnRef.current;
-    } else {
-      // No "active" tab in the strict tab sense — highlight `next` so the
-      // pill anchors on the most relevant action. When at end, highlight
-      // play (replay). When at start, highlight next.
-      if (value <= 0 && nextBtnRef.current) active = nextBtnRef.current;
-      else if (value >= total - 1 && playBtnRef.current && playable)
-        active = playBtnRef.current;
-      else if (nextBtnRef.current) active = nextBtnRef.current;
-      else active = playBtnRef.current;
-    }
-    if (!active) return;
-    const trackRect = track.getBoundingClientRect();
-    const r = active.getBoundingClientRect();
-    setPill({ x: r.left - trackRect.left, w: r.width, ready: true });
-  }, [value, total, playing, playable]);
-
-  useLayoutEffect(() => {
-    measure();
-  }, [measure]);
-
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(() => measure());
-    ro.observe(track);
-    return () => ro.disconnect();
-  }, [measure]);
 
   // Auto-play loop.
   useEffect(() => {
@@ -165,24 +109,17 @@ export function WidgetNav({
   const atEnd = value >= total - 1;
   const onlyOne = total <= 1;
 
-  // Phase 1 visual-weight lift: buttons read as deliberate chips — full
-  // text contrast, 1 px rule border, opaque surface at rest. Hover stays
-  // terracotta (existing behaviour). Disabled keeps the §11 0.4 floor.
+  // Each button is a self-contained pill: full text contrast, 1 px rule
+  // border, opaque surface at rest. Hover lifts the text to terracotta.
+  // Disabled keeps the §11 0.4 floor.
   const btnClass =
-    "relative z-10 inline-flex items-center justify-center min-h-[44px] min-w-[44px] " +
+    "inline-flex items-center justify-center min-h-[44px] min-w-[44px] " +
     "px-[var(--spacing-sm)] py-[var(--spacing-2xs)] rounded-[var(--radius-md)] " +
     "border border-[color:var(--color-rule)] bg-[color:var(--color-surface)] " +
     "text-[color:var(--color-text)] " +
     "transition-colors disabled:opacity-40 disabled:cursor-not-allowed " +
     "hover:enabled:text-[color:var(--color-accent)] focus-visible:outline-none " +
     "focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]";
-
-  // The pill style. Under reduced motion we drop the filter and let `motion`
-  // teleport (no spring) by passing a non-spring transition.
-  const pillTransition = prefersReducedMotion ? { duration: 0 } : SPRING.snappy;
-  const pillFilter = prefersReducedMotion ? "none" : `url(#${gooFilter})`;
-
-  // Stable variants live in module scope (see end of file).
 
   // Counter live-region: silent during autoplay, polite once the user has
   // taken at least one action. On first mount we keep it `off` so screen
@@ -206,54 +143,9 @@ export function WidgetNav({
       className="flex flex-wrap items-center gap-x-[var(--spacing-sm)] gap-y-[var(--spacing-2xs)] font-sans"
       style={{ fontSize: "var(--text-ui)" }}
     >
-      {/* Inline goo filter, scoped per-instance via useId(). The width:0
-          height:0 SVG keeps it out of layout. */}
-      <svg
-        width="0"
-        height="0"
-        aria-hidden
-        focusable="false"
-        style={{ position: "absolute", width: 0, height: 0, overflow: "hidden" }}
-      >
-        <defs>
-          <filter id={gooFilter}>
-            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
-            <feColorMatrix
-              in="blur"
-              type="matrix"
-              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"
-              result="goo"
-            />
-            <feBlend in="SourceGraphic" in2="goo" />
-          </filter>
-        </defs>
-      </svg>
-
-      <div
-        ref={trackRef}
-        className="relative inline-flex items-center"
-        style={{ filter: pillFilter }}
-      >
-        {/* Indicator pill — single morphing element that travels via transform. */}
-        <motion.span
-          aria-hidden
-          className="pointer-events-none absolute top-0 left-0 h-full rounded-[var(--radius-md)]"
-          initial={false}
-          animate={
-            pill.ready
-              ? { x: pill.x, width: pill.w, opacity: onlyOne ? 0 : 1 }
-              : { opacity: 0 }
-          }
-          transition={pillTransition}
-          style={{
-            background: "color-mix(in oklab, var(--color-accent) 18%, transparent)",
-            border: "1px solid color-mix(in oklab, var(--color-accent) 45%, transparent)",
-          }}
-        />
-
+      <div className="inline-flex items-center gap-1.5">
         <motion.button
           ref={(node) => {
-            prevBtnRef.current = node;
             prevPulse.ref.current = node;
           }}
           type="button"
@@ -272,7 +164,6 @@ export function WidgetNav({
 
         {playable && !onlyOne ? (
           <motion.button
-            ref={playBtnRef}
             type="button"
             onClick={() => {
               // Progress-Tick on every play/pause/replay press — these
@@ -304,7 +195,6 @@ export function WidgetNav({
 
         <motion.button
           ref={(node) => {
-            nextBtnRef.current = node;
             nextPulse.ref.current = node;
           }}
           type="button"

@@ -2,8 +2,10 @@
  * lib/audio.ts — central play surface for the bytesize audio system.
  *
  * Anchor principles (also enumerated in `docs/audio-playbook.md`):
- *   1. Audio is OPT-IN, default OFF. State persists in
- *      `localStorage["lainlog:audio"] = "on" | "off"`.
+ *   1. Audio is default ON. State persists in
+ *      `localStorage["lainlog:audio"] = "on" | "off"`. Unset / null reads
+ *      as ON; only an explicit `"off"` mutes. (Updated 2026-05-02 — the
+ *      original opt-in default was flipped to opt-out per user direction.)
  *   2. `prefers-reduced-motion: reduce` → audio off automatically.
  *   3. Sound is never the sole feedback channel.
  *   4. Same action = same sound everywhere.
@@ -138,7 +140,9 @@ function isBrowser(): boolean {
 function readPref(): boolean {
   if (!isBrowser()) return false;
   try {
-    return window.localStorage.getItem(STORAGE_KEY) === "on";
+    // Default ON: unset / null reads as on; only an explicit "off" mutes.
+    const v = window.localStorage.getItem(STORAGE_KEY);
+    return v === null ? true : v === "on";
   } catch {
     return false;
   }

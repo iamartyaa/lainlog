@@ -28,19 +28,23 @@ export function useAudioPreference(): {
   const [enabled, setEnabledState] = useState<boolean>(false);
 
   // Hydrate from localStorage post-mount (avoids hydration mismatch).
+  // Default ON: unset / null reads as on; only an explicit "off" mutes.
   useEffect(() => {
     try {
-      setEnabledState(window.localStorage.getItem(STORAGE_KEY) === "on");
+      const v = window.localStorage.getItem(STORAGE_KEY);
+      setEnabledState(v === null ? true : v === "on");
     } catch {
       // Private mode / disabled storage — keep default false.
     }
   }, []);
 
-  // Cross-tab sync via the `storage` event.
+  // Cross-tab sync via the `storage` event. A null `newValue` (the key was
+  // removed in another tab) follows the same default-ON rule as initial
+  // hydration.
   useEffect(() => {
     function onStorage(e: StorageEvent) {
       if (e.key !== STORAGE_KEY) return;
-      setEnabledState(e.newValue === "on");
+      setEnabledState(e.newValue === null ? true : e.newValue === "on");
     }
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);

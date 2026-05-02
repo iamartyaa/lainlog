@@ -9,7 +9,6 @@ import {
   Em,
   Aside,
   A,
-  HeroTile,
   Term,
 } from "@/components/prose";
 import { PostBackLink } from "@/components/nav/PostBackLink";
@@ -32,9 +31,6 @@ export default function TheFunctionThatRemembered() {
     <Prose>
       <div className="pt-[var(--spacing-xl)]">
         <PostBackLink />
-        <div className="mt-[var(--spacing-md)] mb-[var(--spacing-md)] hidden md:flex flex-col items-start gap-[var(--spacing-md)] lg:flex-row lg:items-end">
-          <HeroTile slug="the-function-that-remembered" />
-        </div>
         <H1 style={{ fontSize: "clamp(2.5rem, 2rem + 3.5vw, 4rem)" }}>
           JavaScript closures, var vs let, and the loop bug
         </H1>

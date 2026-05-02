@@ -12,7 +12,7 @@ This doc is loaded at Phase E of `/new-post` and during any feature build that t
 
 Seven non-negotiables. If a proposal violates any of these, the proposal loses.
 
-1. **Audio is OPT-IN, default OFF.** State persists in `localStorage["lainlog:audio"] = "on" | "off"`. The Header speaker icon is the only way to flip it.
+1. **Audio is default ON.** State persists in `localStorage["lainlog:audio"] = "on" | "off"`. Unset / null reads as ON; only an explicit `"off"` mutes. The Header speaker icon is the only way to flip it. *(Updated 2026-05-02 — the original opt-in default was flipped to opt-out per user direction. The "no autoplay on page load" guarantee in §9 is unchanged: AudioContext is still created lazily inside the first real user-gesture handler.)*
 2. **`prefers-reduced-motion: reduce` → audio off automatically.** No user override in v1. If the OS preference says quiet, we listen.
 3. **Sound is never the sole feedback channel.** Every wire-site already has a visual cue — sound layers onto an existing affordance, never replaces one.
 4. **Same action = same sound everywhere.** A button-press click sounds identical in every widget. Consistency over novelty.
@@ -154,19 +154,19 @@ The preview is also a deliberate confirmation — the user hears the system come
 
 ## 11. First-visit prompt
 
-`<AudioPromptTooltip>` (co-located inside `<AudioToggle>`) renders a small "try it with sounds on" bubble anchored beside the speaker icon. It exists for one job: tell first-time readers the audio system is here and opt-in. It is never shown again once dismissed.
+`<AudioPromptTooltip>` (co-located inside `<AudioToggle>`) renders a small **"Click here to mute the site."** bubble anchored beside the speaker icon. With audio default-on (§1), the tooltip's job is to tell first-time readers HOW TO MUTE — pointer at the speaker toggle. It is never shown again once dismissed.
 
 Render conditions (ALL must be true):
 
 - Component has hydrated (avoids SSR mismatch — `localStorage` isn't available on the server).
 - `usePathname() === "/"` — home page only. Article pages stay quiet.
-- Audio preference is `false` (no point prompting if the reader's already opted in).
+- Audio preference is `true` (the only state where a "click to mute" hint makes sense; if the reader has already muted there's nothing to prompt about).
 - `localStorage["lainlog:audio:prompt-dismissed"] !== "true"`.
 
 Dismiss paths (both persist):
 
 - The `×` close button → `localStorage.setItem("lainlog:audio:prompt-dismissed", "true")` and unmounts via `<AnimatePresence>`.
-- Toggling audio ON without clicking close → the parent `<AudioToggle>` flips `audioEnabled` to true; the tooltip's effect persists `prompt-dismissed = "true"` so it never reappears even if the reader later turns audio back off.
+- Toggling audio OFF without clicking close → the parent `<AudioToggle>` flips `audioEnabled` to false; the tooltip's effect persists `prompt-dismissed = "true"` so it never reappears even if the reader later turns audio back on.
 
 The tooltip is decorative (`role="status"`, non-interruptive). It does not trap focus. Reduced-motion users get the static state via `<MotionConfigProvider reducedMotion="user">`.
 
