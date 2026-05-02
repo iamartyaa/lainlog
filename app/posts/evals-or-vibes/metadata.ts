@@ -4,9 +4,9 @@ import { SITE_URL as SITE } from "@/lib/site";
 const SLUG = "evals-or-vibes";
 const VISIBLE_HEADING =
   "Evals, or Vibes? — How to know if your LLM feature is actually any good";
-const LYRICAL_TAGLINE = "You can't taste your own wine.";
+const LYRICAL_TAGLINE = "Vibes don't scale.";
 const HOOK =
-  "Two teams, same product, six months. One ships on vibes, one opens a CSV. Why eval suites are the blind tasting protocol your LLM feature needs — and why a 100% pass rate is a failing grade.";
+  "You're shipping AI on vibes. Your prompt looks fine in the playground, the demo lands, the suite passes — and you're still the last person in the building qualified to grade the output. Here's what to do about it on Monday morning.";
 
 /** Visible subtitle on the post page (poetic tagline under the descriptive H1). */
 export const subtitle = LYRICAL_TAGLINE;

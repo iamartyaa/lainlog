@@ -33,38 +33,38 @@ type Candidate = {
 
 const CANDIDATES: Candidate[] = [
   // 18 conventional-looking — the bait
-  { id: 1, text: "draft a listing for a 2-bed in Logan Square", shape: "conventional" },
-  { id: 2, text: "summarise comps for 1843 Damen", shape: "conventional" },
-  { id: 3, text: "rewrite this draft to be warmer", shape: "conventional" },
-  { id: 4, text: "what's the median price in Wicker Park?", shape: "conventional" },
-  { id: 5, text: "respond to a buyer asking about parking", shape: "conventional" },
-  { id: 6, text: "draft an open-house invite", shape: "conventional" },
-  { id: 7, text: "shorten this listing under 80 words", shape: "conventional" },
-  { id: 8, text: "what schools are nearby?", shape: "conventional" },
-  { id: 9, text: "draft a follow-up to a tour visitor", shape: "conventional" },
-  { id: 10, text: "describe this loft in two sentences", shape: "conventional" },
-  { id: 11, text: "translate this listing to Spanish", shape: "conventional" },
-  { id: 12, text: "list pros of this corner unit", shape: "conventional" },
-  { id: 13, text: "summarise the inspection report", shape: "conventional" },
-  { id: 14, text: "draft a price-drop email", shape: "conventional" },
-  { id: 15, text: "rewrite for a Gen-Z audience", shape: "conventional" },
-  { id: 16, text: "explain the HOA fees clearly", shape: "conventional" },
-  { id: 17, text: "compare two listings side by side", shape: "conventional" },
-  { id: 18, text: "draft a reply to a low-ball offer", shape: "conventional" },
+  { id: 1, text: "summarise this 12-message support thread", shape: "conventional" },
+  { id: 2, text: "explain this stack trace to a junior engineer", shape: "conventional" },
+  { id: 3, text: "write a SQL query for active users last 7 days", shape: "conventional" },
+  { id: 4, text: "draft a polite reply to this churn-risk customer", shape: "conventional" },
+  { id: 5, text: "extract action items from this meeting transcript", shape: "conventional" },
+  { id: 6, text: "what does this regex do?", shape: "conventional" },
+  { id: 7, text: "summarise this PR description in two sentences", shape: "conventional" },
+  { id: 8, text: "translate this docstring to French", shape: "conventional" },
+  { id: 9, text: "convert this curl command to fetch()", shape: "conventional" },
+  { id: 10, text: "rewrite this paragraph in plain English", shape: "conventional" },
+  { id: 11, text: "what's the time complexity of this function?", shape: "conventional" },
+  { id: 12, text: "draft release notes from this commit log", shape: "conventional" },
+  { id: 13, text: "categorise this bug report (P0/P1/P2/P3)", shape: "conventional" },
+  { id: 14, text: "name three risks in this design doc", shape: "conventional" },
+  { id: 15, text: "explain a useEffect cleanup function", shape: "conventional" },
+  { id: 16, text: "find the typo in this YAML config", shape: "conventional" },
+  { id: 17, text: "compare these two API responses", shape: "conventional" },
+  { id: 18, text: "summarise an Atlassian status incident", shape: "conventional" },
   // 8 edge — failure modes
-  { id: 19, text: "is the school district good?", shape: "edge" },
-  { id: 20, text: "respond to 'is this a good investment?'", shape: "edge" },
-  { id: 21, text: "draft a listing with no input data", shape: "edge" },
-  { id: 22, text: "user types in all caps and emoji 🏡🔥", shape: "edge" },
-  { id: 23, text: "user asks 'is this priced too high?'", shape: "edge" },
-  { id: 24, text: "user pastes a 4,000-word inspection PDF", shape: "edge" },
-  { id: 25, text: "user uses 'they/them' and last name only", shape: "edge" },
-  { id: 26, text: "input lat/lon is wrong by half a mile", shape: "edge" },
+  { id: 19, text: "user pastes 40,000 tokens of logs", shape: "edge" },
+  { id: 20, text: "thread has two users with similar names", shape: "edge" },
+  { id: 21, text: "ticket body is empty", shape: "edge" },
+  { id: 22, text: "user types in ALL CAPS with emoji 🔥🔥🔥", shape: "edge" },
+  { id: 23, text: "transcript is in mixed English/Hindi", shape: "edge" },
+  { id: 24, text: "code snippet uses a private internal API", shape: "edge" },
+  { id: 25, text: "PDF input is OCR'd and full of typos", shape: "edge" },
+  { id: 26, text: "input contradicts itself across two messages", shape: "edge" },
   // 4 out-of-scope — also failure modes
-  { id: 27, text: "should I refinance my mortgage?", shape: "out-of-scope" },
-  { id: 28, text: "is now a good time to buy?", shape: "out-of-scope" },
-  { id: 29, text: "what's my home worth?", shape: "out-of-scope" },
-  { id: 30, text: "draft a legal disclaimer for the listing", shape: "out-of-scope" },
+  { id: 27, text: "should I quit my job to start a startup?", shape: "out-of-scope" },
+  { id: 28, text: "is this code legally safe to ship?", shape: "out-of-scope" },
+  { id: 29, text: "give me medical advice for my cough", shape: "out-of-scope" },
+  { id: 30, text: "write a cover letter for me", shape: "out-of-scope" },
 ];
 
 const PICK_LIMIT = 3;
@@ -250,7 +250,7 @@ export function N10Trap() {
                   color: "var(--color-text-muted)",
                 }}
               >
-                pick {PICK_LIMIT} prompts you&apos;d test Bob on
+                pick {PICK_LIMIT} prompts you&apos;d test on
               </div>
               <div className="bs-n10-grid">
                 {CANDIDATES.map((c) => {

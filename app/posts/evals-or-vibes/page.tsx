@@ -3,24 +3,23 @@
  *
  *   tone: deliberate-deviation; see Checkpoint 2 of t-mo8rshv6dno5 brief
  *
- * This post intentionally deviates from the lainlog house voice. It is
- * funny, informal, slightly weary, and self-aware in the wine-criticism
- * register (Hamel / Maciej / Patrick McKenzie). Memes are allowed (cap 2).
- * Two MediaBetweenText slots are intentional, against the doc's
- * "one per article max" guidance — the user explicitly authorised the
- * second slot at Checkpoint 2.
+ * Funny, informal, slightly weary. Memes capped at 2 (both load-bearing
+ * and earned: "dog in burning room" once; "dog has built a CSV" once).
+ * Two MediaBetweenText slots are intentional — explicit Checkpoint 2
+ * sign-off.
  *
- * Pedagogy patterns deliberately NOT used (per user override):
- *   - No §0 premise-quiz opener.
- *   - No mechanism-first reframe.
- *   - No "many-views-of-one-mechanism" structure.
- *   - No <VerticalCutReveal> (banned site-wide).
+ * Rewrite-pass (post user feedback): the wine analogy was carpeted
+ * across all 8 scenes in the polish-pass. This rewrite collapses it to
+ * the cover image + ONE earned closing line in §7. The running
+ * "Bob the real-estate AI" example is replaced by varied, concrete
+ * dev failure modes (SQL agents, doc-Q&A tools, support summarisers,
+ * etc.). Sentence-level rewrite for clarity. New H1: "Vibes don't
+ * scale."
  *
  * Bans honored:
  *   - No <HeroTile> on the article page (post-PR-#92 convention).
  *   - No <VerticalCutReveal>.
- *   - WidgetShell from @/components/viz/WidgetShell (not a post-local
- *     re-export).
+ *   - WidgetShell from @/components/viz/WidgetShell.
  */
 import {
   Prose,
@@ -129,7 +128,7 @@ export default function EvalsOrVibes() {
             lineHeight: 1.05,
           }}
         >
-          You can&apos;t taste your own wine.
+          Vibes don&apos;t scale.
         </H1>
         <p
           className="mt-[var(--spacing-sm)] font-mono tabular-nums"
@@ -144,114 +143,84 @@ export default function EvalsOrVibes() {
         </p>
       </div>
 
-      {/* §1 — The day Bob hallucinated a school district. */}
+      {/* §1 — Cold open: a Tuesday-morning failure */}
       <div>
         <Dots />
         <SectionH2 eyebrow="1 · the cold open" id="cold-open">
-          The day Bob hallucinated a school district.
+          Your model passes every demo and fails on a Tuesday.
         </SectionH2>
         <P>
-          Bob is an AI assistant for real-estate agents. It drafts
-          listings, answers buyer chat, pulls comps. By every internal
-          metric, working great. The team has been shipping for two
-          months. The founders have a weekly demo where Bob says
-          something charming about a Craftsman in Logan Square and
-          everyone in the Zoom laughs.
+          On a Tuesday in March, a SQL agent your team shipped two
+          months ago drops the <Em>WHERE</Em> clause and returns the
+          entire users table to a sales rep typing &ldquo;show me
+          customers in Ohio.&rdquo; Twelve thousand rows. The rep
+          screenshots it. The screenshot lands in a customer Slack
+          before it lands in yours.
         </P>
         <P>
-          On a Tuesday in March, an agent in Oak Park asks Bob to
-          summarise a listing. Bob says the property is in the
-          highly-rated Lincoln Elementary district. The buyer is excited.
-          The buyer&apos;s child is school-age. The listing is in a
-          different district. Lincoln Elementary isn&apos;t even close.
-        </P>
-        <P>
-          That same week, Bob quotes the rent on a 2-bed walkup at
-          $1,800. Two days later, asked about the same listing, Bob
-          quotes the rent at $4,200. Same model. Same prompt. Same
-          listing. Different reality.
+          That same week, a teammate runs the same prompt twice, two
+          days apart, and gets two different answers.
         </P>
         <RentChipReveal />
         <P>
-          Nobody on the team noticed. The founders found out from the
-          customer, on a Friday, in a call that opened with the words{" "}
-          <Em>&ldquo;is your AI okay?&rdquo;</Em>{" "}
+          Nobody on the team noticed either failure until somebody
+          outside the building did.{" "}
           <HL>The author of the feature is the last person in the building to notice.</HL>{" "}
           Not because the team is bad. Because the team is involved.
-          They test by re-running the prompt in the playground, watching
-          it come back coherent, and shipping. This isn&apos;t the edge
-          case. This is the median Tuesday.
+          They test by re-running the prompt in the playground,
+          watching it come back coherent, and shipping. This
+          isn&apos;t the edge case. This is the median Tuesday.
         </P>
-        <P>
-          So how would you know? How would <Em>anyone</Em> know?
-          That&apos;s the rest of this post.
-        </P>
+        <P>So how would you know? How would <Em>anyone</Em> know?</P>
       </div>
 
-      {/* §2 — Two teams, same product, no evals */}
+      {/* §2 — Eyeballing your own output is the worst way to grade it */}
       <div>
         <Dots />
-        <SectionH2 eyebrow="2 · the bifurcation" id="two-teams">
-          Two teams. Same product. No evals — yet.
+        <SectionH2 eyebrow="2 · the wrong instrument" id="wrong-instrument">
+          Eyeballing your own output is the worst way to grade it.
         </SectionH2>
         <P>
-          Imagine two parallel companies shipping Bob. Six engineers
-          each. Same spec, same prompt, same model. For the first
-          quarter they&apos;re identical. Both ship the same way: open
-          the playground, paste a prompt, eyeball it, ship.
+          Most teams ship the same way. Open the playground. Paste a
+          prompt. Read the output. If it looks fine, ship.{" "}
+          <HL>That isn&apos;t testing. That&apos;s vibes auto-correlated with hope.</HL>
         </P>
         <P>
-          They tested it the way you test whether the milk has gone off —
-          briefly, by feel, with one nostril and a slight grimace. They
-          called it due diligence. It was{" "}
-          <HL>vibes auto-correlated with hope.</HL>
+          You wrote the prompt. You picked the model. You chose the
+          example. You are, structurally, the worst grader the
+          output has. Your brain pattern-matches its own output as
+          coherent because it already agrees with the assumptions
+          that produced it. The bugs you can&apos;t see are the
+          bugs that match your own blind spots.
         </P>
         <P>
-          Here&apos;s the wine-criticism cliché this piece is built on:
-          when serious wine people decide whether a $15 bottle is better
-          than a $200 one, they don&apos;t pour their own glass and
-          stare at the label. They blind-taste. Multiple judges.
-          Pre-defined{" "}
-          <Term define="A scoring guide. The yes/no questions a careful grader would ask of every output — factual, on-voice, in-scope, safe.">
-            rubric
-          </Term>
-          . Repeatable protocol. The human in front of the wine — looking
-          at the label, knowing what was paid for it — is the worst
-          judge of it. Not because the human is bad. Because the human
-          is involved.
-        </P>
-        <P>
-          A team running their own LLM through the playground is the
-          wine reviewer who poured their own glass and is gazing fondly
-          at the label. They are, structurally, the least qualified
-          person in the building to grade the output.{" "}
-          <HL>You can&apos;t taste your own wine.</HL>
-        </P>
-        <P>
-          The fix is the one wine settled on a century ago:{" "}
+          The fix is{" "}
           <Term define="A held-out set of inputs your LLM has to produce acceptable outputs for. Test fixtures with a scoring guide attached.">
             evals
           </Term>
-          . A blind tasting protocol for your LLM feature. Rubric written
-          first. Multiple judges. Outputs scored before anyone sees the
-          label. Run on every prompt change, every model swap, every
-          Friday-afternoon &ldquo;small tweak.&rdquo; That&apos;s the
-          whole mechanism.
+          : a small, written-down set of inputs and the answers you
+          expect, scored against a{" "}
+          <Term define="A scoring guide. The yes/no questions a careful grader would ask of every output — factual, on-voice, in-scope, safe.">
+            rubric
+          </Term>{" "}
+          you wrote in advance. Outputs graded blind, on every prompt
+          change, every model swap, every Friday-afternoon
+          &ldquo;small tweak.&rdquo; Boring. Mechanical. Works.
         </P>
         <P>
-          The widget makes the gap concrete. Three Bob outputs. Mark
-          one by gut, ship or cut. The rubric reveals on the first
-          rating. The shape of the disagreement is the shape of the
-          problem.
+          The widget below makes the gap concrete. Three outputs —
+          mark each one ship or cut by gut. The rubric reveals on
+          your first tap. The shape of your disagreement with the
+          rubric is the shape of the bug your eyes were missing.
         </P>
         <VibesVsRubric />
         <P>
-          The gap is rarely in the obvious mistakes. Vibes catches
-          obvious mistakes — that&apos;s why team morale was high. The
-          gap lives in the outputs that <Em>read</Em> shippable but flunk
-          a criterion you weren&apos;t scanning for. Factual? Yes.
-          In-scope? You didn&apos;t check. On-voice? Nobody asked. Safe?
-          You forgot we had a policy.
+          Vibes catches the obvious mistakes. That&apos;s why
+          morale is high — most outputs <Em>do</Em> look fine. The
+          gap is in the outputs that read shippable but flunk a
+          criterion you weren&apos;t scanning for. Factual? Yes.
+          In-scope? You didn&apos;t check. On-voice? Nobody asked.
+          Safe? You forgot you had a policy.
         </P>
       </div>
 
@@ -262,46 +231,41 @@ export default function EvalsOrVibes() {
           Day three, somebody opens a CSV.
         </SectionH2>
         <P>
-          Day three of the second quarter, both teams hit the same edge
-          case on the same morning. Bob claims a listing has hardwood
-          floors. The input data says laminate.
+          A teammate posts a screenshot. A doc-Q&amp;A tool
+          confidently cited page 14 of a contract. The clause is on
+          page 27. The output reads fluent. The citation is wrong.
         </P>
         <P>
-          Team Vibes reads the output, shrugs, says &ldquo;close
-          enough,&rdquo; and ships. Team Vibes is{" "}
-          <Em>always</Em> fine. Team Vibes is fine the way the dog in the
-          burning room is fine.
+          One team reads the output, shrugs, says &ldquo;close
+          enough,&rdquo; and ships. That team is{" "}
+          <Em>always</Em> fine. That team is fine the way the dog in
+          the burning room is fine.
         </P>
         <P>
-          Team Evals opens a CSV. Prompt in column A. Actual output in
-          column B. Expected output in column C. A one-line comment in
-          column D — &ldquo;hardwood vs laminate; flooring
-          hallucination.&rdquo; They paste in five more borderline
-          outputs from the morning. By Friday they have an{" "}
+          The other team opens a CSV. Prompt in column A. Actual
+          output in column B. Expected output in column C. A one-line
+          comment in column D — &ldquo;cited page 14; correct page is
+          27.&rdquo; They paste in five more borderline outputs from
+          the morning. By Friday they have an{" "}
           <Term define="A small CSV of inputs your LLM has to handle. Each row: prompt, expected output, what a careful grader would say.">
             eval set
           </Term>
           .
         </P>
         <P>
-          That&apos;s the entire bifurcation. From here, the two teams
-          diverge in ways that compound. Eugene Yan calls building
+          That&apos;s the bifurcation. Eugene Yan calls building
           product evals{" "}
-          <HL>the scientific method in disguise</HL>: observe, annotate,
-          hypothesize, experiment, measure. The CSV is the disguise. The
-          method is the <Em>annotate</Em> column.
+          <HL>the scientific method in disguise</HL>: observe,
+          annotate, hypothesize, experiment, measure. The CSV is the
+          disguise. The method is the <Em>annotate</Em> column.
         </P>
         <EvalSetBuilder />
         <P>
-          An eval set isn&apos;t a tool. It&apos;s a habit. The first
-          row is the act that distinguishes the two teams forever. Hamel
-          Husain&apos;s framing is the one that moves people:{" "}
-          <Em>
-            you are doing it wrong if you aren&apos;t looking at lots of
-            data.
-          </Em>{" "}
-          Every other piece of advice in this post is replaceable. That
-          one isn&apos;t.
+          An eval set isn&apos;t a tool. It&apos;s a habit. The
+          first row is the act. Every other piece of advice in this
+          post is replaceable. The first row isn&apos;t. As Hamel
+          Husain puts it:{" "}
+          <Em>you are doing it wrong if you aren&apos;t looking at lots of data.</Em>
         </P>
       </div>
 
@@ -312,107 +276,90 @@ export default function EvalsOrVibes() {
           A 100% pass rate is a failing grade.
         </SectionH2>
         <P>
-          Two months in. Team Evals has 50 prompts in the CSV. Half from
-          real traffic, half synthetic ones the engineer made up over
-          coffee. The full suite passes. Every Monday it passes. Every
-          Friday it passes. The team feels great. They&apos;ve entered
-          the most dangerous phase of eval-writing —{" "}
-          <HL>the phase where the evals tell you what you want to hear.</HL>
+          Two months in. Fifty prompts in the CSV. The full suite
+          passes every Monday. Passes every Friday. The team feels
+          great.
         </P>
         <P>
-          Then a customer reports Bob hallucinated a school district.
-          The suite — the one passing 100% — didn&apos;t catch it. The
-          suite was full of easy examples the prompt could already pass.
-          It hadn&apos;t been challenged in weeks.
+          They&apos;ve walked into the most dangerous phase of
+          eval-writing —{" "}
+          <HL>the phase where the suite tells you what you want to hear.</HL>
         </P>
         <P>
           Simon Willison has the cleanest line on this:{" "}
           <Em>
-            &ldquo;If you&apos;re passing 100% of your evals, you&apos;re
-            likely not challenging your system enough.&rdquo;
+            &ldquo;If you&apos;re passing 100% of your evals,
+            you&apos;re likely not challenging your system enough.&rdquo;
           </Em>{" "}
           The term of art is{" "}
           <Term define="The moment your eval suite stops telling you anything new — the prompts in it are too easy for the current model. A 100% pass rate is the symptom.">
             eval saturation
           </Term>
-          : the moment the suite stops giving signal.
+          : the suite stops giving signal.
         </P>
         <P>
           <BallotChipReveal />
         </P>
         <P>
-          The fix is to keep adding hard prompts. Ones the model fails
-          on. Ones from the last incident. Ones a competitor&apos;s
-          release surfaced. <HL>Eval sets aren&apos;t done when they
-          pass.</HL> They&apos;re done when they break in interesting
-          ways.
+          The fix is to keep adding hard prompts. Ones the model
+          fails on. Ones from the last incident. Ones a
+          competitor&apos;s release surfaced.{" "}
+          <HL>Eval sets aren&apos;t done when they pass.</HL>{" "}
+          They&apos;re done when they break in interesting ways.
         </P>
         <PassRateOverTime />
         <P>
-          The line climbs to 100% and stays there. A customer-incident
-          dot lands on the plateau like a cigarette burn on a tablecloth.
-          Press &ldquo;add hard prompts&rdquo; and the line drops to
-          78%. 78% is not a problem. 78% is the suite doing its job.
-          100% is the suite not doing its job.
-        </P>
-        <P>
-          A coffee-table book is a beautiful object. It isn&apos;t a
-          measurement. An eval that always passes has stopped being an
-          eval. It is a coffee-table book.
+          The line climbs to 100% and stays there. Then a customer
+          incident lands on the plateau. Press &ldquo;add hard
+          prompts&rdquo; and the line drops to 78%. 78% is not a
+          problem. 78% is the suite doing its job. 100% is the suite
+          asleep.
         </P>
       </div>
 
-      {/* §5 — LLM-as-judge has a palate too */}
+      {/* §5 — LLM-as-judge has biases too */}
       <div>
         <Dots />
         <SectionH2 eyebrow="5 · the calibration" id="judge">
-          LLM-as-judge has a palate too.
+          Your grader is biased. Calibrate it.
         </SectionH2>
         <P>
-          Three months in. Team Evals has 240 prompts. They can&apos;t
-          manually grade 240 outputs after every prompt change. So they
-          do what every team does: they hire an LLM as their grader.
-          Fast. Scales. Also, in interesting ways, wrong.
+          Three months in. The suite is at 240 prompts. Nobody can
+          manually grade 240 outputs after every prompt change. So
+          the team does what every team does: they hire an LLM as
+          their grader. Fast. Scales. Also wrong in ways that matter.
         </P>
-        <P>
-          The LLM-judge has, it turns out, <HL>a palate.</HL> It
-          inherited it from training the same way you inherited yours
-          from your aunt. You can&apos;t un-train it. You can only
-          calibrate around it.
-        </P>
-        <Note summary="What &ldquo;has a palate&rdquo; means, concretely">
-          Lilian Weng catalogued the failure modes of LLM-as-judge in
-          uncomfortable detail. The judge prefers verbose outputs. The
-          judge scores its own model family higher than rivals. The
-          judge sycophantically agrees with whatever the question framing
-          implies. None of this is fixable by prompting. All of it is
-          measurable.
+        <Note summary="The biases your judge ships with">
+          Lilian Weng catalogued the failure modes of LLM-as-judge
+          in uncomfortable detail. The judge prefers verbose
+          outputs. The judge scores its own model family higher
+          than rivals. The judge sycophantically agrees with
+          whatever the question framing implies. None of this is
+          fixable by prompting. All of it is measurable.
         </Note>
         <P>
-          The wine-criticism callback writes itself: you can&apos;t
-          replace the human panel with a robot panel that&apos;s never
-          tasted a real wine. You have to take the robot to a tasting
-          and tell it which is the $200 bottle and which is the $15. A
-          few hundred bottles. Regular cadence. Forever. That&apos;s the
-          deal.
+          A judge that scores its own model family higher than
+          rivals is an A/B test you can&apos;t trust. A judge that
+          rewards verbosity will hand you a feature that drifts
+          from terse-and-correct to long-and-plausible over six
+          months — and you&apos;ll never see the slide.
         </P>
         <JudgeCalibrate />
         <P>
-          Move the strictness slider — verdict flips. Toggle the judge
-          model — verdict flips again.{" "}
-          <HL>The verdict is not a property of the output.</HL> It is a
-          property of the (judge, rubric) pair, calibrated as a unit.
-          The fix isn&apos;t a fancier model. The fix is{" "}
-          <Em>calibration, not a fancier model</Em> — sample, label,
-          align, repeat.
+          Move the strictness slider — verdict flips. Toggle the
+          judge model — verdict flips again.{" "}
+          <HL>The verdict is not a property of the output.</HL>{" "}
+          It&apos;s a property of the (judge, rubric) pair,
+          calibrated as a unit. The fix isn&apos;t a fancier model.
+          The fix is sample-and-calibrate.
         </P>
-        <Note summary="The Yan recipe — sample, blind, compare">
-          Eugene Yan has the cleanest tactical version. Every week,
-          sample 30 outputs the LLM-judge has scored. Have a human
-          re-grade them blind. Compare. If the LLM-judge and the human
-          agree to within four points on the rubric, you&apos;re
-          calibrated. If not, you have a re-prompting afternoon ahead of
-          you.
+        <Note summary="Yan&rsquo;s recipe — sample, blind, compare">
+          Eugene Yan has the cleanest tactical version. Every
+          week, sample 30 outputs the LLM-judge has scored. Have a
+          human re-grade them blind. Compare. If the LLM-judge and
+          the human agree to within four points on the rubric,
+          you&apos;re calibrated. If not, you have a re-prompting
+          afternoon ahead of you.
         </Note>
       </div>
 
@@ -423,34 +370,31 @@ export default function EvalsOrVibes() {
           The N=10 trap.
         </SectionH2>
         <P>
-          Four months in. Team Vibes finally writes evals. Ten of them.
-          Hand-picked by the engineer who wrote the prompt, on a
-          Thursday afternoon, in the spirit of getting the ticket off
-          the board. Bob passes 10/10. Team Vibes ships v2. Team Vibes
-          is fine.
+          Four months in. The other team finally writes evals. Ten
+          of them. Hand-picked by the engineer who wrote the prompt,
+          on a Thursday, in the spirit of getting the ticket off the
+          board. The model passes 10/10. They ship v2. They are
+          fine.
         </P>
         <P>The dog has built a CSV. The room is still on fire.</P>
         <P>
-          In production, v2 fails 1 in 4 prompts. The 10 hand-picked
-          examples were the engineer&apos;s mental model of &ldquo;the
-          kind of prompt customers send.&rdquo; That mental model was
-          the prompt-writer&apos;s view of the world, which is the view
-          that produced the prompt, which is the view the model is
-          already aligned to. The hand-picked eval set was a
-          self-portrait. <HL>You can&apos;t sample by intuition the
-          failure modes you can&apos;t see.</HL>
+          In production, v2 fails one prompt in four. The 10
+          hand-picked examples were a self-portrait. Of course the
+          model passed them — they were written by the same person
+          who wrote the prompt the model is aligned to.{" "}
+          <HL>You can&apos;t sample by intuition the failure modes you can&apos;t see.</HL>
         </P>
         <N10Trap />
         <P>
-          The fix is mechanical and slightly humiliating: pull the eval
-          set from real traffic. Failures first. Edge cases first.
-          Out-of-scope queries first. The boring shippable cases
-          never — those aren&apos;t the eval set, those are the
-          regression test.
+          The fix is mechanical and slightly humiliating: pull the
+          eval set from real traffic. Failures first. Edge cases
+          first. Out-of-scope queries first. The boring shippable
+          cases never — those aren&apos;t the eval set, those are
+          the regression test.
         </P>
         <P>
-          A hand-picked eval set is a self-portrait, not a measurement.
-          The eval set&apos;s job is to <HL>surprise you.</HL> If it
+          A hand-picked eval set is a self-portrait, not a
+          measurement. Its job is to <HL>surprise you.</HL> If it
           doesn&apos;t, you wrote it for comfort.
         </P>
       </div>
@@ -462,37 +406,35 @@ export default function EvalsOrVibes() {
           Six months in.
         </SectionH2>
         <P>
-          Six months after the bifurcation, Team Evals has 240 prompts
-          in a CSV. Half labeled by humans, half by an LLM-judge
-          calibrated to within four points of the human panel. A
-          regression suite that fires when the new prompt drops the
-          customer-name token. A weekly cadence where ten engineers
-          spend an hour staring at outputs and updating the rubric. The
-          product hasn&apos;t changed. Bob still drafts listings, still
-          answers chat, still pulls comps. The team&apos;s relationship
-          to the product has changed.
+          Six months after the bifurcation, one team has a CSV with
+          240 rows. Half labeled by humans, half by an LLM-judge
+          calibrated weekly to within four points of the human
+          panel. A regression suite that fires when the new prompt
+          drops the customer-name token. A weekly hour where ten
+          engineers stare at outputs and update the rubric. The
+          product hasn&apos;t changed. The team&apos;s relationship
+          to the product has.
         </P>
         <P>
-          They <HL>stopped tasting their own wine.</HL> When they ship a
-          prompt change, they don&apos;t debate whether it&apos;s
-          better. They look at the CSV. Sometimes it tells them no.
+          They <HL>stopped tasting their own wine.</HL> When they
+          ship a prompt change, they don&apos;t debate whether
+          it&apos;s better. They look at the CSV. Sometimes the CSV
+          tells them no.
         </P>
         <P>
-          Team Vibes shipped a v2 last week. Customers are complaining.
-          The team is in a meeting trying to decide whether the
-          complaints are real. The founder is on Slack saying it{" "}
-          <Em>feels</Em> better in the playground. Nobody on Team Vibes
-          can tell whether v2 is better than v1 — they built no
-          instrument that can answer the question. They&apos;re pouring
-          their own glass. Looking at the label.
+          The other team shipped v2 last week. Customers are
+          complaining. The team is in a meeting trying to decide
+          whether the complaints are real. The founder is on Slack
+          saying it <Em>feels</Em> better. Nobody can answer the
+          question, because nobody built the instrument that
+          answers it.
         </P>
         <P>
-          The point of evals isn&apos;t catching bugs, although they do.
-          It isn&apos;t even shipping faster, although Team Evals ships
-          three times more often than Team Vibes.{" "}
-          <HL>The point of evals is being able to tell the truth about
-          your product</HL> — to yourself, to your team, to the next
-          person who asks if your AI is okay.
+          The point of evals isn&apos;t catching bugs, although they
+          do. It isn&apos;t shipping faster, although you will.{" "}
+          <HL>The point of evals is being able to tell the truth about your product</HL>{" "}
+          — to yourself, to your team, to the next person who asks
+          if your AI is okay.
         </P>
       </div>
 
@@ -512,38 +454,40 @@ export default function EvalsOrVibes() {
             style={{ color: "var(--color-text)" }}
           >
             <li>
-              <strong>Open a spreadsheet.</strong> Any spreadsheet. The
-              one you already use is fine.
+              <strong>Open a spreadsheet.</strong> Any spreadsheet.
+              The one you already use is fine.
             </li>
             <li>
-              <strong>Paste in 20 real prompts</strong> — not synthetic,
-              not invented, not the ones you used to demo the feature.
-              Real ones. From production. From the last week.
+              <strong>Paste in 20 real prompts</strong> — not
+              synthetic, not invented, not the ones you used to demo
+              the feature. Real ones. From production. From the last
+              week.
             </li>
             <li>
-              <strong>Mark the borderline outputs.</strong> The ones you
-              had to think about. The ones that <Em>almost</Em> shipped.
+              <strong>Mark the borderline outputs.</strong> The ones
+              you had to think about. The ones that <Em>almost</Em>{" "}
+              shipped.
             </li>
             <li>
-              <strong>Ask a teammate to grade them blind.</strong> Hide
-              the model name. Hide the prompt version. Just the inputs
-              and the outputs.
+              <strong>Ask a teammate to grade them blind.</strong>{" "}
+              Hide the model name. Hide the prompt version. Just the
+              inputs and the outputs.
             </li>
             <li>
               <strong>Compare.</strong> Where you and your teammate
               disagree is your starting rubric.
             </li>
             <li>
-              <strong>Repeat next sprint.</strong> The CSV grows. The
-              rubric tightens. The model swaps. The CSV stays.
+              <strong>Repeat next sprint.</strong> The CSV grows.
+              The rubric tightens. The model swaps. The CSV stays.
             </li>
           </ul>
         </Callout>
         <P>
           That&apos;s the whole craft. No framework to install. No
-          platform to onboard. The industry will sell you both, and you
-          may eventually need them, but you don&apos;t need them on
-          Monday. <HL>Open the spreadsheet.</HL>
+          platform to onboard. The industry will sell you both, and
+          you may eventually need them, but you don&apos;t need them
+          on Monday. <HL>Open the spreadsheet.</HL>
         </P>
       </div>
 

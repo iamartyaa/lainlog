@@ -7,18 +7,17 @@ const TRANSITION = { type: "spring" as const, duration: 1, bounce: 0 };
 /**
  * MediaBetweenText slot B — Scene 4 mid-post.
  *
- *   "If every wine on your panel scores 95, [chip ballot] your panel
- *    isn't tasting hard enough."
+ *   "If every prompt in your suite passes, [chip 100% pass-row]
+ *    your suite has stopped testing."
  *
- * The chip is a terracotta tasting-ballot row — five small dots, all
- * filled, the visual punchline of "every wine scores 95." It carries the
- * wine-panel lens visually for the only time outside prose.
+ * The chip is a terracotta pass-row — five filled dots, the visual
+ * punchline of "every prompt passes."
  */
 export function BallotChipReveal() {
   return (
     <MediaBetweenText
-      firstText="If every wine on your panel scores 95, "
-      secondText=" your panel isn't tasting hard enough."
+      firstText="If every prompt in your suite passes, "
+      secondText=" your suite has stopped testing."
       triggerType="inView"
       useInViewOptionsProp={{ once: true, amount: 0.6 }}
       mediaContainerClassName="align-middle mx-[6px]"

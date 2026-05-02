@@ -10,7 +10,7 @@ import { playSound } from "@/lib/audio";
 /**
  * W4 — JudgeCalibrate.
  *
- * One Bob output. A rubric-strictness slider (loose ↔ strict) and a
+ * One LLM output. A rubric-strictness slider (loose ↔ strict) and a
  * judge-model toggle (model-A / model-B / human panel). The verdict pill
  * (ship / cut) flips as the inputs change. Same output, different
  * verdicts — because the verdict is a property of the (judge, rubric)
@@ -156,12 +156,16 @@ export function JudgeCalibrate() {
           `}</style>
 
           <div>
-            <span className="bs-jc-output-label">bob · output #042</span>
+            <span className="bs-jc-output-label">model · output #042</span>
             <div className="bs-jc-output">
-              &ldquo;Charming Lincoln-Park 2-bed, walkable to Café Mustache
-              and the Blue Line. Listed at $2,950/mo. Updated kitchen,
-              hardwood throughout, in-unit laundry — schedule your tour
-              today.&rdquo;
+              &ldquo;Hi Sarah — thanks for reaching out. I&rsquo;ve
+              checked the import logs and the failure was caused by
+              a malformed CSV header on row 1. I&rsquo;ve attached a
+              fixed file. Let me know if you have any other issues!&rdquo;
+              <span style={{ display: "block", marginTop: 6, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-text-muted)" }}>
+                (input ticket: customer name was Sara, not Sarah; the
+                root cause was a permissions issue, not a malformed CSV.)
+              </span>
             </div>
           </div>
 

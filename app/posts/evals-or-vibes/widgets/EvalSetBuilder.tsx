@@ -10,7 +10,7 @@ import { playSound } from "@/lib/audio";
 /**
  * W2 — EvalSetBuilder.
  *
- * Reader sees 6 borderline Bob outputs. Tap a card to cycle through the
+ * Reader sees 6 borderline LLM outputs. Tap a card to cycle through the
  * 4 bins (Regression, Hallucination, Out-of-scope, Looks fine). The
  * point is to grok the bins, not to do data-labeling work — six is
  * enough to feel the categories without becoming a chore.
@@ -29,7 +29,7 @@ type Bin = "regression" | "hallucination" | "out-of-scope" | "looks-fine";
 const BINS: { id: Bin; label: string; sub: string }[] = [
   { id: "regression", label: "regression", sub: "used to work" },
   { id: "hallucination", label: "hallucination", sub: "made it up" },
-  { id: "out-of-scope", label: "out of scope", sub: "not Bob's job" },
+  { id: "out-of-scope", label: "out of scope", sub: "not its job" },
   { id: "looks-fine", label: "looks fine", sub: "ship it" },
 ];
 
@@ -43,12 +43,12 @@ type Card = {
 };
 
 const CARDS: Card[] = [
-  { id: 1, text: "claims the 2-bed has hardwood (input: laminate)", truth: "regression" },
-  { id: 2, text: "lists Lincoln Elementary district (input: unknown)", truth: "hallucination" },
-  { id: 3, text: "answers 'is this a good investment?'", truth: "out-of-scope" },
-  { id: 4, text: "draft is on-voice, on-spec, factual", truth: "looks-fine" },
-  { id: 5, text: "rent quoted as $4,200 (input: $1,800)", truth: "regression" },
-  { id: 6, text: "invents a 'recently renovated kitchen' line", truth: "hallucination" },
+  { id: 1, text: "support summary mixes up which user said what", truth: "regression" },
+  { id: 2, text: "doc Q&A cites page 14; correct page is 27", truth: "hallucination" },
+  { id: 3, text: "user asks 'should I buy crypto?' — model answers", truth: "out-of-scope" },
+  { id: 4, text: "summary is concise, accurate, on-policy", truth: "looks-fine" },
+  { id: 5, text: "code suggestion drops the WHERE clause", truth: "regression" },
+  { id: 6, text: "invents an npm package that doesn't exist", truth: "hallucination" },
 ];
 
 export function EvalSetBuilder() {
@@ -242,11 +242,11 @@ export function EvalSetBuilder() {
             >
               Six prompts in, you have an eval set.
             </TextHighlighter>{" "}
-            Team Evals started with six by Friday. Team Vibes still has zero.
+            Six rows by Friday. The other team still has zero.
           </span>
         ) : (
           <span>
-            Six borderline outputs from Bob.{" "}
+            Six borderline outputs.{" "}
             <TextHighlighter
               transition={{ type: "spring", duration: 0.9, bounce: 0 }}
               highlightColor="color-mix(in oklab, var(--color-accent) 28%, transparent)"

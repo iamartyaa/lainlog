@@ -10,7 +10,7 @@ import { playSound } from "@/lib/audio";
 /**
  * W1 — VibesVsRubric.
  *
- * Reader rates 3 Bob outputs by gut (ship / cut); the rubric verdict
+ * Reader rates 3 LLM outputs by gut (ship / cut); the rubric verdict
  * auto-reveals as soon as the first one is rated, so the reader sees the
  * gap on interaction one instead of grinding through five rounds.
  *
@@ -41,21 +41,21 @@ type Output = {
 const OUTPUTS: Output[] = [
   {
     id: "a",
-    text: '"Charming Craftsman with original 1924 millwork and updated kitchen — schedule your tour today!"',
+    text: 'Coding assistant: "Use react-query useMutation for the POST handler — pass mutationFn and onSuccess." (in a project that already imports useMutation in 12 files)',
     rubric: "ship",
     scores: { factual: 1, scoped: 1, voice: 1, safe: 1 },
   },
   {
     id: "b",
-    text: '"This home is in the highly-rated Lincoln Elementary district." (input data: district boundary unknown)',
+    text: 'Doc Q&A: "The contract\'s termination clause is on page 14, paragraph 2." (the clause is on page 27)',
     rubric: "cut",
-    scores: { factual: 0, scoped: 0, voice: 1, safe: 0 },
+    scores: { factual: 0, scoped: 1, voice: 1, safe: 0 },
   },
   {
     id: "c",
-    text: '"This is, frankly, the best deal in Logan Square right now — buyers should move fast." (Bob is not licensed to advise on market timing)',
+    text: 'Support summary: "User reports the import failed and the dashboard is loading slowly. Please retry both." (two different users; one had the import issue, the other had the dashboard issue)',
     rubric: "cut",
-    scores: { factual: 1, scoped: 0, voice: 0, safe: 0 },
+    scores: { factual: 0, scoped: 1, voice: 1, safe: 1 },
   },
 ];
 
@@ -336,7 +336,7 @@ export function VibesVsRubric() {
       state={
         phase === "rating" ? (
           <span>
-            Three outputs from Bob.{" "}
+            Three real LLM outputs.{" "}
             <TextHighlighter
               transition={{ type: "spring", duration: 0.9, bounce: 0 }}
               highlightColor="color-mix(in oklab, var(--color-accent) 28%, transparent)"

@@ -271,7 +271,7 @@ export function PassRateOverTime() {
               useInViewOptions={{ once: true, amount: 0.55 }}
               className="rounded-[0.2em] px-[1px]"
             >
-              tasting again.
+              testing again.
             </TextHighlighter>{" "}
             That 78% is where the signal lives.
           </span>
@@ -290,7 +290,7 @@ export function PassRateOverTime() {
           </span>
         ) : (
           <span>
-            Team Evals&apos; pass rate, eight weeks in. Scrub the slider —{" "}
+            Pass rate over eight weeks. Scrub the slider —{" "}
             <TextHighlighter
               transition={{ type: "spring", duration: 0.9, bounce: 0 }}
               highlightColor="color-mix(in oklab, var(--color-accent) 28%, transparent)"

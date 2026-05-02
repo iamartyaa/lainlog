@@ -7,10 +7,10 @@ const TRANSITION = { type: "spring" as const, duration: 1, bounce: 0 };
 /**
  * MediaBetweenText slot A — Scene 1 opening hook.
  *
- *   "The same model said the rent was [chip $1,800 → $4,200] two days apart."
+ *   "Same prompt, two runs, two different answers — [chip A ⇄ B]."
  *
  * The chip is a small terracotta tile. It is the punchline of the sentence —
- * the model, twice, on the same listing, two different rents. The chip
+ * the model, twice, on the same input, two different outputs. The chip
  * widens-into-place on inView (once) so the beat lands at reading pace.
  *
  * Wrapped in a "use client" component because MediaBetweenText needs a
@@ -19,15 +19,15 @@ const TRANSITION = { type: "spring" as const, duration: 1, bounce: 0 };
 export function RentChipReveal() {
   return (
     <MediaBetweenText
-      firstText="The same model said the rent was "
-      secondText=" two days apart."
+      firstText="Same model. Same prompt. "
+      secondText=" Different output."
       triggerType="inView"
       useInViewOptionsProp={{ once: true, amount: 0.6 }}
       mediaContainerClassName="align-middle mx-[6px]"
       animationVariants={{
         initial: { width: 0, opacity: 0 },
         animate: {
-          width: 96,
+          width: 132,
           opacity: 1,
           transition: TRANSITION,
         },
@@ -37,7 +37,7 @@ export function RentChipReveal() {
           aria-hidden
           style={{
             display: "inline-block",
-            width: 96,
+            width: 132,
             height: 20,
             borderRadius: 4,
             background:
@@ -52,7 +52,7 @@ export function RentChipReveal() {
             verticalAlign: "middle",
           }}
         >
-          $1,800 → $4,200
+          two different answers
         </span>
       )}
     />
