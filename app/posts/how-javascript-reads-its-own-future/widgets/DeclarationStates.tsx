@@ -143,11 +143,186 @@ export function DeclarationStates({ initialKind = "var" }: Props) {
   const MEM_H = 76;
   const HEIGHT = MEM_Y + MEM_H + 14;
 
+  const canvasNode = (
+    <svg
+      viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+      width="100%"
+      style={{
+        maxWidth: WIDTH,
+        height: "auto",
+        display: "block",
+        margin: "0 auto",
+      }}
+      role="img"
+      aria-label={`Declaration state. Kind: ${state.label}. Binding ${state.binding.name} = ${state.binding.valueText}.`}
+    >
+      <defs>
+        <pattern
+          id={hatchPattern}
+          patternUnits="userSpaceOnUse"
+          width="6"
+          height="6"
+          patternTransform="rotate(45)"
+        >
+          <line
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="6"
+            stroke="var(--color-text-muted)"
+            strokeWidth="1.4"
+          />
+        </pattern>
+      </defs>
+
+      {/* Snippet pane */}
+      <rect
+        x={PAD}
+        y={SNIPPET_Y}
+        width={WIDTH - PAD * 2}
+        height={SNIPPET_H}
+        rx={3}
+        fill="color-mix(in oklab, var(--color-surface) 35%, transparent)"
+        stroke="var(--color-rule)"
+        strokeWidth={1}
+      />
+      <text
+        x={PAD + 8}
+        y={SNIPPET_Y + 14}
+        fontFamily="var(--font-sans)"
+        fontSize={9}
+        letterSpacing="0.08em"
+        fill="var(--color-text-muted)"
+      >
+        AT LINE 1
+      </text>
+
+      <motion.g
+        key={`snip-${state.id}`}
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={SPRING.smooth}
+      >
+        {state.snippet.map((line, i) => (
+          <text
+            key={i}
+            x={PAD + 12}
+            y={SNIPPET_Y + 32 + i * 18}
+            fontFamily="var(--font-mono)"
+            fontSize={12}
+            fill={i === 0 ? "var(--color-accent)" : "var(--color-text)"}
+          >
+            <tspan
+              fontFamily="var(--font-mono)"
+              fontSize={10}
+              fill="var(--color-text-muted)"
+            >
+              {i + 1}
+            </tspan>
+            <tspan dx={10}>{line}</tspan>
+          </text>
+        ))}
+      </motion.g>
+
+      {/* Memory pane */}
+      <rect
+        x={PAD}
+        y={MEM_Y}
+        width={WIDTH - PAD * 2}
+        height={MEM_H}
+        rx={3}
+        fill="color-mix(in oklab, var(--color-surface) 35%, transparent)"
+        stroke="var(--color-accent)"
+        strokeWidth={1.4}
+      />
+      <text
+        x={PAD + 8}
+        y={MEM_Y + 14}
+        fontFamily="var(--font-sans)"
+        fontSize={9}
+        letterSpacing="0.08em"
+        fill="var(--color-text-muted)"
+      >
+        MEMORY · CREATION-PHASE STATE
+      </text>
+
+      {/* Binding row — name + state cell */}
+      <motion.g
+        key={`mem-${state.id}`}
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={SPRING.smooth}
+      >
+        <text
+          x={PAD + 14}
+          y={MEM_Y + 44}
+          fontFamily="var(--font-mono)"
+          fontSize={13}
+          fill="var(--color-text)"
+        >
+          {state.binding.name}
+        </text>
+
+        {/* The state cell — shape conveys state, not just colour. */}
+        {state.binding.shape === "value" ? (
+          <rect
+            x={WIDTH / 2 - 4}
+            y={MEM_Y + 30}
+            width={WIDTH / 2 - PAD - 4}
+            height={28}
+            rx={2}
+            fill="color-mix(in oklab, var(--color-accent) 18%, transparent)"
+            stroke="var(--color-accent)"
+            strokeWidth={1}
+          />
+        ) : state.binding.shape === "uninitialized" ? (
+          <g>
+            <rect
+              x={WIDTH / 2 - 4}
+              y={MEM_Y + 30}
+              width={WIDTH / 2 - PAD - 4}
+              height={28}
+              rx={2}
+              fill={`url(#${hatchPattern})`}
+              stroke="var(--color-text-muted)"
+              strokeWidth={1.4}
+              strokeDasharray="3 2"
+            />
+          </g>
+        ) : (
+          // fn-bound — rounded pill (different shape)
+          <rect
+            x={WIDTH / 2 - 4}
+            y={MEM_Y + 30}
+            width={WIDTH / 2 - PAD - 4}
+            height={28}
+            rx={14}
+            fill="color-mix(in oklab, var(--color-accent) 26%, transparent)"
+            stroke="var(--color-accent)"
+            strokeWidth={1.4}
+          />
+        )}
+
+        <text
+          x={WIDTH / 2 - 4 + (WIDTH / 2 - PAD - 4) / 2}
+          y={MEM_Y + 48}
+          textAnchor="middle"
+          fontFamily="var(--font-mono)"
+          fontSize={11}
+          fill="var(--color-text)"
+          fontWeight={state.binding.shape === "fn-bound" ? 600 : 400}
+        >
+          {state.binding.valueText}
+        </text>
+      </motion.g>
+    </svg>
+  );
+
   return (
     <WidgetShell
       title="declarations · at line 1"
-      caption={state.caption}
-      captionTone="prominent"
+      state={state.caption}
+      canvas={canvasNode}
       controls={
         <div
           role="group"
@@ -189,183 +364,6 @@ export function DeclarationStates({ initialKind = "var" }: Props) {
           })}
         </div>
       }
-    >
-      <svg
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        width="100%"
-        style={{
-          maxWidth: WIDTH,
-          height: "auto",
-          display: "block",
-          margin: "0 auto",
-        }}
-        role="img"
-        aria-label={`Declaration state. Kind: ${state.label}. Binding ${state.binding.name} = ${state.binding.valueText}.`}
-      >
-        <defs>
-          <pattern
-            id={hatchPattern}
-            patternUnits="userSpaceOnUse"
-            width="6"
-            height="6"
-            patternTransform="rotate(45)"
-          >
-            <line
-              x1="0"
-              y1="0"
-              x2="0"
-              y2="6"
-              stroke="var(--color-text-muted)"
-              strokeWidth="1.4"
-            />
-          </pattern>
-        </defs>
-
-        {/* Snippet pane */}
-        <rect
-          x={PAD}
-          y={SNIPPET_Y}
-          width={WIDTH - PAD * 2}
-          height={SNIPPET_H}
-          rx={3}
-          fill="color-mix(in oklab, var(--color-surface) 35%, transparent)"
-          stroke="var(--color-rule)"
-          strokeWidth={1}
-        />
-        <text
-          x={PAD + 8}
-          y={SNIPPET_Y + 14}
-          fontFamily="var(--font-sans)"
-          fontSize={9}
-          letterSpacing="0.08em"
-          fill="var(--color-text-muted)"
-        >
-          AT LINE 1
-        </text>
-
-        <motion.g
-          key={`snip-${state.id}`}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={SPRING.smooth}
-        >
-          {state.snippet.map((line, i) => (
-            <text
-              key={i}
-              x={PAD + 12}
-              y={SNIPPET_Y + 32 + i * 18}
-              fontFamily="var(--font-mono)"
-              fontSize={12}
-              fill={i === 0 ? "var(--color-accent)" : "var(--color-text)"}
-            >
-              <tspan
-                fontFamily="var(--font-mono)"
-                fontSize={10}
-                fill="var(--color-text-muted)"
-              >
-                {i + 1}
-              </tspan>
-              <tspan dx={10}>{line}</tspan>
-            </text>
-          ))}
-        </motion.g>
-
-        {/* Memory pane */}
-        <rect
-          x={PAD}
-          y={MEM_Y}
-          width={WIDTH - PAD * 2}
-          height={MEM_H}
-          rx={3}
-          fill="color-mix(in oklab, var(--color-surface) 35%, transparent)"
-          stroke="var(--color-accent)"
-          strokeWidth={1.4}
-        />
-        <text
-          x={PAD + 8}
-          y={MEM_Y + 14}
-          fontFamily="var(--font-sans)"
-          fontSize={9}
-          letterSpacing="0.08em"
-          fill="var(--color-text-muted)"
-        >
-          MEMORY · CREATION-PHASE STATE
-        </text>
-
-        {/* Binding row — name + state cell */}
-        <motion.g
-          key={`mem-${state.id}`}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={SPRING.smooth}
-        >
-          <text
-            x={PAD + 14}
-            y={MEM_Y + 44}
-            fontFamily="var(--font-mono)"
-            fontSize={13}
-            fill="var(--color-text)"
-          >
-            {state.binding.name}
-          </text>
-
-          {/* The state cell — shape conveys state, not just colour. */}
-          {state.binding.shape === "value" ? (
-            <rect
-              x={WIDTH / 2 - 4}
-              y={MEM_Y + 30}
-              width={WIDTH / 2 - PAD - 4}
-              height={28}
-              rx={2}
-              fill="color-mix(in oklab, var(--color-accent) 18%, transparent)"
-              stroke="var(--color-accent)"
-              strokeWidth={1}
-            />
-          ) : state.binding.shape === "uninitialized" ? (
-            <g>
-              <rect
-                x={WIDTH / 2 - 4}
-                y={MEM_Y + 30}
-                width={WIDTH / 2 - PAD - 4}
-                height={28}
-                rx={2}
-                fill={`url(#${hatchPattern})`}
-                stroke="var(--color-text-muted)"
-                strokeWidth={1.4}
-                strokeDasharray="3 2"
-              />
-            </g>
-          ) : (
-            // fn-bound — rounded pill (different shape)
-            <rect
-              x={WIDTH / 2 - 4}
-              y={MEM_Y + 30}
-              width={WIDTH / 2 - PAD - 4}
-              height={28}
-              rx={14}
-              fill="color-mix(in oklab, var(--color-accent) 26%, transparent)"
-              stroke="var(--color-accent)"
-              strokeWidth={1.4}
-            />
-          )}
-
-          <text
-            x={WIDTH / 2 - 4 + (WIDTH / 2 - PAD - 4) / 2}
-            y={MEM_Y + 48}
-            textAnchor="middle"
-            fontFamily="var(--font-mono)"
-            fontSize={11}
-            fill={
-              state.binding.shape === "uninitialized"
-                ? "var(--color-text)"
-                : "var(--color-text)"
-            }
-            fontWeight={state.binding.shape === "fn-bound" ? 600 : 400}
-          >
-            {state.binding.valueText}
-          </text>
-        </motion.g>
-      </svg>
-    </WidgetShell>
+    />
   );
 }

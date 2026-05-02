@@ -97,8 +97,8 @@ export function RequestJourney({
     <WidgetShell
       title="request journey · the browser is the gatekeeper"
       measurements={`allow-origin ${allow ? "sent" : "missing"}`}
-      captionTone="prominent"
-      caption={current.caption(allow)}
+      state={current.caption(allow)}
+      canvas={<Journey step={step} allow={allow} current={current} />}
       controls={
         <div className="flex items-center justify-center gap-[var(--spacing-md)] flex-wrap w-full">
           <WidgetNav value={step} total={STEPS.length} onChange={setStep} />
@@ -123,9 +123,7 @@ export function RequestJourney({
           </motion.button>
         </div>
       }
-    >
-      <Journey step={step} allow={allow} current={current} />
-    </WidgetShell>
+    />
   );
 }
 

@@ -357,42 +357,41 @@ export function CallStackECs({ initialStep = 0, codeSlot }: Props) {
     <WidgetShell
       title="call stack · execution contexts"
       measurements={`step ${clamped + 1}/${TOTAL}`}
-      caption={caption}
-      captionTone="prominent"
-    >
-      <div className="bs-csec">
-        <CallStackBoard
-          activeLine={current.activeLine}
-          stack={current.stack}
-          topId={topFrame.id}
-          consoleLog={consoleLog}
-          reducedMotion={Boolean(reducedMotion)}
-          codeSlot={codeSlot}
-          controls={controls}
-        />
-      </div>
-
-      <style>{`
-        .bs-csec {
-          display: flex;
-          flex-direction: column;
-          gap: var(--spacing-sm);
-          min-width: 0;
-        }
-        .bs-csec-controls {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px;
-          align-items: center;
-          justify-content: flex-start;
-          min-height: 48px;
-        }
-        .bs-csec-btn-label {
-          font-family: var(--font-sans);
-          font-size: var(--text-ui);
-        }
-      `}</style>
-    </WidgetShell>
+      state={caption}
+      canvas={
+        <div className="bs-csec">
+          <CallStackBoard
+            activeLine={current.activeLine}
+            stack={current.stack}
+            topId={topFrame.id}
+            consoleLog={consoleLog}
+            reducedMotion={Boolean(reducedMotion)}
+            codeSlot={codeSlot}
+          />
+          <style>{`
+            .bs-csec {
+              display: flex;
+              flex-direction: column;
+              gap: var(--spacing-sm);
+              min-width: 0;
+            }
+            .bs-csec-controls {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 6px;
+              align-items: center;
+              justify-content: flex-start;
+              min-height: 48px;
+            }
+            .bs-csec-btn-label {
+              font-family: var(--font-sans);
+              font-size: var(--text-ui);
+            }
+          `}</style>
+        </div>
+      }
+      controls={controls}
+    />
   );
 }
 
@@ -407,7 +406,6 @@ function CallStackBoard({
   consoleLog,
   reducedMotion,
   codeSlot,
-  controls,
 }: {
   activeLine: number | null;
   stack: EC[];
@@ -415,7 +413,6 @@ function CallStackBoard({
   consoleLog: ConsoleLine[];
   reducedMotion: boolean;
   codeSlot?: ReactNode;
-  controls: ReactNode;
 }) {
   const boardRef = useRef<HTMLDivElement | null>(null);
   const codePaneRef = useRef<HTMLDivElement | null>(null);
@@ -589,10 +586,6 @@ function CallStackBoard({
         </div>
       </div>
 
-      {/* Controls — immediately below the stack viz. Cause + effect
-          colocated in the reader's eye-line. */}
-      <div className="bs-csec-region-controls">{controls}</div>
-
       {/* Console pane. Lines are derived from `STEPS[0..currentStep]
           .emit`, so stepping back removes lines that haven't fired yet
           and stepping forward replays them. AnimatePresence with
@@ -689,11 +682,6 @@ function CallStackBoard({
           font-variant-numeric: tabular-nums;
         }
         .bs-csec-console { min-height: 88px; }
-        .bs-csec-region-controls {
-          display: flex;
-          align-items: center;
-          min-height: 48px;
-        }
 
         .bs-csec-codeslot {
           position: relative;
@@ -737,12 +725,12 @@ function CallStackBoard({
         @container widget (min-width: 720px) {
           .bs-csec-board {
             grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-            grid-template-rows: auto auto auto;
+            grid-template-rows: auto auto;
           }
           /* code pane — top-left */
           .bs-csec-board > .bs-csec-code {
             grid-column: 1 / 2;
-            grid-row: 1 / 3;
+            grid-row: 1 / 2;
           }
           /* mobile glyph hides */
           .bs-csec-board > .bs-csec-glyph {
@@ -753,15 +741,10 @@ function CallStackBoard({
             grid-column: 2 / 3;
             grid-row: 1 / 2;
           }
-          /* controls — directly under stack viz, right column */
-          .bs-csec-board > .bs-csec-region-controls {
-            grid-column: 2 / 3;
-            grid-row: 2 / 3;
-          }
-          /* console — left column, row 3 (under code) */
+          /* console — full-width, row 2 (under both code and stack) */
           .bs-csec-board > .bs-csec-console {
             grid-column: 1 / 3;
-            grid-row: 3 / 4;
+            grid-row: 2 / 3;
           }
         }
       `}</style>

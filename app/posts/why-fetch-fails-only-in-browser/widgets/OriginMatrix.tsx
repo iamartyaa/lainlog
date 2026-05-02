@@ -107,26 +107,38 @@ export function OriginMatrix() {
       : "var(--color-accent)"
     : "var(--color-text-muted)";
 
+  const stateNode = row ? (
+    <span aria-live="off">
+      <span style={{ color: tone, fontWeight: 500 }}>{decision}</span>
+      {" — "}
+      {row.caption}
+    </span>
+  ) : (
+    <span>
+      Tap any row. Terracotta marks the part that shifts the URL out of your
+      origin.
+    </span>
+  );
+
   return (
     <WidgetShell
       title="origin · scheme · host · port"
       measurements={`base · ${BASE.url}`}
-      captionTone="prominent"
-      caption={
-        row ? (
-          <span aria-live="off">
-            <span style={{ color: tone, fontWeight: 500 }}>{decision}</span>
-            {" — "}
-            {row.caption}
-          </span>
-        ) : (
-          <span>
-            Tap any row. Terracotta marks the part that shifts the URL out of
-            your origin.
-          </span>
-        )
-      }
-    >
+      state={stateNode}
+      canvas={<OriginMatrixCanvas focused={focused} setFocused={setFocused} />}
+    />
+  );
+}
+
+function OriginMatrixCanvas({
+  focused,
+  setFocused,
+}: {
+  focused: number;
+  setFocused: (i: number) => void;
+}) {
+  return (
+    <>
       {/* Mobile-first: stacked list of cards. Each card = url on its own line,
           a one-line scheme/host/port/path diff string with the differing piece
           in terracotta, and a verdict pill on the right. The full caption
@@ -370,6 +382,6 @@ export function OriginMatrix() {
           })}
         </tbody>
       </table>
-    </WidgetShell>
+    </>
   );
 }
