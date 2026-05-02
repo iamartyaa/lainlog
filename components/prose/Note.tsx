@@ -3,6 +3,7 @@
 import { useId, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { playSound } from "@/lib/audio";
+import { Glitter } from "@/components/fancy/Glitter";
 
 /**
  * <Note> — a collapsed-by-default disclosure for "tactical aside" content.
@@ -127,21 +128,6 @@ export function Note({ summary, children, defaultOpen = false }: NoteProps) {
           transform: rotate(90deg);
           color: var(--color-accent);
         }
-        .bs-note-glitter {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          overflow: visible;
-        }
-        .bs-note-spark {
-          position: absolute;
-          width: 5px;
-          height: 5px;
-          border-radius: 50%;
-          background: var(--color-accent);
-          filter: blur(0.3px);
-          will-change: transform, opacity;
-        }
         .bs-note-body {
           overflow: hidden;
           background: color-mix(in oklab, var(--color-surface) 60%, transparent);
@@ -157,7 +143,6 @@ export function Note({ summary, children, defaultOpen = false }: NoteProps) {
           color: var(--color-text);
         }
         @media (prefers-reduced-motion: reduce) {
-          .bs-note-glitter { display: none; }
           .bs-note-chevron { transition: none; }
         }
       `}</style>
@@ -185,17 +170,10 @@ export function Note({ summary, children, defaultOpen = false }: NoteProps) {
           <path d="M5 3 L9 7 L5 11" />
         </svg>
 
-        {/* Glitter prompt — only shown when closed and motion is allowed.
-            Four slow shimmer dots orbiting the trigger; staggered so the
-            eye catches on it without it feeling spinny. */}
-        {!open && !prefersReducedMotion ? (
-          <span className="bs-note-glitter" aria-hidden>
-            <Spark x="6%" y="-8px" delay={0} />
-            <Spark x="92%" y="-6px" delay={0.7} />
-            <Spark x="20%" y="calc(100% - 2px)" delay={1.4} />
-            <Spark x="78%" y="calc(100% - 2px)" delay={2.1} />
-          </span>
-        ) : null}
+        {/* Glitter prompt — only shown when closed. The shared <Glitter>
+            primitive handles reduced-motion internally (returns null), so
+            we only gate on `!open` here. */}
+        {!open ? <Glitter /> : null}
       </button>
 
       <AnimatePresence initial={false}>
@@ -226,35 +204,5 @@ export function Note({ summary, children, defaultOpen = false }: NoteProps) {
         ) : null}
       </AnimatePresence>
     </aside>
-  );
-}
-
-/** A single shimmer dot. 3.6s loop; opacity 0 → 0.9 → 0; tiny y drift. */
-function Spark({
-  x,
-  y,
-  delay,
-}: {
-  x: string;
-  y: string;
-  delay: number;
-}) {
-  return (
-    <motion.span
-      className="bs-note-spark"
-      style={{ left: x, top: y }}
-      initial={{ opacity: 0, scale: 0.6 }}
-      animate={{
-        opacity: [0, 0.85, 0],
-        scale: [0.6, 1, 0.6],
-        y: [0, -3, 0],
-      }}
-      transition={{
-        duration: 3.6,
-        delay,
-        repeat: Infinity,
-        ease: "easeInOut",
-      }}
-    />
   );
 }
