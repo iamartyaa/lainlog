@@ -10,18 +10,19 @@ import { playSound } from "@/lib/audio";
 /**
  * W1 — VibesVsRubric.
  *
- * Reader rates 5 Cassidy outputs by gut (ship / cut). After committing,
- * the same 5 outputs reveal a 4-point rubric verdict (factual / scoped /
- * on-voice / safe). Mismatches between gut and rubric get a terracotta dot.
+ * Reader rates 3 Bob outputs by gut (ship / cut); the rubric verdict
+ * auto-reveals as soon as the first one is rated, so the reader sees the
+ * gap on interaction one instead of grinding through five rounds.
  *
  * The teaching point: the gap is the lesson. You marked these by feel.
  * The rubric marked them too. Here's where they disagreed.
  *
- * State machine:
- *   idle → rating → committed → revealed → reset
+ * Interaction budget: ≤5. One tap on any row reveals every rubric
+ * verdict (1 interaction); the reader can correct or refine the other
+ * two rows (up to 2 more) and reset (1) — capped at 4 meaningful actions.
  *
  * Frame-stable: canvas min-height matches the tallest reachable state
- * (revealed) so the row count never causes a vertical jump.
+ * (3 rows + rubric strip) so row count never causes a vertical jump.
  */
 
 type Verdict = "ship" | "cut" | null;
@@ -40,31 +41,19 @@ type Output = {
 const OUTPUTS: Output[] = [
   {
     id: "a",
-    text: '"This 2-bed in Oak Park is walkable to four cafés and the Blue Line." (input data: 2 cafés, no Blue Line stop within 0.6 mi)',
-    rubric: "cut",
-    scores: { factual: 0, scoped: 1, voice: 1, safe: 1 },
-  },
-  {
-    id: "b",
     text: '"Charming Craftsman with original 1924 millwork and updated kitchen — schedule your tour today!"',
     rubric: "ship",
     scores: { factual: 1, scoped: 1, voice: 1, safe: 1 },
   },
   {
-    id: "c",
-    text: '"This home is in the highly-rated Lincoln Elementary district." (input data: district boundary unknown / not provided)',
+    id: "b",
+    text: '"This home is in the highly-rated Lincoln Elementary district." (input data: district boundary unknown)',
     rubric: "cut",
     scores: { factual: 0, scoped: 0, voice: 1, safe: 0 },
   },
   {
-    id: "d",
-    text: '"Light-filled corner unit, hardwood throughout, dog park across the street." (matches input data)',
-    rubric: "ship",
-    scores: { factual: 1, scoped: 1, voice: 1, safe: 1 },
-  },
-  {
-    id: "e",
-    text: '"This is, frankly, the best deal in Logan Square right now — buyers should move fast." (Cassidy is not licensed to advise on market timing)',
+    id: "c",
+    text: '"This is, frankly, the best deal in Logan Square right now — buyers should move fast." (Bob is not licensed to advise on market timing)',
     rubric: "cut",
     scores: { factual: 1, scoped: 0, voice: 0, safe: 0 },
   },
@@ -79,12 +68,10 @@ export function VibesVsRubric() {
     a: null,
     b: null,
     c: null,
-    d: null,
-    e: null,
   });
 
-  const allPicked = useMemo(
-    () => OUTPUTS.every((o) => picks[o.id] !== null),
+  const ratedCount = useMemo(
+    () => OUTPUTS.filter((o) => picks[o.id]).length,
     [picks],
   );
 
@@ -96,25 +83,20 @@ export function VibesVsRubric() {
 
   const measurements =
     phase === "revealed"
-      ? `${mismatches}/${OUTPUTS.length} disagreements`
-      : `${OUTPUTS.filter((o) => picks[o.id]).length}/${OUTPUTS.length} rated`;
+      ? `${mismatches}/${ratedCount || OUTPUTS.length} disagreements`
+      : `${ratedCount}/${OUTPUTS.length} rated`;
 
+  // The reveal trips on the first rating — show, then explain.
   const handlePick = (id: string, v: Verdict) => {
-    if (phase !== "rating") return;
     playSound("Radio");
     setPicks((p) => ({ ...p, [id]: v }));
-  };
-
-  const handleCommit = () => {
-    if (!allPicked) return;
-    playSound("Click");
-    setPhase("revealed");
+    if (phase === "rating") setPhase("revealed");
   };
 
   const handleReset = () => {
     playSound("Progress-Tick");
     setPhase("rating");
-    setPicks({ a: null, b: null, c: null, d: null, e: null });
+    setPicks({ a: null, b: null, c: null });
   };
 
   return (
@@ -126,7 +108,7 @@ export function VibesVsRubric() {
           <style>{`
             .bs-vvr-canvas {
               padding: var(--spacing-md);
-              min-height: 460px;
+              min-height: 360px;
             }
             .bs-vvr-list {
               display: flex;
@@ -291,7 +273,7 @@ export function VibesVsRubric() {
                     <motion.button
                       type="button"
                       onClick={() => handlePick(o.id, "ship")}
-                      disabled={phase !== "rating"}
+                      disabled={false}
                       aria-pressed={pick === "ship"}
                       className="bs-vvr-pick"
                       data-active={pick === "ship"}
@@ -305,7 +287,7 @@ export function VibesVsRubric() {
                     <motion.button
                       type="button"
                       onClick={() => handlePick(o.id, "cut")}
-                      disabled={phase !== "rating"}
+                      disabled={false}
                       aria-pressed={pick === "cut"}
                       className="bs-vvr-pick"
                       data-active={pick === "cut"}
@@ -354,16 +336,16 @@ export function VibesVsRubric() {
       state={
         phase === "rating" ? (
           <span>
-            Five outputs from Cassidy.{" "}
+            Three outputs from Bob.{" "}
             <TextHighlighter
               transition={{ type: "spring", duration: 0.9, bounce: 0 }}
               highlightColor="color-mix(in oklab, var(--color-accent) 28%, transparent)"
               useInViewOptions={{ once: true, amount: 0.55 }}
               className="rounded-[0.2em] px-[1px]"
             >
-              Mark each by gut.
+              Tap one by gut.
             </TextHighlighter>{" "}
-            Don&apos;t overthink — you&apos;d ship in production.
+            The rubric reveals on first rating.
           </span>
         ) : (
           <span>
@@ -381,26 +363,15 @@ export function VibesVsRubric() {
       }
       controls={
         <div className="flex items-center gap-[var(--spacing-sm)]">
-          {phase === "rating" ? (
-            <motion.button
-              type="button"
-              onClick={handleCommit}
-              disabled={!allPicked}
-              className="bs-vvr-commit"
-              {...PRESS}
-            >
-              {allPicked ? "reveal rubric →" : `${5 - OUTPUTS.filter((o) => picks[o.id]).length} left to rate`}
-            </motion.button>
-          ) : (
-            <motion.button
-              type="button"
-              onClick={handleReset}
-              className="bs-vvr-commit"
-              {...PRESS}
-            >
-              ↺ rate again
-            </motion.button>
-          )}
+          <motion.button
+            type="button"
+            onClick={handleReset}
+            disabled={phase === "rating" && ratedCount === 0}
+            className="bs-vvr-commit"
+            {...PRESS}
+          >
+            ↺ rate again
+          </motion.button>
         </div>
       }
     />

@@ -10,7 +10,7 @@ import { playSound } from "@/lib/audio";
 /**
  * W4 — JudgeCalibrate.
  *
- * One Cassidy output. A rubric-strictness slider (loose ↔ strict) and a
+ * One Bob output. A rubric-strictness slider (loose ↔ strict) and a
  * judge-model toggle (model-A / model-B / human panel). The verdict pill
  * (ship / cut) flips as the inputs change. Same output, different
  * verdicts — because the verdict is a property of the (judge, rubric)
@@ -156,7 +156,7 @@ export function JudgeCalibrate() {
           `}</style>
 
           <div>
-            <span className="bs-jc-output-label">cassidy · output #042</span>
+            <span className="bs-jc-output-label">bob · output #042</span>
             <div className="bs-jc-output">
               &ldquo;Charming Lincoln-Park 2-bed, walkable to Café Mustache
               and the Blue Line. Listed at $2,950/mo. Updated kitchen,

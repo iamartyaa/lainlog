@@ -10,20 +10,24 @@ import { playSound } from "@/lib/audio";
 /**
  * W3 — PassRateOverTime.
  *
- * Time-series of an eval suite's pass rate over 12 weeks. The reader
- * scrubs through the timeline. The line climbs from 60% to 100%, plateaus,
- * and at week 8 a customer-incident dot appears. The reader can press
- * "add hard prompts" to recalibrate — the line drops to 78%, the curve
- * becomes informative again.
+ * Time-series of an eval suite's pass rate over 8 weeks. The line is
+ * already drawn — it climbs from 62% to 100%, plateaus, and a
+ * customer-incident dot sits on the plateau like a cigarette burn on
+ * a tablecloth. One button — "+ add hard prompts" — recalibrates: the
+ * line drops to 78%, the curve becomes informative again.
  *
- * State machine: scrub through weeks → at week ≥ 6, suite is "saturated"
- * → press "add hard prompts" → recalibrated state.
+ * Interaction budget: ≤2. Show by default (the saturated curve with
+ * incident is the lesson); one click for the insight; reset is the
+ * second action. The optional scrubber lets curious readers replay
+ * the climb but isn't load-bearing.
+ *
+ * State machine: saturated (default) → recalibrated.
  */
 
-// 12 weeks of pass-rate %, climbing to 100 by week 6 and plateauing
-const RAW: number[] = [62, 71, 78, 85, 92, 100, 100, 100, 100, 100, 100, 100];
-const RECAL: number[] = [62, 71, 78, 85, 92, 100, 100, 100, 78, 81, 84, 86];
-const INCIDENT_WEEK = 8; // 0-indexed
+// 8 weeks of pass-rate %, climbing to 100 by week 5 and plateauing.
+const RAW: number[] = [62, 75, 85, 95, 100, 100, 100, 100];
+const RECAL: number[] = [62, 75, 85, 95, 100, 100, 78, 82];
+const INCIDENT_WEEK = 6; // 0-indexed
 
 const W = 360;
 const H = 180;
@@ -44,12 +48,15 @@ function pointsFor(values: number[], upTo: number): string {
 
 export function PassRateOverTime() {
   const prefersReducedMotion = useReducedMotion();
-  const [week, setWeek] = useState(0);
+  // Default: end of the timeline so the saturation lesson is visible
+  // on render — show, then explain. Scrubber lets curious readers
+  // replay the climb but isn't load-bearing.
+  const [week, setWeek] = useState(RAW.length - 1);
   const [recalibrated, setRecalibrated] = useState(false);
 
   const series = recalibrated ? RECAL : RAW;
   const value = series[week];
-  const saturated = week >= 6 && !recalibrated;
+  const saturated = week >= 5 && !recalibrated;
   const showIncident = week >= INCIDENT_WEEK && !recalibrated;
 
   const incidentX =
@@ -66,7 +73,7 @@ export function PassRateOverTime() {
 
   const reset = () => {
     playSound("Progress-Tick");
-    setWeek(0);
+    setWeek(RAW.length - 1);
     setRecalibrated(false);
   };
 
@@ -283,14 +290,14 @@ export function PassRateOverTime() {
           </span>
         ) : (
           <span>
-            Team Evals&apos; pass rate, over twelve weeks. Scrub forward —{" "}
+            Team Evals&apos; pass rate, eight weeks in. Scrub the slider —{" "}
             <TextHighlighter
               transition={{ type: "spring", duration: 0.9, bounce: 0 }}
               highlightColor="color-mix(in oklab, var(--color-accent) 28%, transparent)"
               useInViewOptions={{ once: true, amount: 0.55 }}
               className="rounded-[0.2em] px-[1px]"
             >
-              watch what happens after week six.
+              watch the climb stall.
             </TextHighlighter>
           </span>
         )

@@ -10,12 +10,14 @@ import { playSound } from "@/lib/audio";
 /**
  * W2 — EvalSetBuilder.
  *
- * Reader is shown 12 borderline Cassidy outputs. They tap each card to
- * cycle through 4 bins (Regression, Hallucination, Out-of-scope, Looks
- * fine). After all 12 are placed, a summary appears: 12 prompts in, you
- * have an eval set.
+ * Reader sees 6 borderline Bob outputs. Tap a card to cycle through the
+ * 4 bins (Regression, Hallucination, Out-of-scope, Looks fine). The
+ * point is to grok the bins, not to do data-labeling work — six is
+ * enough to feel the categories without becoming a chore.
  *
- * Note on interaction: the outline calls for drag, but for an inline
+ * Interaction budget: ≤6 (one tap per card). Reset is one more.
+ *
+ * Note on interaction: the outline called for drag, but for an inline
  * widget on a long-scroll post page, "tap to cycle through bins" is
  * frame-stable, mobile-friendly, and keyboard-accessible without
  * inventing a custom drag pattern. The bins are unordered so the
@@ -27,7 +29,7 @@ type Bin = "regression" | "hallucination" | "out-of-scope" | "looks-fine";
 const BINS: { id: Bin; label: string; sub: string }[] = [
   { id: "regression", label: "regression", sub: "used to work" },
   { id: "hallucination", label: "hallucination", sub: "made it up" },
-  { id: "out-of-scope", label: "out of scope", sub: "not Cassidy's job" },
+  { id: "out-of-scope", label: "out of scope", sub: "not Bob's job" },
   { id: "looks-fine", label: "looks fine", sub: "ship it" },
 ];
 
@@ -47,12 +49,6 @@ const CARDS: Card[] = [
   { id: 4, text: "draft is on-voice, on-spec, factual", truth: "looks-fine" },
   { id: 5, text: "rent quoted as $4,200 (input: $1,800)", truth: "regression" },
   { id: 6, text: "invents a 'recently renovated kitchen' line", truth: "hallucination" },
-  { id: 7, text: "drafts a response in legal-disclaimer voice", truth: "regression" },
-  { id: 8, text: "advises buyer on offer timing", truth: "out-of-scope" },
-  { id: 9, text: "says 'four cafés walkable' (input: two)", truth: "hallucination" },
-  { id: 10, text: "mirrors agent voice and the listing data", truth: "looks-fine" },
-  { id: 11, text: "answers a mortgage-rate question directly", truth: "out-of-scope" },
-  { id: 12, text: "drops the customer-name token entirely", truth: "regression" },
 ];
 
 export function EvalSetBuilder() {
@@ -104,7 +100,7 @@ export function EvalSetBuilder() {
           <style>{`
             .bs-esb-canvas {
               padding: var(--spacing-md);
-              min-height: 480px;
+              min-height: 360px;
               display: flex;
               flex-direction: column;
               gap: var(--spacing-md);
@@ -244,20 +240,20 @@ export function EvalSetBuilder() {
               useInViewOptions={{ once: true, amount: 0.55 }}
               className="rounded-[0.2em] px-[1px]"
             >
-              Twelve prompts in, you have an eval set.
+              Six prompts in, you have an eval set.
             </TextHighlighter>{" "}
-            Team Evals had twelve by Friday. Team Vibes still has zero.
+            Team Evals started with six by Friday. Team Vibes still has zero.
           </span>
         ) : (
           <span>
-            Twelve borderline outputs from Cassidy.{" "}
+            Six borderline outputs from Bob.{" "}
             <TextHighlighter
               transition={{ type: "spring", duration: 0.9, bounce: 0 }}
               highlightColor="color-mix(in oklab, var(--color-accent) 28%, transparent)"
               useInViewOptions={{ once: true, amount: 0.55 }}
               className="rounded-[0.2em] px-[1px]"
             >
-              Tap each one to drop it in a bin.
+              Tap to drop into a bin.
             </TextHighlighter>{" "}
             The bins are an eval set in disguise.
           </span>

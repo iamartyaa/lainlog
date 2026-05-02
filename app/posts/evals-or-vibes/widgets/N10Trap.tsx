@@ -10,16 +10,14 @@ import { playSound } from "@/lib/audio";
 /**
  * W5 — N10Trap.
  *
- * Reader picks 10 of 30 prompts that "look like the kind a real customer
- * would send." After committing, the widget reveals 1,000 real production
- * prompts as a dot field. The picked 10 get a terracotta ring. The actual
- * failure-mode prompts (which the reader almost certainly didn't pick)
- * are highlighted in a contrasting tone.
+ * Reader picks 3 of 30 prompts that "look like the kind a real customer
+ * would send." Three is enough to feel the bias without becoming
+ * data-labeling work. The widget then reveals the production prompt
+ * field as a dot grid; the failure-mode prompts (which the reader
+ * almost certainly didn't pick) are highlighted in terracotta — they
+ * cluster in the long tail your intuition didn't sample.
  *
- * The picked sample is biased toward "easy-looking" prompts. The failure
- * modes cluster in the long tail — a region the reader's intuition didn't
- * sample. Caption announces how many failure-mode prompts the reader
- * missed.
+ * Interaction budget: ≤5. Pick 3, reveal, reset.
  */
 
 // 30 candidate prompts. We tag each with its "shape" — the reader's
@@ -69,7 +67,7 @@ const CANDIDATES: Candidate[] = [
   { id: 30, text: "draft a legal disclaimer for the listing", shape: "out-of-scope" },
 ];
 
-const PICK_LIMIT = 10;
+const PICK_LIMIT = 3;
 
 export function N10Trap() {
   const prefersReducedMotion = useReducedMotion();
@@ -252,7 +250,7 @@ export function N10Trap() {
                   color: "var(--color-text-muted)",
                 }}
               >
-                pick {PICK_LIMIT} prompts you&apos;d test Cassidy on
+                pick {PICK_LIMIT} prompts you&apos;d test Bob on
               </div>
               <div className="bs-n10-grid">
                 {CANDIDATES.map((c) => {
@@ -330,7 +328,7 @@ export function N10Trap() {
       state={
         revealed ? (
           <span>
-            You picked ten prompts that looked like the ones customers send.{" "}
+            You picked three prompts that looked customer-shaped.{" "}
             <TextHighlighter
               transition={{ type: "spring", duration: 0.9, bounce: 0 }}
               highlightColor="color-mix(in oklab, var(--color-accent) 28%, transparent)"
@@ -339,7 +337,7 @@ export function N10Trap() {
             >
               The terracotta dots are the ones that broke.
             </TextHighlighter>{" "}
-            Eval sets sampled by intuition miss the prompts intuition
+            Eval sets sampled by intuition miss what intuition
             doesn&apos;t have words for.
           </span>
         ) : (
@@ -351,9 +349,9 @@ export function N10Trap() {
               useInViewOptions={{ once: true, amount: 0.55 }}
               className="rounded-[0.2em] px-[1px]"
             >
-              Pick the ten you&apos;d test on.
+              Pick three you&apos;d test on.
             </TextHighlighter>{" "}
-            Then we&apos;ll show you what the customers actually sent.
+            Then we&apos;ll show you what customers actually sent.
           </span>
         )
       }
