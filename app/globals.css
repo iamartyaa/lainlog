@@ -51,14 +51,85 @@
   --font-mono: var(--font-plex-mono), ui-monospace, "SFMono-Regular", Menlo,
     monospace;
 
-  /* Type ramp — 1.25 ratio, clamp for display sizes. */
-  --text-h1: clamp(2.25rem, 1.8rem + 2vw, 3rem);
+  /* Type ramp — 1.25 ratio, clamp for display sizes.
+     Each token couples size + weight + line-height + tracking + family via a
+     paired set of helper variables so consumers can read the full register
+     from one place. The size-only `--text-*` shorthand stays compatible with
+     existing inline `style={{ fontSize: "var(--text-…)" }}` consumers; new
+     callers compose the paired vars (or the `.bs-*` utility classes below). */
+
+  /* h1 — heaviest sans, real weight differentiation vs h2/h3. */
+  --text-h1: clamp(2.5rem, 2rem + 3.5vw, 4rem);
+  --text-h1-weight: 700;
+  --text-h1-lh: 1.05;
+  --text-h1-tracking: -0.025em;
+  --text-h1-family: var(--font-sans);
+
   --text-h2: clamp(1.5rem, 1.3rem + 0.8vw, 1.75rem);
+  --text-h2-weight: 600;
+  --text-h2-lh: 1.20;
+  --text-h2-tracking: -0.015em;
+  --text-h2-family: var(--font-sans);
+
   --text-h3: 1.25rem;
+  --text-h3-weight: 600;
+  --text-h3-lh: 1.30;
+  --text-h3-tracking: -0.005em;
+  --text-h3-family: var(--font-sans);
+
+  /* h4 — uppercase label register. Used by Callout label etc. */
+  --text-h4: 1.0625rem;
+  --text-h4-weight: 600;
+  --text-h4-lh: 1.30;
+  --text-h4-tracking: 0.06em;
+  --text-h4-family: var(--font-sans);
+
   --text-body: 1.125rem;
+  --text-body-weight: 400;
+  --text-body-lh: 1.70;
+  --text-body-tracking: 0;
+  --text-body-family: var(--font-serif);
+
+  /* body-strong — paragraph-load register. Opt-in via `.bs-body-strong`. */
+  --text-body-strong: 1.125rem;
+  --text-body-strong-weight: 500;
+  --text-body-strong-lh: 1.70;
+  --text-body-strong-tracking: 0;
+  --text-body-strong-family: var(--font-serif);
+
+  /* medium — was undefined; resolves the post-subtitle fallback that was
+     rendering at the browser's `medium` keyword. */
+  --text-medium: 1.0625rem;
+  --text-medium-weight: 400;
+  --text-medium-lh: 1.55;
+  --text-medium-tracking: 0;
+  --text-medium-family: var(--font-serif);
+
   --text-ui: 0.9375rem;
+  --text-ui-weight: 500;
+  --text-ui-lh: 1.50;
+  --text-ui-tracking: 0.005em;
+  --text-ui-family: var(--font-sans);
+
   --text-mono: 0.9375rem;
+  --text-mono-weight: 400;
+  --text-mono-lh: 1.70;
+  --text-mono-tracking: 0;
+  --text-mono-family: var(--font-mono);
+
   --text-small: 0.8125rem;
+  --text-small-weight: 500;
+  --text-small-lh: 1.50;
+  --text-small-tracking: 0.01em;
+  --text-small-family: var(--font-sans);
+
+  /* Brand-specific tracking — the home wordmark moment. Carved out of the
+     ramp because it's intentionally tighter than h1 to read as a logotype. */
+  --brand-tracking: -0.03em;
+
+  /* Widget controls slot floor — keeps single-button vs full WidgetNav rows
+     at the same frame height across widgets. */
+  --widget-controls-min: 44px;
 
   /* Motion. */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -118,7 +189,10 @@ body {
   font-family: var(--font-serif);
   font-size: var(--text-body);
   line-height: 1.7;
-  font-feature-settings: "ss02"; /* Plex "a" alt — slightly more neutral */
+  /* ss02 — Plex's neutral 'a' alt. kern + liga are off by default in some
+     rendering paths; explicit opt-in gives a small but real legibility lift
+     across body prose without changing the type's character. */
+  font-feature-settings: "ss02", "kern", "liga";
 
   /* Subtle diagonal hatch visible only outside the centred content container.
      Content blocks the hatch by painting its own solid --color-bg on top.
@@ -563,6 +637,95 @@ html[data-theme-transitioning] {
   .bs-press {
     animation: none;
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Type-ramp utility classes — one consumer per token. Prose components apply
+   these and drop their inline weight / lh / tracking duplications, so
+   globals.css remains the single source of truth for the ramp.
+--------------------------------------------------------------------------- */
+.bs-h1 {
+  font-family: var(--text-h1-family);
+  font-size: var(--text-h1);
+  font-weight: var(--text-h1-weight);
+  line-height: var(--text-h1-lh);
+  letter-spacing: var(--text-h1-tracking);
+}
+.bs-h2 {
+  font-family: var(--text-h2-family);
+  font-size: var(--text-h2);
+  font-weight: var(--text-h2-weight);
+  line-height: var(--text-h2-lh);
+  letter-spacing: var(--text-h2-tracking);
+}
+.bs-h3 {
+  font-family: var(--text-h3-family);
+  font-size: var(--text-h3);
+  font-weight: var(--text-h3-weight);
+  line-height: var(--text-h3-lh);
+  letter-spacing: var(--text-h3-tracking);
+}
+
+/* Opt-in body-strong consumer. Pre-existing `<strong>` browser-default
+   rendering is intentionally NOT changed — authors apply this class to
+   sentences inside paragraphs that "carry the load." */
+.bs-body-strong {
+  font-family: var(--text-body-strong-family);
+  font-size: var(--text-body-strong);
+  font-weight: var(--text-body-strong-weight);
+  line-height: var(--text-body-strong-lh);
+  letter-spacing: var(--text-body-strong-tracking);
+  font-style: normal;
+}
+
+/* ---------------------------------------------------------------------------
+   WidgetShell layout-contract surfaces. The shell renders the body order
+   Title → Canvas → State → Controls; these classes own the visual weight
+   so the shell's JSX stays declarative.
+--------------------------------------------------------------------------- */
+.bs-widget-shell {
+  display: flex;
+  flex-direction: column;
+}
+.bs-widget-canvas {
+  position: relative;
+  background: var(--color-surface);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md) var(--spacing-sm);
+}
+.bs-widget-state {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-md);
+  font-family: var(--text-body-strong-family);
+  font-size: var(--text-body-strong);
+  font-weight: var(--text-body-strong-weight);
+  line-height: var(--text-body-strong-lh);
+  color: var(--color-text);
+  min-height: 5.25em;
+}
+.bs-widget-state-marker {
+  flex-shrink: 0;
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-top: 0.5em;
+  background: var(--color-accent);
+  transform: rotate(45deg);
+  user-select: none;
+}
+.bs-widget-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-sm);
+  padding-inline: var(--spacing-md);
+  margin-inline: auto;
+  min-height: var(--widget-controls-min, 44px);
 }
 
 /* ---------------------------------------------------------------------------

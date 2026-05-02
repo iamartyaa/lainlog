@@ -4,15 +4,12 @@ import { slugify } from "@/lib/utils/slug";
 export function H2({ children, id }: { children: ReactNode; id?: string }) {
   const slug = id ?? slugify(children);
 
+  // `bs-h2` doubles as both the type-ramp consumer (size + weight + lh +
+  // tracking) AND the anchor-reveal hook (`bs-h2:target .bs-h2-anchor`).
   return (
     <h2
       id={slug}
-      className="bs-h2 group relative mt-[2.75em] mb-[0.8em] font-sans font-semibold"
-      style={{
-        fontSize: "var(--text-h2)",
-        letterSpacing: "-0.01em",
-        lineHeight: 1.15,
-      }}
+      className="bs-h2 group relative mt-[2.75em] mb-[0.8em] font-sans"
     >
       {children}
       <a

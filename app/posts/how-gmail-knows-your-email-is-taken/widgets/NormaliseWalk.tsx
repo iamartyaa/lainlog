@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { WidgetNav } from "@/components/viz/WidgetNav";
 import { SPRING } from "@/lib/motion";
-import { WidgetShell } from "./WidgetShell";
+import { WidgetShell } from "@/components/viz/WidgetShell";
 
 const TYPED = "J.Ohn.Doe+promo@gmail.com";
 

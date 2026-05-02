@@ -90,9 +90,15 @@ export async function CodeBlock({
       <div className="relative">
         {tone !== "terminal" ? <CopyButton text={trimmed} /> : null}
         <div
-          className="bs-code-body overflow-x-auto px-[var(--spacing-md)] py-[var(--spacing-md)] leading-[1.55]"
+          className="bs-code-body overflow-x-auto px-[var(--spacing-md)] py-[var(--spacing-md)]"
           data-numbered={numbered ? "true" : undefined}
-          style={{ touchAction: "pan-x" }}
+          style={{
+            touchAction: "pan-x",
+            // Match the prose body line-height (1.7) so code scrolls past
+            // prose without a visible rhythm seam. Was 1.55 before the
+            // Phase 1 ramp revamp — that gap was the seam.
+            lineHeight: "var(--text-mono-lh, 1.7)",
+          }}
           dangerouslySetInnerHTML={{ __html: html }}
         />
       </div>

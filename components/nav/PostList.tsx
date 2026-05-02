@@ -52,9 +52,12 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
               <h3
                 className="font-serif font-semibold transition-colors group-hover:text-[color:var(--color-accent)]"
                 style={{
+                  // Size stays as a custom clamp (the row-title is
+                  // intentionally larger than --text-h3 for nan.fyi-like
+                  // density). Tracking sourced from the type ramp.
                   fontSize: "clamp(1.125rem, 1.05rem + 0.7vw, 1.5rem)",
                   lineHeight: 1.2,
-                  letterSpacing: "-0.01em",
+                  letterSpacing: "var(--text-h2-tracking)",
                   color: "var(--color-text)",
                 }}
               >

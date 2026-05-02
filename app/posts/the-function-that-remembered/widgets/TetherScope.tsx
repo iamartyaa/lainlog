@@ -6,7 +6,7 @@ import { WidgetNav } from "@/components/viz/WidgetNav";
 import { SvgDefs } from "@/components/viz/SvgDefs";
 import { Arrow } from "@/components/viz/Arrow";
 import { SPRING } from "@/lib/motion";
-import { WidgetShell } from "./WidgetShell";
+import { WidgetShell } from "@/components/viz/WidgetShell";
 
 type Step = {
   activeLines: number[];

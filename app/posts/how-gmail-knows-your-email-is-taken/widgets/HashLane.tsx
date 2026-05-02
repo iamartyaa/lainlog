@@ -8,7 +8,7 @@ import { SvgDefs } from "@/components/viz/SvgDefs";
 import type { BlockState } from "@/components/viz/Block";
 import { SPRING, SVG_SONAR } from "@/lib/motion";
 import { BitArray } from "./BitArray";
-import { WidgetShell } from "./WidgetShell";
+import { WidgetShell } from "@/components/viz/WidgetShell";
 
 type HashLaneStep = {
   kind: "insert" | "query" | "remove";

@@ -165,9 +165,14 @@ export function WidgetNav({
   const atEnd = value >= total - 1;
   const onlyOne = total <= 1;
 
+  // Phase 1 visual-weight lift: buttons read as deliberate chips — full
+  // text contrast, 1 px rule border, opaque surface at rest. Hover stays
+  // terracotta (existing behaviour). Disabled keeps the §11 0.4 floor.
   const btnClass =
     "relative z-10 inline-flex items-center justify-center min-h-[44px] min-w-[44px] " +
     "px-[var(--spacing-sm)] py-[var(--spacing-2xs)] rounded-[var(--radius-md)] " +
+    "border border-[color:var(--color-rule)] bg-[color:var(--color-surface)] " +
+    "text-[color:var(--color-text)] " +
     "transition-colors disabled:opacity-40 disabled:cursor-not-allowed " +
     "hover:enabled:text-[color:var(--color-accent)] focus-visible:outline-none " +
     "focus-visible:ring-2 focus-visible:ring-[color:var(--color-accent)]";

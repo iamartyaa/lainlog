@@ -79,19 +79,34 @@ Spacing scale uses semantic names (`--spacing-sm`, `--spacing-md`), never pixel-
 
 ## 4. Type ramp (Plex family, 1.25 ratio)
 
-| Token          | Size                                 | Family     | Tracking | Line-height |
-| -------------- | ------------------------------------ | ---------- | -------- | ----------- |
-| `--text-h1`    | `clamp(2.25rem, 1.8rem + 2vw, 3rem)` | Plex Sans  | −0.02em  | 1.05        |
-| `--text-h2`    | `clamp(1.5rem, …, 1.75rem)`          | Plex Sans  | −0.01em  | 1.15        |
-| `--text-h3`    | `1.25rem`                            | Plex Sans  | 0em      | 1.25        |
-| `--text-body`  | `1.125rem` (18px)                    | Plex Serif | 0em      | 1.7         |
-| `--text-ui`    | `0.9375rem`                          | Plex Sans  | 0em      | 1.4         |
-| `--text-mono`  | `0.9375rem`                          | Plex Mono  | 0em      | 1.5         |
-| `--text-small` | `0.8125rem`                          | Plex Sans  | 0em      | 1.4         |
+Each token couples size + weight + line-height + tracking via paired CSS custom properties (`--text-h1`, `--text-h1-weight`, `--text-h1-lh`, `--text-h1-tracking`, `--text-h1-family`). The size-only `--text-*` shorthand stays compatible with existing inline `style={{ fontSize: "var(--text-…)" }}` consumers; new prose components use the paired vars (or the `.bs-h1` / `.bs-h2` / `.bs-h3` / `.bs-body-strong` utility classes in `globals.css`).
 
-Body is **Plex Serif at 18px, 1.7 line-height** — this is the load-bearing choice for editorial-calm.
+| Token                | Size                                       | Family     | Weight | Tracking | Line-height |
+| -------------------- | ------------------------------------------ | ---------- | ------ | -------- | ----------- |
+| `--text-h1`          | `clamp(2.5rem, 2rem + 3.5vw, 4rem)`        | Plex Sans  | 700    | −0.025em | 1.05        |
+| `--text-h2`          | `clamp(1.5rem, 1.3rem + 0.8vw, 1.75rem)`   | Plex Sans  | 600    | −0.015em | 1.20        |
+| `--text-h3`          | `1.25rem`                                  | Plex Sans  | 600    | −0.005em | 1.30        |
+| `--text-h4`          | `1.0625rem`                                | Plex Sans  | 600    | 0.06em (uppercase) | 1.30 |
+| `--text-body`        | `1.125rem` (18px)                          | Plex Serif | 400    | 0em      | 1.70        |
+| `--text-body-strong` | `1.125rem`                                 | Plex Serif | 500    | 0em      | 1.70        |
+| `--text-medium`      | `1.0625rem`                                | Plex Serif | 400    | 0em      | 1.55        |
+| `--text-ui`          | `0.9375rem`                                | Plex Sans  | 500    | 0.005em  | 1.50        |
+| `--text-mono`        | `0.9375rem`                                | Plex Mono  | 400    | 0em      | 1.70        |
+| `--text-small`       | `0.8125rem`                                | Plex Sans  | 500    | 0.01em   | 1.50        |
 
-**Weight subset (Path B-lite):** Plex Serif 400/500/600 + 400 italic, Plex Sans 400/500/600, Plex Mono 400/500. Weight 700 is not rendered anywhere in the current UI; the heaviest used weight is 600 (`font-semibold`). Proper Path A (self-hosted variable fonts) is deferred to a follow-up phase once VF glyph coverage is verified against the content corpus.
+Body is **Plex Serif at 18 px, 1.7 line-height** — the load-bearing choice for editorial-calm. Code blocks now match that 1.7 lh so prose ↔ code transitions read as one continuous rhythm (was 1.55 before the Phase 1 ramp revamp).
+
+**`--text-h4` (NEW)** — uppercase label register. Used by `<Callout>`'s leading "Note —" / "Watch out —" tags so the label rule lives in one place.
+
+**`--text-body-strong` (NEW)** — paragraph-load register. Opt-in via the `.bs-body-strong` utility class on a `<span>` (or any prose element) authors want to read as body-strong. Pre-existing `<strong>` and `<Em>` rendering are deliberately unchanged in Phase 1; whether and where to roll the body-strong register out across post copy is a Phase 2 (or later editorial-pass) decision.
+
+**`--text-medium` (NEW)** — was previously undefined; consumers' `var(--text-medium, 1.0625rem)` fallbacks were rendering at the browser's `medium` keyword. Now resolves correctly.
+
+**`--brand-tracking: -0.03em`** — scoped tracking for the home-page wordmark (intentionally tighter than `--text-h1-tracking` to read as a logotype).
+
+**`font-feature-settings`** — body has `"ss02"`, `"kern"`, `"liga"` enabled. `ss02` is Plex's neutral 'a' alt; `kern` and `liga` are off by default in some rendering paths and explicit opt-in gives a small but real legibility lift.
+
+**Weight subset (Path B-lite, expanded):** Plex Serif 300/400/500/600 + 400 italic, Plex Sans 400/500/600/700, Plex Mono 400/500. 13 font files vs the previous 11 — within the same Path B-lite envelope. Plex Serif 300 powers chrome / metadata copy that wants a lighter editorial register; Plex Sans 700 powers `--text-h1`. Proper Path A (self-hosted variable fonts) is still deferred to a follow-up phase once VF glyph coverage is verified against the content corpus.
 
 ## 5. Prose components (explicit, typed, semantic HTML)
 
@@ -129,24 +144,25 @@ Every piece of text inside a post is a typed JSX element. No regex classifiers, 
 
 ## 7. Widget design rules
 
-Every custom widget follows this skeleton. This is what "uniform UI" means.
+Every custom widget follows this skeleton. This is what "uniform UI" means. The detailed body order — Title → Canvas → State → Controls — and the per-zone min-height contract live in [`docs/interactive-components.md` §0](./docs/interactive-components.md). The skeleton below is the high-level shape; the playbook is the load-bearing reference for the slot API.
 
 ```
 <FullBleed>
   <Figure>
-    <Header>                    ← optional
+    <Header>                    ← title metadata row
       <Title>BitArray</Title>
       <Measurements>m=16 · set=5 · FPR=2.1%</Measurements>
     </Header>
-    <Canvas>…</Canvas>           ← SVG or HTML viz
-    <Controls>                   ← always below, left-aligned
-      <StepperBar /> <Slider />
+    <Canvas>…</Canvas>           ← SVG or HTML viz, opaque surface, 1px border
+    <State>…</State>             ← teacher-voice line, body-strong + terra marker
+    <Controls>                   ← always below, centred
+      <WidgetNav /> <Slider />
     </Controls>
   </Figure>
 </FullBleed>
 ```
 
-- **Canvas** has no visible border. If a background is needed, `--color-surface` at 40%.
+- **Canvas** is opaque `--color-surface` with a 1 px `--color-rule` border (Phase 1 visual-weight lift; was 40 % alpha-mixed surface, no border).
 - **Measurement labels**: top-right of header, Plex Mono tabular-nums, `--text-small`, separated by `·`. **Never duplicate the step counter here** — `WidgetNav` renders the only `n / N` indicator anywhere on the widget.
 - **Step controls**: `<WidgetNav>` (`components/viz/WidgetNav.tsx`) exclusively. The legacy `<Stepper>` exists only as a shim that forwards to `WidgetNav` for one release; new code reaches for `WidgetNav` directly.
 - **Controls slot**: centred via `WidgetShell`'s `flex flex-wrap items-center justify-center mx-auto px-[--spacing-md]` — every widget's controls row is mobile-first centred with horizontal margin that holds at 360 px.
