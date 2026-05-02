@@ -10,6 +10,7 @@ export { Em } from "./Em";
 export { A } from "./A";
 export { Callout } from "./Callout";
 export { Aside } from "./Aside";
+export { Note } from "./Note";
 export { FullBleed } from "./FullBleed";
 export { Dots } from "./Dots";
 export { HeroTile } from "./HeroTile";
