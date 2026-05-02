@@ -4,6 +4,7 @@ import { CourseCard } from "@/components/nav/CourseCard";
 import { BorderGlow } from "@/components/courses/BorderGlow";
 import { POSTS_NEWEST_FIRST } from "@/content/posts-manifest";
 import { PINNED_COURSE } from "@/content/courses-manifest";
+import { COURSES_VISIBLE } from "@/lib/site-flags";
 import { getUniqueReaderCount } from "@/lib/stats";
 
 /**
@@ -55,7 +56,7 @@ export default async function Home() {
           }}
         />
         <div>
-          {PINNED_COURSE ? (
+          {COURSES_VISIBLE && PINNED_COURSE ? (
             // polish-r5 ITEM 1 + ITEM 2 — neo-brutalism wrapper around
             // re-vendored BorderGlow.
             //

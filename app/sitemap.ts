@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { POSTS } from "@/content/posts-manifest";
 import { COURSES } from "@/content/courses-manifest";
 import { SITE_URL as SITE } from "@/lib/site";
+import { COURSES_VISIBLE } from "@/lib/site-flags";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -20,25 +21,30 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
-  const courseRoutes: MetadataRoute.Sitemap = COURSES.flatMap((c) => {
-    const updated = c.updatedAt
-      ? new Date(c.updatedAt + "T00:00:00Z")
-      : new Date();
-    return [
-      {
-        url: `${SITE}/courses/${c.slug}`,
-        lastModified: updated,
-        changeFrequency: "monthly" as const,
-        priority: 0.7,
-      },
-      ...c.chapters.map((ch) => ({
-        url: `${SITE}/courses/${c.slug}/${ch.slug}`,
-        lastModified: updated,
-        changeFrequency: "monthly" as const,
-        priority: 0.7,
-      })),
-    ];
-  });
+  // Course routes are advertised in the sitemap only when COURSES_VISIBLE.
+  // The routes themselves remain accessible directly — this gate controls
+  // discoverability, not reachability.
+  const courseRoutes: MetadataRoute.Sitemap = COURSES_VISIBLE
+    ? COURSES.flatMap((c) => {
+        const updated = c.updatedAt
+          ? new Date(c.updatedAt + "T00:00:00Z")
+          : new Date();
+        return [
+          {
+            url: `${SITE}/courses/${c.slug}`,
+            lastModified: updated,
+            changeFrequency: "monthly" as const,
+            priority: 0.7,
+          },
+          ...c.chapters.map((ch) => ({
+            url: `${SITE}/courses/${c.slug}/${ch.slug}`,
+            lastModified: updated,
+            changeFrequency: "monthly" as const,
+            priority: 0.7,
+          })),
+        ];
+      })
+    : [];
 
   return [...staticRoutes, ...postRoutes, ...courseRoutes];
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { PostMeta } from "@/content/posts-manifest";
 import { PostCover } from "@/components/covers/PostCover";
+import { NewestChip } from "@/components/nav/NewestChip";
 
 function formatDate(iso: string): string {
   const d = new Date(iso + "T00:00:00Z");
@@ -43,8 +44,24 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
                 snapshot while ambient animation continues underneath.
                 The hover-lift wraps the cover so the morph target is
                 stable. */}
-            <div className="transition-transform duration-[200ms] will-change-transform group-hover:-translate-y-[2px]">
+            <div className="relative transition-transform duration-[200ms] will-change-transform group-hover:-translate-y-[2px]">
               <PostCover slug={p.slug} size="thumb" />
+              {/* "New" sticker — only on the first (newest) post in the
+                  date-sorted list. Positioned top-right of the thumbnail,
+                  slightly overlapping so it reads as a sticker on top of
+                  the artwork rather than a label beside it. The chip is
+                  aria-hidden; the post link's aria-label still announces
+                  the post itself. */}
+              {i === 0 ? (
+                <span
+                  className="absolute -top-2 -right-2 z-10"
+                  // Pointer-events disabled so the chip doesn't intercept
+                  // hover state on the parent <Link>.
+                  style={{ pointerEvents: "none" }}
+                >
+                  <NewestChip />
+                </span>
+              ) : null}
             </div>
 
             {/* Title + date stacked */}
