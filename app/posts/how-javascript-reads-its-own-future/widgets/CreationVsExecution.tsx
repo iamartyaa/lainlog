@@ -144,8 +144,18 @@ export function CreationVsExecution({ initialStop = 0 }: Props) {
   return (
     <WidgetShell
       title="creation vs execution · var x = 5"
-      caption={caption}
-      captionTone="prominent"
+      state={caption}
+      canvas={<CveCanvas
+        clamped={clamped}
+        current={current}
+        TRACK_W={TRACK_W}
+        TRACK_PAD={TRACK_PAD}
+        TRACK_Y={TRACK_Y}
+        TRACK_H={TRACK_H}
+        TRACK_TOTAL_H={TRACK_TOTAL_H}
+        BOUNDARY_X={BOUNDARY_X}
+        CURSOR_X={CURSOR_X}
+      />}
       controls={
         <div className="w-full max-w-[420px]">
           <Scrubber
@@ -158,7 +168,33 @@ export function CreationVsExecution({ initialStop = 0 }: Props) {
           />
         </div>
       }
-    >
+    />
+  );
+}
+
+function CveCanvas({
+  clamped,
+  current,
+  TRACK_W,
+  TRACK_PAD,
+  TRACK_Y,
+  TRACK_H,
+  TRACK_TOTAL_H,
+  BOUNDARY_X,
+  CURSOR_X,
+}: {
+  clamped: number;
+  current: Stop;
+  TRACK_W: number;
+  TRACK_PAD: number;
+  TRACK_Y: number;
+  TRACK_H: number;
+  TRACK_TOTAL_H: number;
+  BOUNDARY_X: number;
+  CURSOR_X: number;
+}) {
+  return (
+    <>
       {/* Time track — mobile-first, scales fluidly */}
       <svg
         viewBox={`0 0 ${TRACK_W} ${TRACK_TOTAL_H}`}
@@ -427,6 +463,6 @@ export function CreationVsExecution({ initialStop = 0 }: Props) {
           }
         `}</style>
       </div>
-    </WidgetShell>
+    </>
   );
 }

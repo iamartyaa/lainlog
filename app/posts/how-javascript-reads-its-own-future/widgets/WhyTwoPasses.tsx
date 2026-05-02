@@ -129,11 +129,159 @@ export function WhyTwoPasses({ initialReason = "callable" }: Props) {
   const OUTCOME_TOTAL_H = OUTCOME_H * 2 + OUTCOME_GAP;
   const HEIGHT = OUTCOME_Y + OUTCOME_TOTAL_H + 14;
 
+  const canvasNode = (
+    <svg
+      viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+      width="100%"
+      style={{
+        maxWidth: WIDTH,
+        height: "auto",
+        display: "block",
+        margin: "0 auto",
+      }}
+      role="img"
+      aria-label={`Reason: ${reason.label}. Counterfactual: ${reason.without.body} With pre-walk: ${reason.withIt.body}`}
+    >
+      {/* Snippet pane */}
+      <rect
+        x={PAD}
+        y={SNIPPET_Y}
+        width={WIDTH - PAD * 2}
+        height={SNIPPET_H}
+        rx={3}
+        fill="color-mix(in oklab, var(--color-surface) 35%, transparent)"
+        stroke="var(--color-rule)"
+        strokeWidth={1}
+      />
+      <text
+        x={PAD + 8}
+        y={SNIPPET_Y + 14}
+        fontFamily="var(--font-sans)"
+        fontSize={9}
+        letterSpacing="0.08em"
+        fill="var(--color-text-muted)"
+      >
+        SNIPPET
+      </text>
+      <motion.g
+        key={`snip-${reason.id}`}
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={SPRING.smooth}
+      >
+        {reason.snippet.map((line, i) => (
+          <text
+            key={i}
+            x={PAD + 12}
+            y={SNIPPET_Y + 30 + i * 16}
+            fontFamily="var(--font-mono)"
+            fontSize={12}
+            fill="var(--color-text)"
+          >
+            <tspan
+              fontFamily="var(--font-mono)"
+              fontSize={10}
+              fill="var(--color-text-muted)"
+            >
+              {i + 1}
+            </tspan>
+            <tspan dx={10}>{line}</tspan>
+          </text>
+        ))}
+      </motion.g>
+
+      {/* "Without" outcome — drawn first, dimmer */}
+      <motion.g
+        key={`without-${reason.id}`}
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={SPRING.smooth}
+      >
+        <rect
+          x={PAD}
+          y={OUTCOME_Y}
+          width={WIDTH - PAD * 2}
+          height={OUTCOME_H}
+          rx={3}
+          fill="transparent"
+          stroke="var(--color-text-muted)"
+          strokeWidth={1}
+          strokeDasharray="3 3"
+        />
+        <text
+          x={PAD + 8}
+          y={OUTCOME_Y + 14}
+          fontFamily="var(--font-sans)"
+          fontSize={9}
+          letterSpacing="0.08em"
+          fill="var(--color-text-muted)"
+        >
+          {reason.without.label.toUpperCase()}
+        </text>
+        <text
+          x={PAD + 12}
+          y={OUTCOME_Y + 36}
+          fontFamily="var(--font-sans)"
+          fontSize={11}
+          fill="var(--color-text-muted)"
+        >
+          {wrapText(reason.without.body, 44).map((line, i) => (
+            <tspan key={i} x={PAD + 12} dy={i === 0 ? 0 : 14}>
+              {line}
+            </tspan>
+          ))}
+        </text>
+      </motion.g>
+
+      {/* "With" outcome — drawn second, accented */}
+      <motion.g
+        key={`with-${reason.id}`}
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ ...SPRING.smooth, delay: 0.06 }}
+      >
+        <rect
+          x={PAD}
+          y={OUTCOME_Y + OUTCOME_H + OUTCOME_GAP}
+          width={WIDTH - PAD * 2}
+          height={OUTCOME_H}
+          rx={3}
+          fill="color-mix(in oklab, var(--color-accent) 12%, transparent)"
+          stroke="var(--color-accent)"
+          strokeWidth={1.4}
+        />
+        <text
+          x={PAD + 8}
+          y={OUTCOME_Y + OUTCOME_H + OUTCOME_GAP + 14}
+          fontFamily="var(--font-sans)"
+          fontSize={9}
+          letterSpacing="0.08em"
+          fill="var(--color-accent)"
+        >
+          {reason.withIt.label.toUpperCase()}
+        </text>
+        <text
+          x={PAD + 12}
+          y={OUTCOME_Y + OUTCOME_H + OUTCOME_GAP + 36}
+          fontFamily="var(--font-sans)"
+          fontSize={11}
+          fill="var(--color-text)"
+        >
+          {wrapText(reason.withIt.body, 44).map((line, i) => (
+            <tspan key={i} x={PAD + 12} dy={i === 0 ? 0 : 14}>
+              {line}
+            </tspan>
+          ))}
+        </text>
+      </motion.g>
+    </svg>
+  );
+
   return (
     <WidgetShell
       title="two passes · why"
-      caption={reason.caption}
-      captionTone="prominent"
+      state={reason.caption}
+      canvas={canvasNode}
       controls={
         <div
           role="group"
@@ -175,153 +323,7 @@ export function WhyTwoPasses({ initialReason = "callable" }: Props) {
           })}
         </div>
       }
-    >
-      <svg
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        width="100%"
-        style={{
-          maxWidth: WIDTH,
-          height: "auto",
-          display: "block",
-          margin: "0 auto",
-        }}
-        role="img"
-        aria-label={`Reason: ${reason.label}. Counterfactual: ${reason.without.body} With pre-walk: ${reason.withIt.body}`}
-      >
-        {/* Snippet pane */}
-        <rect
-          x={PAD}
-          y={SNIPPET_Y}
-          width={WIDTH - PAD * 2}
-          height={SNIPPET_H}
-          rx={3}
-          fill="color-mix(in oklab, var(--color-surface) 35%, transparent)"
-          stroke="var(--color-rule)"
-          strokeWidth={1}
-        />
-        <text
-          x={PAD + 8}
-          y={SNIPPET_Y + 14}
-          fontFamily="var(--font-sans)"
-          fontSize={9}
-          letterSpacing="0.08em"
-          fill="var(--color-text-muted)"
-        >
-          SNIPPET
-        </text>
-        <motion.g
-          key={`snip-${reason.id}`}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={SPRING.smooth}
-        >
-          {reason.snippet.map((line, i) => (
-            <text
-              key={i}
-              x={PAD + 12}
-              y={SNIPPET_Y + 30 + i * 16}
-              fontFamily="var(--font-mono)"
-              fontSize={12}
-              fill="var(--color-text)"
-            >
-              <tspan
-                fontFamily="var(--font-mono)"
-                fontSize={10}
-                fill="var(--color-text-muted)"
-              >
-                {i + 1}
-              </tspan>
-              <tspan dx={10}>{line}</tspan>
-            </text>
-          ))}
-        </motion.g>
-
-        {/* "Without" outcome — drawn first, dimmer */}
-        <motion.g
-          key={`without-${reason.id}`}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={SPRING.smooth}
-        >
-          <rect
-            x={PAD}
-            y={OUTCOME_Y}
-            width={WIDTH - PAD * 2}
-            height={OUTCOME_H}
-            rx={3}
-            fill="transparent"
-            stroke="var(--color-text-muted)"
-            strokeWidth={1}
-            strokeDasharray="3 3"
-          />
-          <text
-            x={PAD + 8}
-            y={OUTCOME_Y + 14}
-            fontFamily="var(--font-sans)"
-            fontSize={9}
-            letterSpacing="0.08em"
-            fill="var(--color-text-muted)"
-          >
-            {reason.without.label.toUpperCase()}
-          </text>
-          <text
-            x={PAD + 12}
-            y={OUTCOME_Y + 36}
-            fontFamily="var(--font-sans)"
-            fontSize={11}
-            fill="var(--color-text-muted)"
-          >
-            {wrapText(reason.without.body, 44).map((line, i) => (
-              <tspan key={i} x={PAD + 12} dy={i === 0 ? 0 : 14}>
-                {line}
-              </tspan>
-            ))}
-          </text>
-        </motion.g>
-
-        {/* "With" outcome — drawn second, accented */}
-        <motion.g
-          key={`with-${reason.id}`}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ ...SPRING.smooth, delay: 0.06 }}
-        >
-          <rect
-            x={PAD}
-            y={OUTCOME_Y + OUTCOME_H + OUTCOME_GAP}
-            width={WIDTH - PAD * 2}
-            height={OUTCOME_H}
-            rx={3}
-            fill="color-mix(in oklab, var(--color-accent) 12%, transparent)"
-            stroke="var(--color-accent)"
-            strokeWidth={1.4}
-          />
-          <text
-            x={PAD + 8}
-            y={OUTCOME_Y + OUTCOME_H + OUTCOME_GAP + 14}
-            fontFamily="var(--font-sans)"
-            fontSize={9}
-            letterSpacing="0.08em"
-            fill="var(--color-accent)"
-          >
-            {reason.withIt.label.toUpperCase()}
-          </text>
-          <text
-            x={PAD + 12}
-            y={OUTCOME_Y + OUTCOME_H + OUTCOME_GAP + 36}
-            fontFamily="var(--font-sans)"
-            fontSize={11}
-            fill="var(--color-text)"
-          >
-            {wrapText(reason.withIt.body, 44).map((line, i) => (
-              <tspan key={i} x={PAD + 12} dy={i === 0 ? 0 : 14}>
-                {line}
-              </tspan>
-            ))}
-          </text>
-        </motion.g>
-      </svg>
-    </WidgetShell>
+    />
   );
 }
 

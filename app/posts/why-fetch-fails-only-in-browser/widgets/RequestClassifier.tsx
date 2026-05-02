@@ -128,98 +128,96 @@ export function RequestClassifier({
         ? "Sent directly — but cookies only ride if the response carries Allow-Credentials: true and a named origin (no wildcard)."
         : "Safelisted. The request goes straight out; only the response is gated.";
 
-  return (
-    <WidgetShell
-      title="preflight classifier · request shape decides"
-      measurements={measurements}
-      captionTone="prominent"
-      caption={caption}
+  const controlsNode = (
+    <div
+      className="grid w-full gap-[var(--spacing-sm)]"
+      style={{ gridTemplateColumns: "minmax(0, 1fr)" }}
     >
-      {/* Fixed-frame grid: every row reserves its maximum height upfront so the
-          container never resizes when verdict / reasons / preflight panel
-          change. All transitions are color-, opacity-, or transform-only.
-          R6 hard-rule compliance. */}
-      <div
-        className="grid"
-        style={{
-          gap: "var(--spacing-md)",
-          gridTemplateRows: "auto auto auto",
+      <SegmentedRow
+        label="method"
+        options={METHODS}
+        value={method}
+        onChange={(v) => {
+          touch();
+          setMethod(v);
         }}
+      />
+      <SegmentedRow
+        label="Content-Type"
+        options={CONTENT_TYPES}
+        value={contentType}
+        onChange={(v) => {
+          touch();
+          setContentType(v);
+        }}
+        disabled={ctDisabled}
+        disabledHint={ctDisabled ? "(no body on this method)" : undefined}
+      />
+      <div
+        className="bs-classifier-row flex items-center gap-[var(--spacing-md)] flex-wrap font-sans"
+        style={{ fontSize: "var(--text-ui)" }}
       >
-        {/* Row A — controls */}
-        <div className="grid gap-[var(--spacing-sm)]" style={{ gridTemplateColumns: "minmax(0, 1fr)" }}>
-          <SegmentedRow
-            label="method"
-            options={METHODS}
-            value={method}
-            onChange={(v) => {
+        <span
+          className="bs-classifier-label font-mono"
+          style={{ color: "var(--color-text-muted)", minWidth: "12ch" }}
+        >
+          extra headers
+        </span>
+        <div className="bs-classifier-options flex items-center gap-[var(--spacing-2xs)] flex-wrap">
+          <Toggle
+            label="Authorization"
+            pressed={auth}
+            onToggle={() => {
               touch();
-              setMethod(v);
+              setAuth((v) => !v);
             }}
           />
-          <SegmentedRow
-            label="Content-Type"
-            options={CONTENT_TYPES}
-            value={contentType}
-            onChange={(v) => {
+          <Toggle
+            label="X-Custom"
+            pressed={custom}
+            onToggle={() => {
               touch();
-              setContentType(v);
+              setCustom((v) => !v);
             }}
-            disabled={ctDisabled}
-            disabledHint={ctDisabled ? "(no body on this method)" : undefined}
           />
-          <div
-            className="bs-classifier-row flex items-center gap-[var(--spacing-md)] flex-wrap font-sans"
-            style={{ fontSize: "var(--text-ui)" }}
-          >
-            <span
-              className="bs-classifier-label font-mono"
-              style={{ color: "var(--color-text-muted)", minWidth: "12ch" }}
-            >
-              extra headers
-            </span>
-            <div className="bs-classifier-options flex items-center gap-[var(--spacing-2xs)] flex-wrap">
-              <Toggle
-                label="Authorization"
-                pressed={auth}
-                onToggle={() => {
-                  touch();
-                  setAuth((v) => !v);
-                }}
-              />
-              <Toggle
-                label="X-Custom"
-                pressed={custom}
-                onToggle={() => {
-                  touch();
-                  setCustom((v) => !v);
-                }}
-              />
-            </div>
-          </div>
-          <div
-            className="bs-classifier-row flex items-center gap-[var(--spacing-md)] flex-wrap font-sans"
-            style={{ fontSize: "var(--text-ui)" }}
-          >
-            <span
-              className="bs-classifier-label font-mono"
-              style={{ color: "var(--color-text-muted)", minWidth: "12ch" }}
-            >
-              credentials
-            </span>
-            <div className="bs-classifier-options flex items-center gap-[var(--spacing-2xs)] flex-wrap">
-              <CredentialsSwitch
-                value={credentials}
-                onChange={(v) => {
-                  touch();
-                  setCredentials(v);
-                }}
-              />
-            </div>
-          </div>
         </div>
+      </div>
+      <div
+        className="bs-classifier-row flex items-center gap-[var(--spacing-md)] flex-wrap font-sans"
+        style={{ fontSize: "var(--text-ui)" }}
+      >
+        <span
+          className="bs-classifier-label font-mono"
+          style={{ color: "var(--color-text-muted)", minWidth: "12ch" }}
+        >
+          credentials
+        </span>
+        <div className="bs-classifier-options flex items-center gap-[var(--spacing-2xs)] flex-wrap">
+          <CredentialsSwitch
+            value={credentials}
+            onChange={(v) => {
+              touch();
+              setCredentials(v);
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
 
-        {/* Row B — verdict pill + reasons.
+  const canvasNode = (
+    /* Fixed-frame grid: every row reserves its maximum height upfront so the
+       container never resizes when verdict / reasons / preflight panel
+       change. All transitions are color-, opacity-, or transform-only.
+       R6 hard-rule compliance. */
+    <div
+      className="grid"
+      style={{
+        gap: "var(--spacing-md)",
+        gridTemplateRows: "auto auto",
+      }}
+    >
+      {/* Row A — verdict pill + reasons.
             Reserves space for up-to-five reasons so list growth is opacity-only. */}
         <div
           className="rounded-[var(--radius-sm)] px-[var(--spacing-md)] py-[var(--spacing-sm)]"
@@ -314,7 +312,16 @@ export function RequestClassifier({
           />
         </div>
       </div>
-    </WidgetShell>
+  );
+
+  return (
+    <WidgetShell
+      title="preflight classifier · request shape decides"
+      measurements={measurements}
+      state={caption}
+      canvas={canvasNode}
+      controls={controlsNode}
+    />
   );
 }
 
