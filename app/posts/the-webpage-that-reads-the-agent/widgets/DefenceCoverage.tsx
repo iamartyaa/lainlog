@@ -71,8 +71,7 @@ export function DefenceCoverage() {
     <WidgetShell
       title="defence coverage"
       measurements={focus ? `focus · ${focus.label}` : "3 layers · 6 stages"}
-      captionTone="prominent"
-      caption={
+      state={
         <AnimatePresence mode="wait">
           <motion.span
             key={focus?.key ?? "none"}
@@ -100,8 +99,9 @@ export function DefenceCoverage() {
           </motion.span>
         </AnimatePresence>
       }
-    >
-      <div className="bs-dc">
+      canvas={
+        <>
+          <div className="bs-dc">
         {/* header row with stage names */}
         <div className="bs-dc-header">
           <span />
@@ -215,7 +215,9 @@ export function DefenceCoverage() {
           }
         }
       `}</style>
-    </WidgetShell>
+        </>
+      }
+    />
   );
 }
 

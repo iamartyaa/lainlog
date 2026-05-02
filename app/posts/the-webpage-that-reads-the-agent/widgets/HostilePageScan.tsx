@@ -67,8 +67,36 @@ export function HostilePageScan() {
       measurements={
         scanning ? "3 injections · unmasked" : "3 injections · hidden"
       }
-      captionTone="prominent"
-      caption={
+      canvas={
+        <>
+          <div className="bs-hps-grid">
+            <PageCanvas
+              key={scanKey}
+              scanning={scanning}
+              reducedMotion={!!prefersReducedMotion}
+            />
+            <ChipTrack
+              key={`c-${scanKey}`}
+              scanning={scanning}
+              reducedMotion={!!prefersReducedMotion}
+            />
+          </div>
+          <style>{`
+            .bs-hps-grid {
+              display: grid;
+              grid-template-columns: 1fr;
+              gap: var(--spacing-md);
+              align-items: stretch;
+            }
+            @container widget (min-width: 640px) {
+              .bs-hps-grid {
+                grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.8fr);
+              }
+            }
+          `}</style>
+        </>
+      }
+      state={
         scanning ? (
           <>
             The page the human reads shows a tepid three-star review.{" "}
@@ -137,33 +165,7 @@ export function HostilePageScan() {
           ) : null}
         </div>
       }
-    >
-      <div className="bs-hps-grid">
-        <PageCanvas
-          key={scanKey}
-          scanning={scanning}
-          reducedMotion={!!prefersReducedMotion}
-        />
-        <ChipTrack
-          key={`c-${scanKey}`}
-          scanning={scanning}
-          reducedMotion={!!prefersReducedMotion}
-        />
-      </div>
-      <style>{`
-        .bs-hps-grid {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: var(--spacing-md);
-          align-items: stretch;
-        }
-        @container widget (min-width: 640px) {
-          .bs-hps-grid {
-            grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.8fr);
-          }
-        }
-      `}</style>
-    </WidgetShell>
+    />
   );
 }
 

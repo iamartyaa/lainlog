@@ -26,8 +26,7 @@ export function ParseVsRender() {
       measurements={
         view === "human" ? "human view · rendered" : "agent view · parsed"
       }
-      captionTone="prominent"
-      caption={
+      state={
         view === "human" ? (
           <>
             This is the page a human sees — a tepid three-star review.{" "}
@@ -96,33 +95,34 @@ export function ParseVsRender() {
           ))}
         </div>
       }
-    >
-      <div className="relative" style={{ minHeight: 260 }}>
-        <AnimatePresence initial={false} mode="wait">
-          {view === "human" ? (
-            <motion.div
-              key="human"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={SPRING.smooth}
-            >
-              <HumanView />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="agent"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={SPRING.smooth}
-            >
-              <AgentView />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </WidgetShell>
+      canvas={
+        <div className="relative" style={{ minHeight: 260 }}>
+          <AnimatePresence initial={false} mode="wait">
+            {view === "human" ? (
+              <motion.div
+                key="human"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={SPRING.smooth}
+              >
+                <HumanView />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="agent"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={SPRING.smooth}
+              >
+                <AgentView />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      }
+    />
   );
 }
 

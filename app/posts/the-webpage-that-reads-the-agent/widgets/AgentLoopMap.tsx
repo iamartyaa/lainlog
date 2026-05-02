@@ -76,8 +76,7 @@ export function AgentLoopMap() {
   return (
     <WidgetShell
       title="agent loop · six stages"
-      captionTone="prominent"
-      caption={
+      state={
         <AnimatePresence mode="wait">
           <motion.span
             key={step}
@@ -134,8 +133,8 @@ export function AgentLoopMap() {
           counterNoun="stage"
         />
       }
-    >
-      <div className="mx-auto" style={{ maxWidth: 420 }}>
+      canvas={
+        <div className="mx-auto" style={{ maxWidth: 420 }}>
         <svg
           viewBox="0 0 360 360"
           role="img"
@@ -274,7 +273,8 @@ export function AgentLoopMap() {
             </motion.text>
           </AnimatePresence>
         </svg>
-      </div>
-    </WidgetShell>
+        </div>
+      }
+    />
   );
 }
