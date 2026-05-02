@@ -1,0 +1,8 @@
+/* Vendored React Bits "DotField" — minimal stylesheet. The canvas fills its
+   parent (which is sized via Tailwind / fixed-inset on the wrapper). */
+
+.bs-dot-field {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
