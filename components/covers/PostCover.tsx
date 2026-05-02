@@ -8,6 +8,7 @@ import { FunctionRememberedCover } from "./FunctionRememberedCover";
 import { WebpageReadsAgentCover } from "./WebpageReadsAgentCover";
 import { LineThatWaitsItsTurnCover } from "./LineThatWaitsItsTurnCover";
 import { HowJavascriptReadsItsOwnFutureCover } from "./HowJavascriptReadsItsOwnFutureCover";
+import { EvalsOrVibesCover } from "./EvalsOrVibesCover";
 
 /**
  * Slug → cover-component registry.
@@ -24,6 +25,7 @@ const REGISTRY: Record<string, () => React.ReactNode> = {
   "the-webpage-that-reads-the-agent": WebpageReadsAgentCover,
   "the-line-that-waits-its-turn": LineThatWaitsItsTurnCover,
   "how-javascript-reads-its-own-future": HowJavascriptReadsItsOwnFutureCover,
+  "evals-or-vibes": EvalsOrVibesCover,
 };
 
 type Size = "thumb" | "hero";
