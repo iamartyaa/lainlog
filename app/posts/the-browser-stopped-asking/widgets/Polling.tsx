@@ -37,8 +37,7 @@ export function Polling() {
           ? `${sim.stats.reqs} polls · ${(sim.stats.bytesSent / 1000).toFixed(1)} KB · max Δ ${sim.stats.worstLatencyMs} ms`
           : `t = ${(nowMs / 1000).toFixed(1)}s of ${DURATION_MS / 1000}s`
       }
-      captionTone="prominent"
-      caption={
+      state={
         <>
           <TextHighlighter
             triggerType="auto"
@@ -50,6 +49,26 @@ export function Polling() {
           </TextHighlighter>{" "}
           and watch sixty requests carry three pieces of news. Most replies
           carry nothing.
+        </>
+      }
+      canvas={
+        <>
+          <div className="bs-pc-narrow">
+            <ProtocolCanvas
+              protocol="polling"
+              sim={sim}
+              nowMs={nowMs}
+              authoredWidth={340}
+            />
+          </div>
+          <div className="bs-pc-wide">
+            <ProtocolCanvas
+              protocol="polling"
+              sim={sim}
+              nowMs={nowMs}
+              authoredWidth={680}
+            />
+          </div>
         </>
       }
       controls={
@@ -72,23 +91,6 @@ export function Polling() {
           <StatLine protocol="polling" stats={sim.stats} />
         </div>
       }
-    >
-      <div className="bs-pc-narrow">
-        <ProtocolCanvas
-          protocol="polling"
-          sim={sim}
-          nowMs={nowMs}
-          authoredWidth={340}
-        />
-      </div>
-      <div className="bs-pc-wide">
-        <ProtocolCanvas
-          protocol="polling"
-          sim={sim}
-          nowMs={nowMs}
-          authoredWidth={680}
-        />
-      </div>
-    </WidgetShell>
+    />
   );
 }

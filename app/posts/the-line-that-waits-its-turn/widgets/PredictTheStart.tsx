@@ -113,7 +113,7 @@ export function PredictTheStart({ codeSlot }: Props) {
             ? "got it"
             : "most miss this"
       }
-      caption={
+      state={
         answered === null ? (
           <>
             <CaptionCue>Predict the output.</CaptionCue> Pick the order{" "}
@@ -136,8 +136,7 @@ export function PredictTheStart({ codeSlot }: Props) {
           </>
         )
       }
-      captionTone="prominent"
-    >
+      canvas={
       <div className="flex flex-col gap-[var(--spacing-sm)]">
         {codeSlot}
 
@@ -193,6 +192,7 @@ export function PredictTheStart({ codeSlot }: Props) {
           randomize
         />
       </div>
-    </WidgetShell>
+      }
+    />
   );
 }

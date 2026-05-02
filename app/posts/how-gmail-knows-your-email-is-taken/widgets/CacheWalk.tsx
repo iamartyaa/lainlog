@@ -245,12 +245,11 @@ export function CacheWalk({
   return (
     <WidgetShell
       title="cache walk · pick a locality"
-      caption={resolved.caption}
-      captionTone="prominent"
+      state={resolved.caption}
       controls={
         <WidgetNav value={clamped} total={total} onChange={handleStep} />
       }
-    >
+      canvas={
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         width="100%"
@@ -473,6 +472,7 @@ export function CacheWalk({
           </text>
         </motion.g>
       </svg>
-    </WidgetShell>
+      }
+    />
   );
 }

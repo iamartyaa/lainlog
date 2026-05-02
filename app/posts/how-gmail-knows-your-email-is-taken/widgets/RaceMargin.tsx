@@ -144,8 +144,7 @@ export function RaceMargin({
     <WidgetShell
       title="race · margin"
       measurements={measurements}
-      captionTone="prominent"
-      caption={
+      state={
         <>
           Drag either handle. Both clients always see{" "}
           <span className="font-mono">available</span> while typing — only{" "}
@@ -175,7 +174,7 @@ export function RaceMargin({
           />
         </div>
       }
-    >
+      canvas={
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         width="100%"
@@ -254,6 +253,7 @@ export function RaceMargin({
           exact tie — A wins by stable order
         </motion.text>
       </svg>
-    </WidgetShell>
+      }
+    />
   );
 }

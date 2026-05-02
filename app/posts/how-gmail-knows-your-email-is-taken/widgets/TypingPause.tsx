@@ -135,7 +135,7 @@ export function TypingPause() {
               ? "typing · timer paused"
               : "idle"
       }
-      caption={
+      state={
         phase === "idle"
           ? "Tap play to type a sample address. The check fires only after you stop."
           : phase === "typing"
@@ -177,7 +177,7 @@ export function TypingPause() {
           </motion.button>
         </div>
       }
-    >
+      canvas={
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         width="100%"
@@ -291,6 +291,7 @@ export function TypingPause() {
           {fireOn ? `request → server : "${SAMPLE}"` : "request not fired yet"}
         </text>
       </svg>
-    </WidgetShell>
+      }
+    />
   );
 }

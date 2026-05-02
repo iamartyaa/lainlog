@@ -44,7 +44,7 @@ export function NetflixSplit() {
     <WidgetShell
       title="netflix vs gmail · same address, two accounts"
       measurements={`variant: ${input.label}`}
-      caption={
+      state={
         <>
           Gmail folds every variant down to{" "}
           <span className="font-mono">{CANONICAL}</span> — one inbox, one
@@ -85,7 +85,7 @@ export function NetflixSplit() {
           })}
         </div>
       }
-    >
+      canvas={
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         width="100%"
@@ -310,6 +310,7 @@ export function NetflixSplit() {
           <tspan fill="var(--color-accent)">{CANONICAL}</tspan>
         </text>
       </svg>
-    </WidgetShell>
+      }
+    />
   );
 }

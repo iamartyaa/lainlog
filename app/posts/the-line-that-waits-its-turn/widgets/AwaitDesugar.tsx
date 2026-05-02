@@ -264,8 +264,7 @@ export function AwaitDesugar() {
     <WidgetShell
       title="await · the .then in disguise"
       measurements={`step ${step + 1} / ${STEPS.length}`}
-      caption={tick.caption}
-      captionTone="prominent"
+      state={tick.caption}
       controls={
         <div className="flex items-center justify-center w-full">
           <WidgetNav
@@ -276,7 +275,7 @@ export function AwaitDesugar() {
           />
         </div>
       }
-    >
+      canvas={
       <div
         className="grid gap-[var(--spacing-md)]"
         style={{
@@ -317,6 +316,7 @@ export function AwaitDesugar() {
           `}</style>
         </div>
       </div>
-    </WidgetShell>
+      }
+    />
   );
 }

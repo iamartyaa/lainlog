@@ -670,8 +670,8 @@ export function RuntimeSimulator() {
     <WidgetShell
       title="runtime · scripted stepper"
       measurements={`tick ${step + 1} / ${TICKS.length}`}
-      caption={tick.caption}
-      captionTone="prominent"
+      state={tick.caption}
+      canvas={<MemoCanvas tick={tick} />}
       controls={
         <div className="flex items-center justify-center w-full">
           <WidgetNav
@@ -682,8 +682,6 @@ export function RuntimeSimulator() {
           />
         </div>
       }
-    >
-      <MemoCanvas tick={tick} />
-    </WidgetShell>
+    />
   );
 }

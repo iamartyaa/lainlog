@@ -208,8 +208,7 @@ export function RaceVerdict({ initialStep = 0 }: Props) {
   return (
     <WidgetShell
       title="race · verdict"
-      caption={tick.caption}
-      captionTone="prominent"
+      state={tick.caption}
       controls={
         <WidgetNav
           value={clamped}
@@ -220,7 +219,7 @@ export function RaceVerdict({ initialStep = 0 }: Props) {
           counterNoun="tick"
         />
       }
-    >
+      canvas={
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         width="100%"
@@ -415,6 +414,7 @@ export function RaceVerdict({ initialStep = 0 }: Props) {
           </motion.g>
         </g>
       </svg>
-    </WidgetShell>
+      }
+    />
   );
 }

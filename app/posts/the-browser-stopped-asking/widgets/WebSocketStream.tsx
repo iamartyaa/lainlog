@@ -38,8 +38,7 @@ export function WebSocketStream() {
           ? `${sim.stats.eventsDelivered} frames · ${sim.stats.bytesSent} B · max Δ ${sim.stats.worstLatencyMs} ms`
           : `t = ${(nowMs / 1000).toFixed(1)}s of ${DURATION_MS / 1000}s`
       }
-      captionTone="prominent"
-      caption={
+      state={
         <>
           <TextHighlighter
             triggerType="auto"
@@ -51,6 +50,26 @@ export function WebSocketStream() {
           </TextHighlighter>{" "}
           and watch the handshake finish, then three frames ride the open
           socket. No more requests after the first.
+        </>
+      }
+      canvas={
+        <>
+          <div className="bs-pc-narrow">
+            <ProtocolCanvas
+              protocol="websocket"
+              sim={sim}
+              nowMs={nowMs}
+              authoredWidth={340}
+            />
+          </div>
+          <div className="bs-pc-wide">
+            <ProtocolCanvas
+              protocol="websocket"
+              sim={sim}
+              nowMs={nowMs}
+              authoredWidth={680}
+            />
+          </div>
         </>
       }
       controls={
@@ -73,23 +92,6 @@ export function WebSocketStream() {
           <StatLine protocol="websocket" stats={sim.stats} />
         </div>
       }
-    >
-      <div className="bs-pc-narrow">
-        <ProtocolCanvas
-          protocol="websocket"
-          sim={sim}
-          nowMs={nowMs}
-          authoredWidth={340}
-        />
-      </div>
-      <div className="bs-pc-wide">
-        <ProtocolCanvas
-          protocol="websocket"
-          sim={sim}
-          nowMs={nowMs}
-          authoredWidth={680}
-        />
-      </div>
-    </WidgetShell>
+    />
   );
 }

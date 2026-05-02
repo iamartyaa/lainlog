@@ -295,7 +295,7 @@ export function MicrotaskStarvation() {
     <WidgetShell
       title="queue race · microtasks vs macrotasks"
       measurements={`tick ${tick} · output ${output.length}`}
-      caption={
+      state={
         starved ? (
           <>
             <CaptionCue>Microtask starvation.</CaptionCue> Each fired microtask
@@ -320,8 +320,7 @@ export function MicrotaskStarvation() {
           </>
         )
       }
-      captionTone="prominent"
-    >
+      canvas={
       <div className="bs-qrace">
         {/* Tick counter strip — fixed height, aria-live announces ticks. */}
         <div
@@ -369,146 +368,156 @@ export function MicrotaskStarvation() {
           <ConsolePane lines={output} />
         </div>
 
-        {/* Controls strip. Tap targets ≥ 44px; flex-wrap only as last resort
-            — at 360 px the row stays single via short labels. */}
-        <div
-          className="bs-qrace-controls"
-          role="group"
-          aria-label="Queue controls"
-        >
-          <CtrlBtn onClick={addMicro} disabled={running} kind="accent">
-            <span aria-hidden>+</span>
-            <span>micro</span>
-          </CtrlBtn>
-          <CtrlBtn onClick={addMacro} disabled={running} kind="muted">
-            <span aria-hidden>+</span>
-            <span>macro</span>
-          </CtrlBtn>
-          <div className="bs-qrace-self-wrap">
-            <CtrlBtn
-              onClick={addSelf}
-              disabled={running}
-              kind="dashed"
-              ariaLabel="add a self-scheduling microtask"
-            >
-              <span aria-hidden>↻</span>
-              <span>self-sched</span>
-            </CtrlBtn>
-            <AnimatePresence>
-              {selfHintVisible ? (
-                <motion.div
-                  key="hint"
-                  className="bs-qrace-hint"
-                  initial={
-                    reduce ? { opacity: 0 } : { opacity: 0, y: -4 }
-                  }
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={reduce ? { duration: 0 } : SPRING.smooth}
-                  role="note"
-                >
-                  This microtask schedules another microtask. Hit Run — the
-                  queue never empties.
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
-          </div>
-          <CtrlBtn
-            onClick={run}
-            disabled={!canRun}
-            kind="primary"
-            ariaLabel={running ? "running" : "run one tick"}
-          >
-            {running ? "running…" : "Run ▸"}
-          </CtrlBtn>
-          <CtrlBtn onClick={reset} kind="ghost" ariaLabel="reset queues">
-            reset
-          </CtrlBtn>
-        </div>
-
-        <p className="bs-qrace-rule">
-          Run = drain <em>all</em> microtasks, then <em>one</em> macrotask, then
-          repeat.
-        </p>
-      </div>
-
-      <style>{`
-        .bs-qrace {
-          display: flex;
-          flex-direction: column;
-          gap: var(--spacing-sm);
-        }
-        .bs-qrace-tick {
-          min-height: 24px;
-          line-height: 24px;
-          font-size: 12px;
-          letter-spacing: 0.02em;
-          padding: 0 2px;
-        }
-        .bs-qrace-body {
-          display: grid;
-          grid-template-columns: 1fr;
-          gap: var(--spacing-sm);
-        }
-        .bs-qrace-queues {
-          display: flex;
-          flex-direction: column;
-          gap: var(--spacing-sm);
-        }
-        .bs-qrace-controls {
-          display: flex;
-          flex-wrap: wrap;
-          align-items: center;
-          gap: 6px;
-          padding-top: 4px;
-        }
-        .bs-qrace-self-wrap {
-          position: relative;
-          display: inline-flex;
-        }
-        .bs-qrace-hint {
-          position: absolute;
-          left: 0;
-          top: calc(100% + 6px);
-          z-index: 2;
-          width: max-content;
-          max-width: 240px;
-          padding: 6px 10px;
-          font-family: var(--font-sans);
-          font-size: 11px;
-          line-height: 1.4;
-          color: var(--color-text);
-          background: var(--color-surface);
-          border: 1px solid var(--color-accent);
-          border-radius: var(--radius-sm);
-        }
-        .bs-qrace-hint::before {
-          content: "";
-          position: absolute;
-          top: -5px;
-          left: 18px;
-          width: 8px;
-          height: 8px;
-          background: var(--color-surface);
-          border-top: 1px solid var(--color-accent);
-          border-left: 1px solid var(--color-accent);
-          transform: rotate(45deg);
-        }
-        .bs-qrace-rule {
-          font-family: var(--font-sans);
-          font-size: 11px;
-          color: var(--color-text-muted);
-          text-align: center;
-          margin: 2px 0 0 0;
-          line-height: 1.5;
-        }
-        @container widget (min-width: 720px) {
-          .bs-qrace-body {
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        <style>{`
+          .bs-qrace {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
           }
-        }
-      `}</style>
-    </WidgetShell>
+          .bs-qrace-tick {
+            min-height: 24px;
+            line-height: 24px;
+            font-size: 12px;
+            letter-spacing: 0.02em;
+            padding: 0 2px;
+          }
+          .bs-qrace-body {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: var(--spacing-sm);
+          }
+          .bs-qrace-queues {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+          }
+          .bs-qrace-controls-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: 100%;
+          }
+          .bs-qrace-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+          }
+          .bs-qrace-self-wrap {
+            position: relative;
+            display: inline-flex;
+          }
+          .bs-qrace-hint {
+            position: absolute;
+            left: 0;
+            top: calc(100% + 6px);
+            z-index: 2;
+            width: max-content;
+            max-width: 240px;
+            padding: 6px 10px;
+            font-family: var(--font-sans);
+            font-size: 11px;
+            line-height: 1.4;
+            color: var(--color-text);
+            background: var(--color-surface);
+            border: 1px solid var(--color-accent);
+            border-radius: var(--radius-sm);
+          }
+          .bs-qrace-hint::before {
+            content: "";
+            position: absolute;
+            top: -5px;
+            left: 18px;
+            width: 8px;
+            height: 8px;
+            background: var(--color-surface);
+            border-top: 1px solid var(--color-accent);
+            border-left: 1px solid var(--color-accent);
+            transform: rotate(45deg);
+          }
+          .bs-qrace-rule {
+            font-family: var(--font-sans);
+            font-size: 11px;
+            color: var(--color-text-muted);
+            text-align: center;
+            margin: 0;
+            line-height: 1.5;
+          }
+          @container widget (min-width: 720px) {
+            .bs-qrace-body {
+              grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            }
+          }
+        `}</style>
+      </div>
+      }
+      controls={
+        <div className="bs-qrace-controls-wrap">
+          {/* Controls strip. Tap targets ≥ 44px; flex-wrap only as last resort
+              — at 360 px the row stays single via short labels. */}
+          <div
+            className="bs-qrace-controls"
+            role="group"
+            aria-label="Queue controls"
+          >
+            <CtrlBtn onClick={addMicro} disabled={running} kind="accent">
+              <span aria-hidden>+</span>
+              <span>micro</span>
+            </CtrlBtn>
+            <CtrlBtn onClick={addMacro} disabled={running} kind="muted">
+              <span aria-hidden>+</span>
+              <span>macro</span>
+            </CtrlBtn>
+            <div className="bs-qrace-self-wrap">
+              <CtrlBtn
+                onClick={addSelf}
+                disabled={running}
+                kind="dashed"
+                ariaLabel="add a self-scheduling microtask"
+              >
+                <span aria-hidden>↻</span>
+                <span>self-sched</span>
+              </CtrlBtn>
+              <AnimatePresence>
+                {selfHintVisible ? (
+                  <motion.div
+                    key="hint"
+                    className="bs-qrace-hint"
+                    initial={
+                      reduce ? { opacity: 0 } : { opacity: 0, y: -4 }
+                    }
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    transition={reduce ? { duration: 0 } : SPRING.smooth}
+                    role="note"
+                  >
+                    This microtask schedules another microtask. Hit Run — the
+                    queue never empties.
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
+            </div>
+            <CtrlBtn
+              onClick={run}
+              disabled={!canRun}
+              kind="primary"
+              ariaLabel={running ? "running" : "run one tick"}
+            >
+              {running ? "running…" : "Run ▸"}
+            </CtrlBtn>
+            <CtrlBtn onClick={reset} kind="ghost" ariaLabel="reset queues">
+              reset
+            </CtrlBtn>
+          </div>
+
+          <p className="bs-qrace-rule">
+            Run = drain <em>all</em> microtasks, then <em>one</em> macrotask, then
+            repeat.
+          </p>
+        </div>
+      }
+    />
   );
 }
 

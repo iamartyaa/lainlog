@@ -237,7 +237,7 @@ export function PredictTheOutput({ codeSlots }: Props) {
     <WidgetShell
       title="predict the output"
       measurements={variant.label}
-      caption={
+      state={
         answered ? (
           <>
             <CaptionCue>Revealed.</CaptionCue> {variant.revealNote}
@@ -249,8 +249,7 @@ export function PredictTheOutput({ codeSlots }: Props) {
           </>
         )
       }
-      captionTone="prominent"
-    >
+      canvas={
       <div className="flex flex-col gap-[var(--spacing-sm)]">
         {/* Variant chooser — segmented control above the canvas. */}
         <div
@@ -316,6 +315,7 @@ export function PredictTheOutput({ codeSlots }: Props) {
           randomize
         />
       </div>
-    </WidgetShell>
+      }
+    />
   );
 }

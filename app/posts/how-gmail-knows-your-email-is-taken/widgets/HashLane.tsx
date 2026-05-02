@@ -120,10 +120,9 @@ export function HashLane({ m = 16, script = DEFAULT_SCRIPT, initialStep = 0 }: P
     <WidgetShell
       title={`bloom · ${current.kind} "${current.key}"`}
       measurements={measurements}
-      caption={current.caption}
-      captionTone="prominent"
+      state={current.caption}
       controls={<WidgetNav value={step} total={script.length} onChange={setStep} />}
-    >
+      canvas={
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         width="100%"
@@ -240,7 +239,8 @@ export function HashLane({ m = 16, script = DEFAULT_SCRIPT, initialStep = 0 }: P
           </motion.text>
         ) : null}
       </svg>
-    </WidgetShell>
+      }
+    />
   );
 }
 

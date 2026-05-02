@@ -86,8 +86,7 @@ export function CostMatrix() {
     <WidgetShell
       title="where the cost reappears"
       measurements={focus ? `focus · ${focus.label}` : "3 modes · 4 protocols"}
-      captionTone="prominent"
-      caption={
+      state={
         <AnimatePresence mode="wait">
           <motion.span
             key={focus?.key ?? "none"}
@@ -115,8 +114,9 @@ export function CostMatrix() {
           </motion.span>
         </AnimatePresence>
       }
-    >
-      <div className="bs-cm">
+      canvas={
+        <>
+        <div className="bs-cm">
         {/* header row with protocol names */}
         <div className="bs-cm-header">
           <span />
@@ -251,7 +251,9 @@ export function CostMatrix() {
           }
         }
       `}</style>
-    </WidgetShell>
+        </>
+      }
+    />
   );
 }
 
