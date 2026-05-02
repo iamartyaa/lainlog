@@ -62,8 +62,7 @@ export function GapDuration() {
     <WidgetShell
       title="gap length · how much SSE has to replay"
       measurements={`gap: ${(dropMs / 1000).toFixed(1)}s · ${replayLabel}`}
-      captionTone="prominent"
-      caption={
+      state={
         <>
           <TextHighlighter
             triggerType="auto"
@@ -77,6 +76,30 @@ export function GapDuration() {
           WebSocket&apos;s loss count grows too — nothing comes back.
         </>
       }
+      canvas={
+        <>
+          <div className="bs-rg-narrow">
+            <MemoTwoRowCanvas
+              classified={classified}
+              dropAt={FIXED_DROP_AT_MS}
+              dropEnd={dropEnd}
+              lastSseId={lastSseId}
+              variant="narrow"
+              scrubbedEdge="right"
+            />
+          </div>
+          <div className="bs-rg-wide">
+            <MemoTwoRowCanvas
+              classified={classified}
+              dropAt={FIXED_DROP_AT_MS}
+              dropEnd={dropEnd}
+              lastSseId={lastSseId}
+              variant="wide"
+              scrubbedEdge="right"
+            />
+          </div>
+        </>
+      }
       controls={
         <Scrubber
           label="for"
@@ -88,27 +111,6 @@ export function GapDuration() {
           format={(v) => `${(v / 1000).toFixed(1)}s`}
         />
       }
-    >
-      <div className="bs-rg-narrow">
-        <MemoTwoRowCanvas
-          classified={classified}
-          dropAt={FIXED_DROP_AT_MS}
-          dropEnd={dropEnd}
-          lastSseId={lastSseId}
-          variant="narrow"
-          scrubbedEdge="right"
-        />
-      </div>
-      <div className="bs-rg-wide">
-        <MemoTwoRowCanvas
-          classified={classified}
-          dropAt={FIXED_DROP_AT_MS}
-          dropEnd={dropEnd}
-          lastSseId={lastSseId}
-          variant="wide"
-          scrubbedEdge="right"
-        />
-      </div>
-    </WidgetShell>
+    />
   );
 }

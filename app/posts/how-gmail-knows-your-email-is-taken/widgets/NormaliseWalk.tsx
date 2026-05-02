@@ -60,12 +60,11 @@ export function NormaliseWalk({ initialStep = 0 }: Props) {
   return (
     <WidgetShell
       title="normalise walk · three steps"
-      caption={stepCaption}
-      captionTone="prominent"
+      state={stepCaption}
       controls={
         <WidgetNav value={clamped} total={TOTAL} onChange={setStep} />
       }
-    >
+      canvas={
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         width="100%"
@@ -236,6 +235,7 @@ export function NormaliseWalk({ initialStep = 0 }: Props) {
           opacity={0.5}
         />
       </svg>
-    </WidgetShell>
+      }
+    />
   );
 }

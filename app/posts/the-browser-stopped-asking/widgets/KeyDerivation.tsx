@@ -71,8 +71,7 @@ export function KeyDerivation() {
     <WidgetShell
       title="your browser does the SHA-1"
       measurements={measurements}
-      captionTone="prominent"
-      caption={
+      state={
         <>
           <TextHighlighter
             triggerType="auto"
@@ -86,6 +85,7 @@ export function KeyDerivation() {
           and runs the SHA-1. Nothing in the reveal is precomputed.
         </>
       }
+      canvas={<KeyDerivationCanvas computed={computed} />}
       controls={
         <div className="flex items-center justify-center w-full">
           <motion.button
@@ -106,9 +106,7 @@ export function KeyDerivation() {
           </motion.button>
         </div>
       }
-    >
-      <KeyDerivationCanvas computed={computed} />
-    </WidgetShell>
+    />
   );
 }
 

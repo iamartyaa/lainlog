@@ -53,8 +53,7 @@ export function DropTiming() {
     <WidgetShell
       title="dropout · which side of the cliff"
       measurements={`WS lost: ${wsLost} · SSE replayed: ${sseReplayed}`}
-      captionTone="prominent"
-      caption={
+      state={
         <>
           <TextHighlighter
             triggerType="auto"
@@ -68,6 +67,30 @@ export function DropTiming() {
           cliff; SSE replays them all when the connection heals.
         </>
       }
+      canvas={
+        <>
+          <div className="bs-rg-narrow">
+            <MemoTwoRowCanvas
+              classified={classified}
+              dropAt={dropAt}
+              dropEnd={dropEnd}
+              lastSseId={lastSseId}
+              variant="narrow"
+              scrubbedEdge="left"
+            />
+          </div>
+          <div className="bs-rg-wide">
+            <MemoTwoRowCanvas
+              classified={classified}
+              dropAt={dropAt}
+              dropEnd={dropEnd}
+              lastSseId={lastSseId}
+              variant="wide"
+              scrubbedEdge="left"
+            />
+          </div>
+        </>
+      }
       controls={
         <Scrubber
           label="drop@"
@@ -79,27 +102,6 @@ export function DropTiming() {
           format={(v) => `${(v / 1000).toFixed(1)}s`}
         />
       }
-    >
-      <div className="bs-rg-narrow">
-        <MemoTwoRowCanvas
-          classified={classified}
-          dropAt={dropAt}
-          dropEnd={dropEnd}
-          lastSseId={lastSseId}
-          variant="narrow"
-          scrubbedEdge="left"
-        />
-      </div>
-      <div className="bs-rg-wide">
-        <MemoTwoRowCanvas
-          classified={classified}
-          dropAt={dropAt}
-          dropEnd={dropEnd}
-          lastSseId={lastSseId}
-          variant="wide"
-          scrubbedEdge="left"
-        />
-      </div>
-    </WidgetShell>
+    />
   );
 }
