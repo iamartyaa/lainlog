@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { PostMeta } from "@/content/posts-manifest";
 import { PostCover } from "@/components/covers/PostCover";
+import { NewestChip } from "@/components/nav/NewestChip";
 
 function formatDate(iso: string): string {
   const d = new Date(iso + "T00:00:00Z");
@@ -34,9 +35,25 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
         >
           <Link
             href={`/posts/${p.slug}`}
-            className="grid grid-cols-[64px_minmax(0,1fr)_24px] lg:grid-cols-[80px_minmax(0,1.1fr)_minmax(0,1.2fr)_32px] items-center gap-[var(--spacing-md)] lg:gap-[var(--spacing-lg)] px-[var(--spacing-sm)] py-[var(--spacing-lg)] no-underline transition-colors hover:bg-[color:color-mix(in_oklab,var(--color-accent)_4%,transparent)]"
+            className="relative grid grid-cols-[64px_minmax(0,1fr)_24px] lg:grid-cols-[80px_minmax(0,1.1fr)_minmax(0,1.2fr)_32px] items-center gap-[var(--spacing-md)] lg:gap-[var(--spacing-lg)] px-[var(--spacing-sm)] py-[var(--spacing-lg)] no-underline transition-colors hover:bg-[color:color-mix(in_oklab,var(--color-accent)_4%,transparent)]"
             aria-label={`${p.title} — ${p.hook}`}
           >
+            {/* "New" sticker — only on the first (newest) post in the
+                date-sorted list. Positioned at the top-right of the row
+                itself (the article's border), not the cover thumbnail, so
+                it reads as a row-level marker that the article is the
+                latest entry. Aria-hidden; the post link's aria-label
+                still announces the post itself. */}
+            {i === 0 ? (
+              <span
+                className="absolute -top-2 right-[var(--spacing-sm)] z-10"
+                // Pointer-events disabled so the chip doesn't intercept
+                // hover state on the parent <Link>.
+                style={{ pointerEvents: "none" }}
+              >
+                <NewestChip />
+              </span>
+            ) : null}
             {/* Cover thumbnail — bespoke per-post animated SVG.
                 `view-transition-name` lives on PostCover's outer wrapper
                 (CoverFrame) so home → post morphs work on the still

@@ -1,0 +1,95 @@
+/* Vendored React Bits "StarBorder" — theme-integrated.
+   See StarBorder.tsx JSDoc for the list of modifications vs. the upstream
+   source (theme tokens, currentColor default, reduced-motion guard). */
+
+.star-border-container {
+  display: inline-block;
+  padding: 1px 0;
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  /* Reset native button affordances so this primitive works whether it's
+     rendered as a <button> (interactive) or a <div>/<span> (decorative). */
+  background: transparent;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  cursor: inherit;
+  /* When rendered as a button, restore pointer cursor explicitly. */
+}
+button.star-border-container {
+  cursor: pointer;
+}
+
+.border-gradient-bottom {
+  position: absolute;
+  width: 300%;
+  height: 50%;
+  opacity: 0.7;
+  bottom: -11px;
+  right: -250%;
+  border-radius: 50%;
+  animation: star-movement-bottom linear infinite alternate;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.border-gradient-top {
+  position: absolute;
+  opacity: 0.7;
+  width: 300%;
+  height: 50%;
+  top: -10px;
+  left: -250%;
+  border-radius: 50%;
+  animation: star-movement-top linear infinite alternate;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.inner-content {
+  position: relative;
+  /* Theme-integrated: vars instead of hardcoded #000/#222/white. */
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-rule);
+  font-size: var(--text-small, 14px);
+  text-align: center;
+  padding: 8px 14px;
+  border-radius: 20px;
+  z-index: 1;
+}
+
+@keyframes star-movement-bottom {
+  0% {
+    transform: translate(0%, 0%);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-100%, 0%);
+    opacity: 0;
+  }
+}
+
+@keyframes star-movement-top {
+  0% {
+    transform: translate(0%, 0%);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(100%, 0%);
+    opacity: 0;
+  }
+}
+
+/* Reduced-motion guard. The inline animationDuration on each gradient layer
+   (set by the TSX) bypasses the global animation-killer rule in globals.css,
+   so we add an explicit `animation: none` here. The orbit becomes a static
+   glow at 0.4 opacity — preserving the visual presence without the motion. */
+@media (prefers-reduced-motion: reduce) {
+  .border-gradient-bottom,
+  .border-gradient-top {
+    animation: none;
+    opacity: 0.4;
+  }
+}

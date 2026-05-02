@@ -855,3 +855,94 @@ is `false` (solid `--color-bg` fill, as before). The courses layout
 wraps in `<CozyFrameProvider transparent>` so the column doesn't paint
 over the dots. Posts and the homepage never see this provider; their
 default `false` is unchanged.
+
+## 12. Site-wide feature flags
+
+Single source of truth: [`lib/site-flags.ts`](../lib/site-flags.ts). Flags
+in this file are typed `const` exports (literal `true` / `false`), which
+lets the compiler tree-shake unreachable branches at build time. Flipping
+a flag and rebuilding fully removes the gated code from the client bundle.
+
+Current flags:
+
+| Flag | Default | Effect when `false` |
+|---|---|---|
+| `COURSES_VISIBLE` | `false` | Pinned course card on the home page is hidden; sitemap excludes course routes. The `/courses/<slug>` and `/courses/<slug>/<chapter>` routes themselves remain reachable for preview. |
+
+When adding a new flag:
+1. Add the `export const` to `lib/site-flags.ts` with a JSDoc explaining
+   what `false` means and how to re-enable.
+2. Document it in the table above.
+3. Gate every consumer at the call site (don't bury the flag inside a
+   helper — the grep should be obvious).
+
+## 13. Sticker primitives — `StarBorder` + `Glitter` + `NewestChip`
+
+The home page surfaces a "New" sticker on the most recent post tile. The
+sticker is composed of two reusable primitives plus a thin call-site
+component that wires them together.
+
+### `<StarBorder>` — vendored from React Bits
+
+Source: [`components/fancy/star-border/StarBorder.tsx`](../components/fancy/star-border/StarBorder.tsx) +
+[`StarBorder.css`](../components/fancy/star-border/StarBorder.css). A pill
+with two radial-gradient "stars" orbiting along the top and bottom
+perimeter. Pure CSS animation — no client hooks, no JS animation cost.
+
+Modifications vs. the React Bits source:
+- **Theme integration.** The vendor CSS hardcoded `background: #000;
+  color: white; border: 1px solid #222` on the inner content. Replaced
+  with `--color-surface` / `--color-text` / `--color-rule` so the
+  primitive renders correctly on both light and dark themes.
+- **`color` prop default.** Changed from `"white"` to `"currentColor"`
+  so the orbiting gradient inherits the surrounding text color by default
+  on a light theme. Pass `"var(--color-accent)"` for a fixed accent tone.
+- **Reduced-motion guard.** The React Bits source applied the orbit
+  duration via inline `animationDuration`, which bypasses the global
+  animation-killer rule in `globals.css`. The CSS file now ships an
+  explicit `@media (prefers-reduced-motion: reduce)` block that sets
+  `animation: none` and dims the gradient layers to 0.4 opacity — the
+  primitive becomes a static glow ring under user pref.
+- **Polymorphic `as` prop.** Default is `"button"` (matching the React
+  Bits demo) but consumers can pass `"div"` / `"span"` for decorative
+  uses where the chip shouldn't be announced as a button.
+
+### `<Glitter>` — extracted from `<Note>`
+
+Source: [`components/fancy/Glitter.tsx`](../components/fancy/Glitter.tsx).
+A small cluster of shimmer dots that fade in and out around the bounds
+of a parent element. Originally inlined inside `<Note>` (PR #36); extracted
+in PR #95 so the chip and the Note share the exact same shimmer
+vocabulary.
+
+Default contract: 4 terracotta dots positioned at the parent's corners,
+each fading opacity 0 → 0.85 → 0 over 3.6s with staggered delays so the
+cluster twinkles asynchronously. Returns `null` under
+`prefers-reduced-motion` — decoration motion is opt-out by default.
+
+The parent must establish positioning context (`position: relative`).
+
+Tuning:
+- Default 4 dots fits a Note-trigger-sized parent (~360 × 44 px).
+- For chips (~80 × 28 px), pass a 3-dot `dots` array and `size={3}` or
+  `size={4}` so the cluster doesn't crowd the perimeter.
+
+### `<NewestChip>` — composition
+
+Source: [`components/nav/NewestChip.tsx`](../components/nav/NewestChip.tsx).
+A "New" sticker rendered on top of the most recent post tile in
+`<PostList>`. Composes `<StarBorder>` (orbiting accent ring) with
+`<Glitter>` (3-dot cluster) inside the chip's bounds.
+
+Why the double-up isn't visual noise:
+- The orbit is *continuous* (never punctuated).
+- The glitter is *asynchronous* (each dot off-beat from the orbit).
+- They complement instead of competing.
+
+Placement contract: the chip is `aria-hidden` and decorative — the parent
+post `<a>` already announces the post. Positioning (top-right, slightly
+offset over the cover thumbnail) is the responsibility of the call site
+in `PostList.tsx`. The chip itself does not assume a position.
+
+Visibility: rendered only on the first item in the date-sorted post list
+(`POSTS_NEWEST_FIRST`), via `i === 0` in `PostList.tsx`.

@@ -5,3 +5,5 @@ export { VerticalCutReveal, type VerticalCutRevealRef } from "./vertical-cut-rev
 export { ScrambleIn, type ScrambleInRef } from "./scramble-in";
 export { ClickSpark, default as ClickSparkDefault } from "./click-spark";
 export { Stack, type StackProps } from "./stack-cards";
+export { StarBorder, type StarBorderProps } from "./star-border/StarBorder";
+export { Glitter, type GlitterProps, type GlitterDot } from "./Glitter";
