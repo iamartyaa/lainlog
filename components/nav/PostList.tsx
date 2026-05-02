@@ -35,33 +35,33 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
         >
           <Link
             href={`/posts/${p.slug}`}
-            className="grid grid-cols-[64px_minmax(0,1fr)_24px] lg:grid-cols-[80px_minmax(0,1.1fr)_minmax(0,1.2fr)_32px] items-center gap-[var(--spacing-md)] lg:gap-[var(--spacing-lg)] px-[var(--spacing-sm)] py-[var(--spacing-lg)] no-underline transition-colors hover:bg-[color:color-mix(in_oklab,var(--color-accent)_4%,transparent)]"
+            className="relative grid grid-cols-[64px_minmax(0,1fr)_24px] lg:grid-cols-[80px_minmax(0,1.1fr)_minmax(0,1.2fr)_32px] items-center gap-[var(--spacing-md)] lg:gap-[var(--spacing-lg)] px-[var(--spacing-sm)] py-[var(--spacing-lg)] no-underline transition-colors hover:bg-[color:color-mix(in_oklab,var(--color-accent)_4%,transparent)]"
             aria-label={`${p.title} — ${p.hook}`}
           >
+            {/* "New" sticker — only on the first (newest) post in the
+                date-sorted list. Positioned at the top-right of the row
+                itself (the article's border), not the cover thumbnail, so
+                it reads as a row-level marker that the article is the
+                latest entry. Aria-hidden; the post link's aria-label
+                still announces the post itself. */}
+            {i === 0 ? (
+              <span
+                className="absolute -top-2 right-[var(--spacing-sm)] z-10"
+                // Pointer-events disabled so the chip doesn't intercept
+                // hover state on the parent <Link>.
+                style={{ pointerEvents: "none" }}
+              >
+                <NewestChip />
+              </span>
+            ) : null}
             {/* Cover thumbnail — bespoke per-post animated SVG.
                 `view-transition-name` lives on PostCover's outer wrapper
                 (CoverFrame) so home → post morphs work on the still
                 snapshot while ambient animation continues underneath.
                 The hover-lift wraps the cover so the morph target is
                 stable. */}
-            <div className="relative transition-transform duration-[200ms] will-change-transform group-hover:-translate-y-[2px]">
+            <div className="transition-transform duration-[200ms] will-change-transform group-hover:-translate-y-[2px]">
               <PostCover slug={p.slug} size="thumb" />
-              {/* "New" sticker — only on the first (newest) post in the
-                  date-sorted list. Positioned top-right of the thumbnail,
-                  slightly overlapping so it reads as a sticker on top of
-                  the artwork rather than a label beside it. The chip is
-                  aria-hidden; the post link's aria-label still announces
-                  the post itself. */}
-              {i === 0 ? (
-                <span
-                  className="absolute -top-2 -right-2 z-10"
-                  // Pointer-events disabled so the chip doesn't intercept
-                  // hover state on the parent <Link>.
-                  style={{ pointerEvents: "none" }}
-                >
-                  <NewestChip />
-                </span>
-              ) : null}
             </div>
 
             {/* Title + date stacked */}
