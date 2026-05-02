@@ -29,11 +29,11 @@ export const POSTS: PostMeta[] = [
   {
     slug: "evals-or-vibes",
     title:
-      "Evals, or Vibes? — How to know if your LLM feature is actually any good",
+      "How to know if your AI is actually any good — a primer on evals for LLM products",
     date: "2026-05-02",
     hook:
-      "two teams, same product, six months. one ships on vibes, one opens a CSV. why eval suites are the blind tasting protocol your LLM feature needs.",
-    readingMinutes: 14,
+      "an eval is a test for an LLM feature: a list of inputs, the answers you expect, and a way to score what came back. three kinds, and a monday-morning recipe.",
+    readingMinutes: 9,
     tags: ["ai", "evals", "engineering-practice"],
   },
   {

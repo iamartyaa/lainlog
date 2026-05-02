@@ -1,30 +1,33 @@
 /**
  * Voice & tone note (do not "fix" without re-reading the brief):
  *
- *   tone: deliberate-deviation; see Checkpoint 2 of t-mo8rshv6dno5 brief
+ *   tone: dry confidence, plain English, Hamel-shaped.
  *
- * Funny, informal, slightly weary. Memes capped at 2 (both load-bearing
- * and earned: "dog in burning room" once; "dog has built a CSV" once).
- * Two MediaBetweenText slots are intentional — explicit Checkpoint 2
- * sign-off.
+ * From-scratch rewrite (iteration #5). The four prior iterations leaned
+ * on a sustained analogy (wine), a running character (Bob), and five
+ * interactive widgets. The reader reported understanding "absolutely
+ * nothing" after three paragraphs.
  *
- * Rewrite-pass (post user feedback): the wine analogy was carpeted
- * across all 8 scenes in the polish-pass. This rewrite collapses it to
- * the cover image + ONE earned closing line in §7. The running
- * "Bob the real-estate AI" example is replaced by varied, concrete
- * dev failure modes (SQL agents, doc-Q&A tools, support summarisers,
- * etc.). Sentence-level rewrite for clarity. New H1: "Vibes don't
- * scale."
+ * This rewrite:
+ *   - opens by orienting the reader (what an eval is, why this matters,
+ *     who it's for, what they'll get) before any vignette;
+ *   - mirrors Hamel's three-eval-types structure (unit tests →
+ *     LLM-as-judge → human eval) instead of inventing a new spine;
+ *   - drops all 5 widgets. Prose carries the load;
+ *   - keeps the cover SVG, the <Note> primitive (1 use), and a small
+ *     budget of <Term> tooltips (≤5).
  *
  * Bans honored:
  *   - No <HeroTile> on the article page (post-PR-#92 convention).
  *   - No <VerticalCutReveal>.
- *   - WidgetShell from @/components/viz/WidgetShell.
+ *   - No memes.
+ *   - No analogies-as-scaffolding.
  */
 import {
   Prose,
   H1,
   H2,
+  H3,
   P,
   Callout,
   Dots,
@@ -35,15 +38,6 @@ import {
 import { PostBackLink } from "@/components/nav/PostBackLink";
 import { PostNavCards } from "@/components/nav/PostNavCards";
 import { TextHighlighter } from "@/components/fancy";
-import {
-  VibesVsRubric,
-  EvalSetBuilder,
-  PassRateOverTime,
-  JudgeCalibrate,
-  N10Trap,
-  RentChipReveal,
-  BallotChipReveal,
-} from "./widgets";
 import { metadata } from "./metadata";
 
 export { metadata };
@@ -120,7 +114,7 @@ export default function EvalsOrVibes() {
             marginBottom: "var(--spacing-sm)",
           }}
         >
-          Evals, or Vibes? — How to know if your LLM feature is actually any good
+          A primer on evals for LLM products
         </p>
         <H1
           style={{
@@ -128,7 +122,7 @@ export default function EvalsOrVibes() {
             lineHeight: 1.05,
           }}
         >
-          Vibes don&apos;t scale.
+          How to know if your AI is actually any good.
         </H1>
         <p
           className="mt-[var(--spacing-sm)] font-mono tabular-nums"
@@ -139,314 +133,214 @@ export default function EvalsOrVibes() {
         >
           <time dateTime="2026-05-02">may 2, 2026</time>
           <span className="mx-2">·</span>
-          <span>14 min read</span>
+          <span>9 min read</span>
         </p>
       </div>
 
-      {/* §1 — Cold open: a Tuesday-morning failure */}
+      {/* §1 — Preface: orient the reader. */}
       <div>
         <Dots />
-        <SectionH2 eyebrow="1 · the cold open" id="cold-open">
-          Your model passes every demo and fails on a Tuesday.
+        <SectionH2 eyebrow="1 · what this is about" id="preface">
+          What this article is, in one paragraph.
         </SectionH2>
         <P>
-          On a Tuesday in March, a SQL agent your team shipped two
-          months ago drops the <Em>WHERE</Em> clause and returns the
-          entire users table to a sales rep typing &ldquo;show me
-          customers in Ohio.&rdquo; Twelve thousand rows. The rep
-          screenshots it. The screenshot lands in a customer Slack
-          before it lands in yours.
-        </P>
-        <P>
-          That same week, a teammate runs the same prompt twice, two
-          days apart, and gets two different answers.
-        </P>
-        <RentChipReveal />
-        <P>
-          Nobody on the team noticed either failure until somebody
-          outside the building did.{" "}
-          <HL>The author of the feature is the last person in the building to notice.</HL>{" "}
-          Not because the team is bad. Because the team is involved.
-          They test by re-running the prompt in the playground,
-          watching it come back coherent, and shipping. This
-          isn&apos;t the edge case. This is the median Tuesday.
-        </P>
-        <P>So how would you know? How would <Em>anyone</Em> know?</P>
-      </div>
-
-      {/* §2 — Eyeballing your own output is the worst way to grade it */}
-      <div>
-        <Dots />
-        <SectionH2 eyebrow="2 · the wrong instrument" id="wrong-instrument">
-          Eyeballing your own output is the worst way to grade it.
-        </SectionH2>
-        <P>
-          Most teams ship the same way. Open the playground. Paste a
-          prompt. Read the output. If it looks fine, ship.{" "}
-          <HL>That isn&apos;t testing. That&apos;s vibes auto-correlated with hope.</HL>
-        </P>
-        <P>
-          You wrote the prompt. You picked the model. You chose the
-          example. You are, structurally, the worst grader the
-          output has. Your brain pattern-matches its own output as
-          coherent because it already agrees with the assumptions
-          that produced it. The bugs you can&apos;t see are the
-          bugs that match your own blind spots.
-        </P>
-        <P>
-          The fix is{" "}
-          <Term define="A held-out set of inputs your LLM has to produce acceptable outputs for. Test fixtures with a scoring guide attached.">
-            evals
-          </Term>
-          : a small, written-down set of inputs and the answers you
-          expect, scored against a{" "}
-          <Term define="A scoring guide. The yes/no questions a careful grader would ask of every output — factual, on-voice, in-scope, safe.">
-            rubric
+          An{" "}
+          <Term define="A test for whether your LLM is doing what you want. In practice: a list of inputs, the answers you expect, and a way to score what came back.">
+            eval
           </Term>{" "}
-          you wrote in advance. Outputs graded blind, on every prompt
-          change, every model swap, every Friday-afternoon
-          &ldquo;small tweak.&rdquo; Boring. Mechanical. Works.
+          is a test for an LLM feature. You write down a list of
+          inputs, you write down what a good answer looks like, you
+          run the model, and you score the output. That&apos;s the
+          whole idea. The rest of this article is about how to do
+          that well.
         </P>
         <P>
-          The widget below makes the gap concrete. Three outputs —
-          mark each one ship or cut by gut. The rubric reveals on
-          your first tap. The shape of your disagreement with the
-          rubric is the shape of the bug your eyes were missing.
+          Most teams shipping AI features skip this step. They paste
+          a prompt into the playground, look at the answer, decide
+          it reads fine, and ship. That works until it doesn&apos;t
+          — usually around the second customer, or the first time
+          someone swaps the model. Then the team is stuck debating
+          whether the new version is &ldquo;better,&rdquo; with
+          nothing to point at.{" "}
+          <HL>Evals are how you get something to point at.</HL>
         </P>
-        <VibesVsRubric />
         <P>
-          Vibes catches the obvious mistakes. That&apos;s why
-          morale is high — most outputs <Em>do</Em> look fine. The
-          gap is in the outputs that read shippable but flunk a
-          criterion you weren&apos;t scanning for. Factual? Yes.
-          In-scope? You didn&apos;t check. On-voice? Nobody asked.
-          Safe? You forgot you had a policy.
+          This is for developers and product folks shipping
+          LLM-powered features — chat, search, summarisation, agents,
+          anything where the output isn&apos;t deterministic. By the
+          end you&apos;ll have a working mental model of what evals
+          are, the three kinds you&apos;ll want, and a small recipe
+          you can run on Monday morning with nothing but a
+          spreadsheet.
         </P>
       </div>
 
-      {/* §3 — Day three, somebody opens a CSV */}
+      {/* §2 — What goes wrong without evals: one concrete failure mode. */}
       <div>
         <Dots />
-        <SectionH2 eyebrow="3 · the act" id="open-the-csv">
-          Day three, somebody opens a CSV.
+        <SectionH2 eyebrow="2 · the failure mode" id="failure-mode">
+          What goes wrong when you skip this.
         </SectionH2>
         <P>
-          A teammate posts a screenshot. A doc-Q&amp;A tool
-          confidently cited page 14 of a contract. The clause is on
-          page 27. The output reads fluent. The citation is wrong.
+          Picture a doc-Q&amp;A tool. Customers ask questions about a
+          contract, the model answers, and the answer cites a page
+          number. The team built it in a week. The demo went well.
+          Six weeks later, a customer notices the model cited page
+          14 of a contract — and the clause is on page 27. The
+          answer reads fluent. The number is wrong.
         </P>
         <P>
-          One team reads the output, shrugs, says &ldquo;close
-          enough,&rdquo; and ships. That team is{" "}
-          <Em>always</Em> fine. That team is fine the way the dog in
-          the burning room is fine.
+          Without evals, three things are now true. One: nobody
+          knows how often this happens. Two: nobody knows whether
+          the new prompt the team shipped on Tuesday made it worse.
+          Three: the only way to find out is to wait for the next
+          customer to complain. The feedback loop is months long
+          and runs through your support inbox.
         </P>
         <P>
-          The other team opens a CSV. Prompt in column A. Actual
-          output in column B. Expected output in column C. A one-line
-          comment in column D — &ldquo;cited page 14; correct page is
-          27.&rdquo; They paste in five more borderline outputs from
-          the morning. By Friday they have an{" "}
-          <Term define="A small CSV of inputs your LLM has to handle. Each row: prompt, expected output, what a careful grader would say.">
-            eval set
+          With evals, the picture changes. You have, somewhere, a
+          list of twenty real questions. For each one, you know what
+          page the right answer cites. When the model gets a page
+          number wrong, a number on a dashboard moves. When you
+          change the prompt, the number moves. When you swap the
+          model, the number moves.{" "}
+          <HL>You can tell, before the customer can.</HL>
+        </P>
+        <P>
+          That&apos;s the whole pitch. The rest is mechanics — what
+          to put in the list, how to score it, and what to do when
+          the list gets too big to grade by hand.
+        </P>
+      </div>
+
+      {/* §3 — Three kinds of evals. */}
+      <div>
+        <Dots />
+        <SectionH2 eyebrow="3 · the three kinds" id="three-kinds">
+          The three kinds of evals.
+        </SectionH2>
+        <P>
+          There are roughly three kinds of evals, and most teams
+          end up using all three. They get progressively more
+          flexible, more expensive, and harder to automate. Start
+          with the cheap ones.
+        </P>
+
+        <H3>Kind 1 — Unit tests.</H3>
+        <P>
+          A unit test for an LLM is a deterministic check. You
+          decide, in advance, a yes-or-no question you can ask of
+          the output, and you ask it with code, not with another
+          model. <Em>Did the SQL the model produced contain a
+          WHERE clause?</Em> <Em>Is the cited page number a number
+          that exists in the document?</Em> <Em>Did the answer
+          mention a competitor we asked it not to mention?</Em>
+        </P>
+        <P>
+          These are cheap. They run in milliseconds. You run them
+          on every prompt change and every model swap, the same
+          way you run unit tests in any other codebase. They&apos;re
+          also limited: they only catch things you can express as a
+          rule. They won&apos;t tell you whether the answer is
+          helpful, on-tone, or factually correct on something the
+          rule can&apos;t see.
+        </P>
+        <P>
+          Use them wherever you can. They catch the dumb regressions
+          — the ones where a prompt change breaks formatting, drops
+          a required field, or stops citing sources. They&apos;re
+          also where most teams should start, because they&apos;re
+          the cheapest way to turn vibes into a number.
+        </P>
+
+        <H3>
+          Kind 2 —{" "}
+          <Term define="An LLM you point at another LLM's output and ask to grade it. Flexible, fast, and biased — useful once you've calibrated it against humans.">
+            LLM-as-judge
           </Term>
           .
+        </H3>
+        <P>
+          When the question you want to ask isn&apos;t a regex —{" "}
+          <Em>was the tone polite?</Em>, <Em>did the answer cover
+          all three points the user asked about?</Em> — you reach
+          for a second LLM. You give it the input, the output, and
+          a{" "}
+          <Term define="A scoring guide. The yes-or-no questions a careful grader would ask of every output — factual, on-voice, in-scope, complete.">
+            rubric
+          </Term>{" "}
+          (a short list of yes-or-no questions), and ask it to
+          grade.
         </P>
         <P>
-          That&apos;s the bifurcation. Eugene Yan calls building
-          product evals{" "}
-          <HL>the scientific method in disguise</HL>: observe,
-          annotate, hypothesize, experiment, measure. The CSV is the
-          disguise. The method is the <Em>annotate</Em> column.
+          This scales. One judge model can grade thousands of
+          outputs in the time a human grades ten. It&apos;s also
+          biased in ways you have to measure. The judge prefers
+          longer answers. The judge scores its own model family
+          higher than rivals. The judge agrees with whatever the
+          question implies. None of this is fixable by writing a
+          better prompt — but all of it is measurable.
         </P>
-        <EvalSetBuilder />
-        <P>
-          An eval set isn&apos;t a tool. It&apos;s a habit. The
-          first row is the act. Every other piece of advice in this
-          post is replaceable. The first row isn&apos;t. As Hamel
-          Husain puts it:{" "}
-          <Em>you are doing it wrong if you aren&apos;t looking at lots of data.</Em>
-        </P>
-      </div>
-
-      {/* §4 — A 100% pass rate is a failing grade */}
-      <div>
-        <Dots />
-        <SectionH2 eyebrow="4 · the saturation trap" id="saturation">
-          A 100% pass rate is a failing grade.
-        </SectionH2>
-        <P>
-          Two months in. Fifty prompts in the CSV. The full suite
-          passes every Monday. Passes every Friday. The team feels
-          great.
-        </P>
-        <P>
-          They&apos;ve walked into the most dangerous phase of
-          eval-writing —{" "}
-          <HL>the phase where the suite tells you what you want to hear.</HL>
-        </P>
-        <P>
-          Simon Willison has the cleanest line on this:{" "}
-          <Em>
-            &ldquo;If you&apos;re passing 100% of your evals,
-            you&apos;re likely not challenging your system enough.&rdquo;
-          </Em>{" "}
-          The term of art is{" "}
-          <Term define="The moment your eval suite stops telling you anything new — the prompts in it are too easy for the current model. A 100% pass rate is the symptom.">
-            eval saturation
-          </Term>
-          : the suite stops giving signal.
-        </P>
-        <P>
-          <BallotChipReveal />
-        </P>
-        <P>
-          The fix is to keep adding hard prompts. Ones the model
-          fails on. Ones from the last incident. Ones a
-          competitor&apos;s release surfaced.{" "}
-          <HL>Eval sets aren&apos;t done when they pass.</HL>{" "}
-          They&apos;re done when they break in interesting ways.
-        </P>
-        <PassRateOverTime />
-        <P>
-          The line climbs to 100% and stays there. Then a customer
-          incident lands on the plateau. Press &ldquo;add hard
-          prompts&rdquo; and the line drops to 78%. 78% is not a
-          problem. 78% is the suite doing its job. 100% is the suite
-          asleep.
-        </P>
-      </div>
-
-      {/* §5 — LLM-as-judge has biases too */}
-      <div>
-        <Dots />
-        <SectionH2 eyebrow="5 · the calibration" id="judge">
-          Your grader is biased. Calibrate it.
-        </SectionH2>
-        <P>
-          Three months in. The suite is at 240 prompts. Nobody can
-          manually grade 240 outputs after every prompt change. So
-          the team does what every team does: they hire an LLM as
-          their grader. Fast. Scales. Also wrong in ways that matter.
-        </P>
-        <Note summary="The biases your judge ships with">
-          Lilian Weng catalogued the failure modes of LLM-as-judge
-          in uncomfortable detail. The judge prefers verbose
-          outputs. The judge scores its own model family higher
-          than rivals. The judge sycophantically agrees with
-          whatever the question framing implies. None of this is
-          fixable by prompting. All of it is measurable.
+        <Note summary="The cheapest calibration recipe — sample, blind, compare.">
+          Eugene Yan&apos;s tactical version: every week, take 30
+          outputs the LLM-judge has scored. Have a human re-grade
+          them blind — no model name, no judge score visible. If
+          the human and the judge agree on roughly the same
+          fraction of outputs, you&apos;re calibrated. If they
+          don&apos;t, the judge prompt or the rubric needs work
+          before you trust the dashboard again.
         </Note>
         <P>
-          A judge that scores its own model family higher than
-          rivals is an A/B test you can&apos;t trust. A judge that
-          rewards verbosity will hand you a feature that drifts
-          from terse-and-correct to long-and-plausible over six
-          months — and you&apos;ll never see the slide.
+          Use LLM-as-judge for the questions a unit test
+          can&apos;t answer, but only after you&apos;ve checked
+          its agreement with a human grader on a small sample.
+          Skip it if your eval set is small enough that a human
+          can grade the whole thing in an afternoon — that&apos;s
+          cheaper than calibrating a judge, and more accurate.
         </P>
-        <JudgeCalibrate />
-        <P>
-          Move the strictness slider — verdict flips. Toggle the
-          judge model — verdict flips again.{" "}
-          <HL>The verdict is not a property of the output.</HL>{" "}
-          It&apos;s a property of the (judge, rubric) pair,
-          calibrated as a unit. The fix isn&apos;t a fancier model.
-          The fix is sample-and-calibrate.
-        </P>
-        <Note summary="Yan&rsquo;s recipe — sample, blind, compare">
-          Eugene Yan has the cleanest tactical version. Every
-          week, sample 30 outputs the LLM-judge has scored. Have a
-          human re-grade them blind. Compare. If the LLM-judge and
-          the human agree to within four points on the rubric,
-          you&apos;re calibrated. If not, you have a re-prompting
-          afternoon ahead of you.
-        </Note>
-      </div>
 
-      {/* §6 — The N=10 trap */}
-      <div>
-        <Dots />
-        <SectionH2 eyebrow="6 · the picked sample" id="n10-trap">
-          The N=10 trap.
-        </SectionH2>
+        <H3>Kind 3 — Human eval.</H3>
         <P>
-          Four months in. The other team finally writes evals. Ten
-          of them. Hand-picked by the engineer who wrote the prompt,
-          on a Thursday, in the spirit of getting the ticket off the
-          board. The model passes 10/10. They ship v2. They are
-          fine.
-        </P>
-        <P>The dog has built a CSV. The room is still on fire.</P>
-        <P>
-          In production, v2 fails one prompt in four. The 10
-          hand-picked examples were a self-portrait. Of course the
-          model passed them — they were written by the same person
-          who wrote the prompt the model is aligned to.{" "}
-          <HL>You can&apos;t sample by intuition the failure modes you can&apos;t see.</HL>
-        </P>
-        <N10Trap />
-        <P>
-          The fix is mechanical and slightly humiliating: pull the
-          eval set from real traffic. Failures first. Edge cases
-          first. Out-of-scope queries first. The boring shippable
-          cases never — those aren&apos;t the eval set, those are
-          the regression test.
+          Sometimes the only thing that knows whether the answer is
+          good is a person. Tone. Helpfulness. Whether the model
+          actually answered the question the user asked, instead of
+          the question it preferred to answer. Whether the
+          summary leaves out something important. These are
+          questions where a human grader is the gold standard, and
+          where any model — including the judge — is fundamentally
+          downstream of human judgment.
         </P>
         <P>
-          A hand-picked eval set is a self-portrait, not a
-          measurement. Its job is to <HL>surprise you.</HL> If it
-          doesn&apos;t, you wrote it for comfort.
+          Human eval is slow and expensive. It also doesn&apos;t
+          scale: ten people grading a hundred outputs each is a
+          full week of work. So you do it sparingly and in two
+          places. First, on a small fixed set of hard examples
+          you re-grade every release — the ones where you really
+          want to know whether you&apos;ve regressed. Second, on
+          the calibration sample for the LLM-judge, where you only
+          need to grade thirty.
+        </P>
+        <P>
+          Skip human eval if a unit test or a calibrated LLM-judge
+          can answer the question. Reach for it when the question
+          is squishy enough that you don&apos;t trust either —{" "}
+          <HL>and accept that some questions will always be squishy.</HL>{" "}
+          That&apos;s not a failure of the eval system. That&apos;s
+          the shape of the work.
         </P>
       </div>
 
-      {/* §7 — Six months in (closing image) */}
+      {/* §4 — How to actually start. */}
       <div>
         <Dots />
-        <SectionH2 eyebrow="7 · six months in" id="closing-image">
-          Six months in.
+        <SectionH2 eyebrow="4 · the recipe" id="recipe">
+          How to start, on Monday.
         </SectionH2>
         <P>
-          Six months after the bifurcation, one team has a CSV with
-          240 rows. Half labeled by humans, half by an LLM-judge
-          calibrated weekly to within four points of the human
-          panel. A regression suite that fires when the new prompt
-          drops the customer-name token. A weekly hour where ten
-          engineers stare at outputs and update the rubric. The
-          product hasn&apos;t changed. The team&apos;s relationship
-          to the product has.
-        </P>
-        <P>
-          They <HL>stopped tasting their own wine.</HL> When they
-          ship a prompt change, they don&apos;t debate whether
-          it&apos;s better. They look at the CSV. Sometimes the CSV
-          tells them no.
-        </P>
-        <P>
-          The other team shipped v2 last week. Customers are
-          complaining. The team is in a meeting trying to decide
-          whether the complaints are real. The founder is on Slack
-          saying it <Em>feels</Em> better. Nobody can answer the
-          question, because nobody built the instrument that
-          answers it.
-        </P>
-        <P>
-          The point of evals isn&apos;t catching bugs, although they
-          do. It isn&apos;t shipping faster, although you will.{" "}
-          <HL>The point of evals is being able to tell the truth about your product</HL>{" "}
-          — to yourself, to your team, to the next person who asks
-          if your AI is okay.
-        </P>
-      </div>
-
-      {/* §8 — A short codicil */}
-      <div>
-        <Dots />
-        <SectionH2 eyebrow="8 · the codicil" id="monday">
-          A short codicil — what to do Monday.
-        </SectionH2>
-        <P>
-          The barrier has always been a CSV and the willingness to
-          look. Six bullets, the entire practice:
+          You don&apos;t need a framework, a platform, or a vendor.
+          You need a spreadsheet and an hour. The recipe below is
+          deliberately small — small enough that you can run it
+          before lunch and ship the result before the day ends.
         </P>
         <Callout>
           <ul
@@ -454,40 +348,81 @@ export default function EvalsOrVibes() {
             style={{ color: "var(--color-text)" }}
           >
             <li>
-              <strong>Open a spreadsheet.</strong> Any spreadsheet.
-              The one you already use is fine.
+              <strong>Pull 20 real prompts from production.</strong>{" "}
+              Not synthetic. Not the demo prompts. Real ones, from
+              the last week of traffic. Borderline cases first —
+              the ones where you&apos;re not sure what the right
+              answer is.
             </li>
             <li>
-              <strong>Paste in 20 real prompts</strong> — not
-              synthetic, not invented, not the ones you used to demo
-              the feature. Real ones. From production. From the last
-              week.
+              <strong>For each, write what a good answer looks like.</strong>{" "}
+              The exact answer if you know it. Otherwise, the two
+              or three yes-or-no questions a careful grader would
+              ask — <Em>did it cite the right page?</Em>,{" "}
+              <Em>did it stay in scope?</Em>, <Em>was it polite?</Em>
             </li>
             <li>
-              <strong>Mark the borderline outputs.</strong> The ones
-              you had to think about. The ones that <Em>almost</Em>{" "}
-              shipped.
+              <strong>Run the model. Score the output.</strong>{" "}
+              Score it yourself first. If the question is a rule
+              (&ldquo;does the SQL contain WHERE&rdquo;), write a
+              one-line check. If it isn&apos;t, mark each row pass
+              or fail by hand.
             </li>
             <li>
-              <strong>Ask a teammate to grade them blind.</strong>{" "}
-              Hide the model name. Hide the prompt version. Just the
-              inputs and the outputs.
+              <strong>Track the{" "}
+                <Term define="The fraction of your eval set the model gets right. The single number you watch when you change the prompt or swap the model.">
+                  pass rate
+                </Term>{" "}
+                over time.</strong>{" "}
+              When it moves, you&apos;ll know whether the change
+              you made helped, hurt, or did nothing. Most prompt
+              changes do nothing.
             </li>
             <li>
-              <strong>Compare.</strong> Where you and your teammate
-              disagree is your starting rubric.
-            </li>
-            <li>
-              <strong>Repeat next sprint.</strong> The CSV grows.
-              The rubric tightens. The model swaps. The CSV stays.
+              <strong>Add hard prompts every week.</strong> When a
+              customer reports a bad answer, that prompt goes in
+              the spreadsheet. When you find a failure mode in
+              production, that pattern goes in the spreadsheet. The
+              set grows. The rubric tightens.
             </li>
           </ul>
         </Callout>
         <P>
-          That&apos;s the whole craft. No framework to install. No
-          platform to onboard. The industry will sell you both, and
-          you may eventually need them, but you don&apos;t need them
-          on Monday. <HL>Open the spreadsheet.</HL>
+          Twenty prompts is enough to start. It&apos;s not enough
+          to ship a product on, but it&apos;s enough to{" "}
+          <HL>turn vibes into a number</HL>. Once you have the
+          number, the rest of the practice — adding cases,
+          calibrating a judge, scheduling human reviews — is
+          mechanical. The hard part is the first row.
+        </P>
+        <P>
+          One warning. If the suite ever passes 100%, the suite is
+          probably broken — not because your model is perfect, but
+          because the prompts in it have stopped being hard. Keep
+          adding cases the model fails on. A useful eval set is
+          one that <Em>occasionally tells you no.</Em>
+        </P>
+      </div>
+
+      {/* §5 — Closing. */}
+      <div>
+        <Dots />
+        <SectionH2 eyebrow="5 · the point" id="the-point">
+          The point.
+        </SectionH2>
+        <P>
+          The reason to do any of this isn&apos;t to catch bugs,
+          although you will. It isn&apos;t to ship faster, although
+          you will.{" "}
+          <HL>The reason is to be able to answer the question your boss is going to ask.</HL>{" "}
+          Is the new version better? Is the model we&apos;re paying
+          for actually worth it? Did the change you made on Tuesday
+          help? Without an eval set, every answer is an opinion.
+          With one, every answer is a number — and you can argue
+          about the rubric instead of arguing about your taste.
+        </P>
+        <P>
+          Open the spreadsheet.
         </P>
       </div>
 
