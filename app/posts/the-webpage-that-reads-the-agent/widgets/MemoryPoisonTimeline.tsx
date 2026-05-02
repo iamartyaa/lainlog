@@ -114,8 +114,7 @@ export function MemoryPoisonTimeline() {
     <WidgetShell
       title="memory · delayed write"
       measurements={s.label}
-      captionTone="prominent"
-      caption={
+      state={
         <AnimatePresence mode="wait">
           <motion.span
             key={step}
@@ -136,29 +135,30 @@ export function MemoryPoisonTimeline() {
           playInterval={3000}
         />
       }
-    >
-      <div
-        className="grid gap-[var(--spacing-md)]"
-        style={{ gridTemplateColumns: "1fr" }}
-      >
-        <Panel title="context" when={s.when}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`ctx-${step}`}
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={SPRING.smooth}
-            >
-              {s.context}
-            </motion.div>
-          </AnimatePresence>
-        </Panel>
-        <Panel title="agent memory">
-          <MemoryState state={s.memoryState} />
-        </Panel>
-      </div>
-    </WidgetShell>
+      canvas={
+        <div
+          className="grid gap-[var(--spacing-md)]"
+          style={{ gridTemplateColumns: "1fr", minHeight: 280 }}
+        >
+          <Panel title="context" when={s.when}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`ctx-${step}`}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                transition={SPRING.smooth}
+              >
+                {s.context}
+              </motion.div>
+            </AnimatePresence>
+          </Panel>
+          <Panel title="agent memory">
+            <MemoryState state={s.memoryState} />
+          </Panel>
+        </div>
+      }
+    />
   );
 }
 

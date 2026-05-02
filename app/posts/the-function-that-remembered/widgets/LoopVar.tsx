@@ -50,8 +50,7 @@ export function LoopVar() {
     <WidgetShell
       title="loop · var"
       measurements={`${N} callbacks · 1 cell`}
-      caption={captionFor(step)}
-      captionTone="prominent"
+      state={captionFor(step)}
       controls={
         <WidgetNav
           value={step}
@@ -61,8 +60,9 @@ export function LoopVar() {
           ariaLabel="Step var-loop timeline"
         />
       }
-    >
-      <div className="bs-loopvar-wide">
+      canvas={
+        <>
+          <div className="bs-loopvar-wide">
         <svg
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
           width="100%"
@@ -210,14 +210,16 @@ export function LoopVar() {
           </g>
         </svg>
       </div>
-      <div className="bs-loopvar-narrow">
-        <NarrowLoopVar
-          firedCount={firedCount}
-          printedValues={printedValues}
-          sharedVar={sharedVar}
-        />
-      </div>
-    </WidgetShell>
+          <div className="bs-loopvar-narrow">
+            <NarrowLoopVar
+              firedCount={firedCount}
+              printedValues={printedValues}
+              sharedVar={sharedVar}
+            />
+          </div>
+        </>
+      }
+    />
   );
 }
 

@@ -99,12 +99,12 @@ export function TetherScope() {
 
   return (
     <WidgetShell
-      title="TetherScope"
-      caption={s.caption}
-      captionTone="prominent"
+      title="tether · scope"
+      state={s.caption}
       controls={<WidgetNav value={step} total={STEPS.length} onChange={setStep} playInterval={1500} />}
-    >
-      <div className="bs-tetherscope-wide">
+      canvas={
+        <>
+          <div className="bs-tetherscope-wide">
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         width="100%"
@@ -413,10 +413,12 @@ export function TetherScope() {
         </text>
       </svg>
       </div>
-      <div className="bs-tetherscope-narrow">
-        <MemoNarrowTetherScope step={step} s={s} />
-      </div>
-    </WidgetShell>
+          <div className="bs-tetherscope-narrow">
+            <MemoNarrowTetherScope step={step} s={s} />
+          </div>
+        </>
+      }
+    />
   );
 }
 

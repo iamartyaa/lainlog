@@ -70,8 +70,7 @@ export function RenderFixed() {
     <WidgetShell
       title="render · fixed"
       measurements="c => c + 1"
-      captionTone="prominent"
-      caption={captionFor(step)}
+      state={captionFor(step)}
       controls={
         <WidgetNav
           value={step}
@@ -82,8 +81,9 @@ export function RenderFixed() {
           ariaLabel="Step fixed-render timeline"
         />
       }
-    >
-      <div className="bs-renderfixed-wide">
+      canvas={
+        <>
+          <div className="bs-renderfixed-wide">
         <svg
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
           width="100%"
@@ -307,10 +307,12 @@ export function RenderFixed() {
           </g>
         </svg>
       </div>
-      <div className="bs-renderfixed-narrow">
-        <MemoNarrowRenderFixed step={step} tick={tick} />
-      </div>
-    </WidgetShell>
+          <div className="bs-renderfixed-narrow">
+            <MemoNarrowRenderFixed step={step} tick={tick} />
+          </div>
+        </>
+      }
+    />
   );
 }
 

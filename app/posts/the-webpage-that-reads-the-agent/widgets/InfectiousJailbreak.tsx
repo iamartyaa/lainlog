@@ -125,8 +125,7 @@ export function InfectiousJailbreak() {
     <WidgetShell
       title="infectious jailbreak"
       measurements={`${infected.size}/${N} infected`}
-      captionTone="prominent"
-      caption={
+      state={
         state === "start" ? (
           <>
             Fourteen agents, one seeded infected.{" "}
@@ -205,8 +204,8 @@ export function InfectiousJailbreak() {
           ) : null}
         </div>
       }
-    >
-      <div className="mx-auto" style={{ maxWidth: 540 }}>
+      canvas={
+        <div className="mx-auto" style={{ maxWidth: 540 }}>
         <svg
           viewBox="0 0 360 240"
           role="img"
@@ -272,7 +271,8 @@ export function InfectiousJailbreak() {
             );
           })}
         </svg>
-      </div>
-    </WidgetShell>
+        </div>
+      }
+    />
   );
 }

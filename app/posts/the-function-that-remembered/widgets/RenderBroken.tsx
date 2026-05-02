@@ -78,8 +78,7 @@ export function RenderBroken() {
     <WidgetShell
       title="render · broken"
       measurements="count + 1"
-      captionTone="prominent"
-      caption={captionFor(step)}
+      state={captionFor(step)}
       controls={
         <WidgetNav
           value={step}
@@ -90,8 +89,9 @@ export function RenderBroken() {
           ariaLabel="Step broken-render timeline"
         />
       }
-    >
-      <div className="bs-renderbroken-wide">
+      canvas={
+        <>
+          <div className="bs-renderbroken-wide">
         <svg
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
           width="100%"
@@ -327,10 +327,12 @@ export function RenderBroken() {
           </g>
         </svg>
       </div>
-      <div className="bs-renderbroken-narrow">
-        <MemoNarrowRenderBroken step={step} tick={tick} />
-      </div>
-    </WidgetShell>
+          <div className="bs-renderbroken-narrow">
+            <MemoNarrowRenderBroken step={step} tick={tick} />
+          </div>
+        </>
+      }
+    />
   );
 }
 

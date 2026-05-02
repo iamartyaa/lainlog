@@ -48,8 +48,7 @@ export function LoopLet() {
     <WidgetShell
       title="loop · let"
       measurements={`${N} callbacks · ${N} cells`}
-      caption={captionFor(step)}
-      captionTone="prominent"
+      state={captionFor(step)}
       controls={
         <WidgetNav
           value={step}
@@ -59,8 +58,9 @@ export function LoopLet() {
           ariaLabel="Step let-loop timeline"
         />
       }
-    >
-      <div className="bs-looplet-wide">
+      canvas={
+        <>
+          <div className="bs-looplet-wide">
         <svg
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
           width="100%"
@@ -215,14 +215,16 @@ export function LoopLet() {
           </g>
         </svg>
       </div>
-      <div className="bs-looplet-narrow">
-        <NarrowLoopLet
-          firedCount={firedCount}
-          printedValues={printedValues}
-          letBindings={letBindings}
-        />
-      </div>
-    </WidgetShell>
+          <div className="bs-looplet-narrow">
+            <NarrowLoopLet
+              firedCount={firedCount}
+              printedValues={printedValues}
+              letBindings={letBindings}
+            />
+          </div>
+        </>
+      }
+    />
   );
 }
 
